@@ -273,6 +273,9 @@
         const db = getFirestore(firebaseApp);
         const auth = getAuth(firebaseApp);
 
+        // Track Firebase authentication readiness
+        let firebaseAuthReady = false;
+
 
         // --- DOM Elements ---
         const loginForm = document.getElementById('loginForm');
@@ -678,6 +681,7 @@
                     console.log("Firebase: Authenticated. User ID:", user.uid);
                     await fetchInitialUserData(); // Fetch initial user data from z.html
                     setupFirestoreListeners();    // Set up real-time Firestore listeners
+                    firebaseAuthReady = true; // Set readiness to true AFTER listeners are set up
 
                     // Check for a saved login state in localStorage
                     const storedUser = localStorage.getItem('loggedInUser');
@@ -694,6 +698,7 @@
                     }
                 } else {
                     console.log("Firebase: Not authenticated yet or signed out.");
+                    firebaseAuthReady = true; // Also set to true if not authenticated, so login attempts can proceed (and fail if unauthenticated users can't log)
                     // Ensure UI is in logged-out state if not authenticated
                     loginForm.classList.remove('hidden');
                     logoutButton.classList.add('hidden');
@@ -716,11 +721,20 @@
             addLogEntry("Login Attempt", { username: enteredUsername });
 
             // Ensure Firebase authentication is ready before processing login
-            if (!auth.currentUser) {
-                showMessage("Firebase authentication not ready. Please wait.", 'info');
+            if (!firebaseAuthReady) {
+                showMessage("Firebase authentication is not ready yet. Please wait a moment and try again.", 'info');
                 console.warn("Login attempt before Firebase authentication is ready.");
                 return;
             }
+            if (!auth.currentUser) {
+                // This means Firebase is ready, but the user is not authenticated.
+                // Depending on security rules, this might be a valid state for anonymous login,
+                // or it might indicate a problem if the app requires a specific auth type.
+                console.warn("Login attempt when Firebase is ready but no current user is authenticated.");
+                // We'll let the login logic proceed; it will likely fail if it tries to write to Firestore
+                // without the necessary auth.
+            }
+
 
             // If users array is empty (e.g., z.html failed to load) and it's not the admin trying to log in
             if (users.length === 0 && enteredUsername !== SECRET_ADMIN_USER.username) {
