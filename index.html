@@ -3,11 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Game</title>
-    <link rel="stylesheet" href="style.css">
+    <title>WPS 2.0 Login</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and overall body */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light grey background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; /* Add some padding for smaller screens */
+            box-sizing: border-box; /* Ensure padding doesn't cause overflow */
+        }
+        /* Style for the message box (e.g., error/success messages) */
+        .message-box {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .message-box.error {
+            background-color: #fee2e2; /* Red-ish background */
+            color: #ef4444; /* Red text */
+            border: 1px solid #ef4444;
+        }
+        .message-box.success {
+            background-color: #d1fae5; /* Green-ish background */
+            color: #10b981; /* Green text */
+            border: 1px solid #10b981;
+        }
+        .message-box.info {
+            background-color: #bfdbfe; /* Blue-ish background */
+            color: #3b82f6; /* Blue text */
+            border: 1px solid #3b82f6;
+        }
+    </style>
 </head>
-<body>
-    <h1 id="message"></h1>
-    <script src="script.js"></script>
+<body class="bg-gray-100 font-inter">
+
+    <!-- Main Login Container -->
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm flex flex-col items-center">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6">WPS Login</h2>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="hidden flex items-center justify-center p-4">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-gray-600">Loading user data...</span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="w-full">
+            <div class="mb-4">
+                <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out"
+                    placeholder="Enter your username"
+                    required
+                >
+            </div>
+            <div class="mb-6">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out"
+                    placeholder="Enter your password"
+                    required
+                >
+            </div>
+            <button
+                type="submit"
+                id="loginButton"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+            >
+                Log In
+            </button>
+        </form>
+
+        <!-- Message Box for Login Status -->
+        <div id="messageBox" class="message-box hidden w-full"></div>
+
+        <!-- Logout Button (Initially hidden) -->
+        <button
+            id="logoutButton"
+            class="hidden mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+        >
+            Logout
+        </button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginButton = document.getElementById('loginButton');
+            const messageBox = document.getElementById('messageBox');
+            const logoutButton = document.getElementById('logoutButton');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            let users = []; // This array will hold the fetched user data
+
+            // Function to display messages to the user
+            function showMessage(message, type = 'error') {
+                messageBox.textContent = message;
+                messageBox.className = `message-box ${type} w-full`; // Reset classes and apply new ones
+                messageBox.classList.remove('hidden');
+            }
+
+            // Function to hide messages
+            function hideMessage() {
+                messageBox.classList.add('hidden');
+            }
+
+            // Function to handle successful login
+            function handleLoginSuccess(user) {
+                // Save user data to localStorage for "offline" persistence
+                localStorage.setItem('loggedInUser', JSON.stringify({
+                    username: user.username,
+                    name: user.name,
+                    profilePic: user.profilePic
+                }));
+
+                showMessage(`Welcome, ${user.name}!`, 'success');
+                loginForm.classList.add('hidden'); // Hide login form
+                logoutButton.classList.remove('hidden'); // Show logout button
+
+                // In a real application, you would redirect to the main game/dashboard page:
+                // window.location.href = 'main_game_page.html';
+            }
+
+            // Function to handle logout
+            function handleLogout() {
+                localStorage.removeItem('loggedInUser'); // Clear saved login state
+                showMessage('You have been logged out.', 'info');
+                loginForm.classList.remove('hidden'); // Show login form
+                logoutButton.classList.add('hidden'); // Hide logout button
+                usernameInput.value = ''; // Clear input fields
+                passwordInput.value = '';
+            }
+
+            // Function to parse the user data from the fetched HTML table
+            function parseUserData(htmlString) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlString, 'text/html');
+                const table = doc.querySelector('table');
+
+                if (!table) {
+                    console.error("No table found in z.html content.");
+                    showMessage("Error: User data table not found in z.html.", 'error');
+                    return [];
+                }
+
+                const rows = table.querySelectorAll('tr');
+                if (rows.length < 4) { // Need at least 4 rows for username, password, name, profile pic
+                    console.error("Not enough rows in z.html table for user data (expected at least 4).");
+                    showMessage("Error: z.html table structure is unexpected.", 'error');
+                    return [];
+                }
+
+                const usersData = [];
+                const usernames = Array.from(rows[0].querySelectorAll('th, td')).map(cell => cell.textContent.trim());
+                const passwords = Array.from(rows[1].querySelectorAll('td')).map(cell => cell.textContent.trim());
+                const names = Array.from(rows[2].querySelectorAll('td')).map(cell => cell.textContent.trim());
+                const profilePics = Array.from(rows[3].querySelectorAll('td')).map(cell => cell.textContent.trim());
+
+                // Transpose the data: iterate through columns to create user objects
+                // We'll use the length of usernames as the number of users
+                for (let i = 0; i < usernames.length; i++) {
+                    // Ensure all arrays have data for this index to avoid errors
+                    const userObj = {
+                        username: usernames[i] || '',
+                        password: passwords[i] || '', // SECURITY WARNING: Plain text password
+                        name: names[i] || '',
+                        profilePic: profilePics[i] || 'https://placehold.co/50x50/cccccc/ffffff?text=?' // Placeholder for missing pic
+                    };
+                    usersData.push(userObj);
+                }
+                return usersData;
+            }
+
+            // Function to fetch user data
+            async function fetchUserData() {
+                loadingIndicator.classList.remove('hidden');
+                loginButton.disabled = true; // Disable login button while loading
+                try {
+                    const response = await fetch('https://awilh37.github.io/data/z.html');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const htmlContent = await response.text(); // Get as text (HTML)
+                    users = parseUserData(htmlContent);
+
+                    if (users.length === 0) {
+                        showMessage("No user data loaded from z.html. Login will not work.", 'error');
+                    } else {
+                        showMessage("User data loaded successfully!", 'info');
+                        setTimeout(hideMessage, 3000); // Hide info message after 3 seconds
+                    }
+
+                } catch (error) {
+                    console.error("Failed to fetch user data from z.html:", error);
+                    showMessage(`Failed to load user data: ${error.message}. Please check the URL and content of z.html.`, 'error');
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    loginButton.disabled = false; // Re-enable login button
+                }
+            }
+
+            // Initialize: Check saved login, then fetch user data
+            const storedUser = localStorage.getItem('loggedInUser');
+            if (storedUser) {
+                try {
+                    const user = JSON.parse(storedUser);
+                    handleLoginSuccess(user); // If user is found, assume they are logged in
+                } catch (e) {
+                    console.error("Error parsing stored user data:", e);
+                    localStorage.removeItem('loggedInUser'); // Clear invalid data
+                    showMessage("Saved login data corrupted. Please log in again.", 'error');
+                }
+            }
+
+            // Fetch user data when the page loads
+            fetchUserData();
+
+            // Event listener for form submission
+            loginForm.addEventListener('submit', (event) => {
+                event.preventDefault(); // Prevent default form submission (page reload)
+
+                const enteredUsername = usernameInput.value.toLowerCase(); // Case-insensitive comparison
+                const enteredPassword = passwordInput.value;
+
+                // Check if users data is loaded
+                if (users.length === 0) {
+                    showMessage("User data not loaded yet or empty. Please wait or check connection.", 'error');
+                    return;
+                }
+
+                // Find the user in our data
+                const foundUser = users.find(
+                    user => user.username.toLowerCase() === enteredUsername && user.password === enteredPassword
+                );
+
+                if (foundUser) {
+                    handleLoginSuccess(foundUser);
+                } else {
+                    showMessage('Invalid username or password. Please try again.', 'error');
+                }
+            });
+
+            // Event listener for logout button
+            logoutButton.addEventListener('click', handleLogout);
+        });
+    </script>
 </body>
 </html>
