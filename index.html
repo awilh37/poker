@@ -42,6 +42,45 @@
             color: #3b82f6; /* Blue text */
             border: 1px solid #3b82f6;
         }
+        /* Styling for log entries */
+        .log-entry {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            color: #4b5563;
+            text-align: left;
+        }
+        .log-entry strong {
+            color: #1f2937;
+        }
+        /* Table styles for user management */
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .user-table th, .user-table td {
+            border: 1px solid #e2e8f0;
+            padding: 8px;
+            text-align: left;
+        }
+        .user-table th {
+            background-color: #e0f2fe;
+            color: #2563eb;
+            font-weight: bold;
+        }
+        .user-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .user-table select {
+            width: 100%;
+            padding: 4px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-inter">
@@ -102,171 +141,647 @@
         >
             Logout
         </button>
+
+        <!-- Admin Panel (Initially hidden) -->
+        <div id="adminPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full text-center">
+            <h3 class="text-2xl font-bold text-gray-700 mb-4">Admin Panel</h3>
+            <p class="text-gray-600 mb-6">
+                Welcome, Administrator! From here, you can manage users, game data, and other aspects of the WPS system.
+                <br>
+                <strong class="text-red-500">Note: Data is now stored in Firestore.</strong>
+            </p>
+            <div class="space-y-4">
+                <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Manage Users
+                </button>
+                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Manage Game Data
+                </button>
+                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Configure Games
+                </button>
+                <button id="viewLogsButton" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    View Activity Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- User Management Panel (Initially hidden) -->
+        <div id="userManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md">
+            <h3 class="text-2xl font-bold text-gray-700 mb-4 text-center">User Management</h3>
+            <p class="text-gray-600 mb-4 text-center">
+                Assign roles to users. Changes are saved to Firestore.
+            </p>
+            <div class="overflow-x-auto">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userRolesTableBody">
+                        <!-- User rows will be rendered here -->
+                        <tr><td colspan="3" class="text-center text-gray-500">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-between space-x-2 mt-4">
+                <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Save Roles
+                </button>
+                <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Hide Panel
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Activity Log Viewer (Initially hidden) -->
+        <div id="logViewer" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md">
+            <h3 class="text-2xl font-bold text-gray-700 mb-4 text-center">Activity Logs</h3>
+
+            <!-- Log Filters and Sort -->
+            <div class="flex flex-wrap items-center justify-between mb-4 space-y-2 md:space-y-0">
+                <div class="w-full md:w-1/2 pr-0 md:pr-2">
+                    <label for="logFilterType" class="block text-gray-700 text-sm font-semibold mb-1">Filter by Type:</label>
+                    <select id="logFilterType" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="all">All Types</option>
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="w-full md:w-1/2 pl-0 md:pl-2">
+                    <label for="logSearchText" class="block text-gray-700 text-sm font-semibold mb-1">Search Text:</label>
+                    <input type="text" id="logSearchText" placeholder="Search logs..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="w-full mt-3">
+                    <label class="block text-gray-700 text-sm font-semibold mb-1">Sort Order:</label>
+                    <div class="flex items-center space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="logSortOrder" value="newest" checked class="form-radio text-blue-600">
+                            <span class="ml-2 text-gray-700">Newest First</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="logSortOrder" value="oldest" class="form-radio text-blue-600">
+                            <span class="ml-2 text-gray-700">Oldest First</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="logEntries" class="max-h-60 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white mb-4">
+                <!-- Log entries will be rendered here -->
+                <p class="text-gray-500 text-center">No logs yet.</p>
+            </div>
+            <div class="flex justify-between space-x-2">
+                <button id="clearLogsButton" class="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Clear Logs
+                </button>
+                <button id="hideLogsButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Hide Logs
+                </button>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('loginForm');
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
-            const loginButton = document.getElementById('loginButton');
-            const messageBox = document.getElementById('messageBox');
-            const logoutButton = document.getElementById('logoutButton');
-            const loadingIndicator = document.getElementById('loadingIndicator');
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-            let users = []; // This array will hold the fetched user data
+        // --- Firebase Configuration ---
+        // IMPORTANT: Replace these placeholder values with your actual Firebase project configuration
+        // You can find these in your Firebase Project Settings -> General -> Your apps
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_FIREBASE_APP_ID"
+        };
 
-            // Function to display messages to the user
-            function showMessage(message, type = 'error') {
-                messageBox.textContent = message;
-                messageBox.className = `message-box ${type} w-full`; // Reset classes and apply new ones
-                messageBox.classList.remove('hidden');
-            }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId; // Use projectId as default appId outside Canvas
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-            // Function to hide messages
-            function hideMessage() {
-                messageBox.classList.add('hidden');
-            }
+        // Initialize Firebase
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getFirestore(firebaseApp);
+        const auth = getAuth(firebaseApp);
 
-            // Function to handle successful login
-            function handleLoginSuccess(user) {
-                // Save user data to localStorage for "offline" persistence
-                localStorage.setItem('loggedInUser', JSON.stringify({
-                    username: user.username,
-                    name: user.name,
-                    profilePic: user.profilePic
-                }));
 
-                showMessage(`Welcome, ${user.name}!`, 'success');
-                loginForm.classList.add('hidden'); // Hide login form
-                logoutButton.classList.remove('hidden'); // Show logout button
+        // --- DOM Elements ---
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('loginButton');
+        const messageBox = document.getElementById('messageBox');
+        const logoutButton = document.getElementById('logoutButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const adminPanel = document.getElementById('adminPanel');
 
-                // In a real application, you would redirect to the main game/dashboard page:
-                // window.location.href = 'main_game_page.html';
-            }
+        // Admin panel sub-sections
+        const manageUsersButton = document.getElementById('manageUsersButton');
+        const userManagementPanel = document.getElementById('userManagementPanel');
+        const userRolesTableBody = document.getElementById('userRolesTableBody');
+        const saveUserRolesButton = document.getElementById('saveUserRolesButton');
+        const hideUserManagementButton = document.getElementById('hideUserManagementButton');
 
-            // Function to handle logout
-            function handleLogout() {
-                localStorage.removeItem('loggedInUser'); // Clear saved login state
-                showMessage('You have been logged out.', 'info');
-                loginForm.classList.remove('hidden'); // Show login form
-                logoutButton.classList.add('hidden'); // Hide logout button
-                usernameInput.value = ''; // Clear input fields
-                passwordInput.value = '';
-            }
+        const viewLogsButton = document.getElementById('viewLogsButton');
+        const logViewer = document.getElementById('logViewer');
+        const logEntriesContainer = document.getElementById('logEntries');
+        const clearLogsButton = document.getElementById('clearLogsButton');
+        const hideLogsButton = document.getElementById('hideLogsButton');
 
-            // Function to parse the user data from the fetched HTML table
-            function parseUserData(htmlString) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(htmlString, 'text/html');
-                const table = doc.querySelector('table');
+        // Log filtering and sorting elements
+        const logFilterType = document.getElementById('logFilterType');
+        const logSearchText = document.getElementById('logSearchText');
+        const logSortOrderRadios = document.querySelectorAll('input[name="logSortOrder"]');
 
-                if (!table) {
-                    console.error("No table found in z.html content.");
-                    showMessage("Error: User data table not found in z.html.", 'error');
-                    return [];
-                }
+        let users = []; // All fetched users from z.html (used for initial login)
+        let firestoreUserRoles = {}; // Stores roles fetched from Firestore
+        let firestoreActivityLogs = []; // Stores logs fetched from Firestore
 
-                const rows = table.querySelectorAll('tr');
-                if (rows.length < 4) { // Need at least 4 rows for username, password, name, profile pic
-                    console.error("Not enough rows in z.html table for user data (expected at least 4).");
-                    showMessage("Error: z.html table structure is unexpected.", 'error');
-                    return [];
-                }
+        const ROLES = ['Member', 'Moderator', 'Banned']; // Defined roles for the system
 
-                const usersData = [];
-                const usernames = Array.from(rows[0].querySelectorAll('th, td')).map(cell => cell.textContent.trim());
-                const passwords = Array.from(rows[1].querySelectorAll('td')).map(cell => cell.textContent.trim());
-                const names = Array.from(rows[2].querySelectorAll('td')).map(cell => cell.textContent.trim());
-                const profilePics = Array.from(rows[3].querySelectorAll('td')).map(cell => cell.textContent.trim());
+        const SECRET_ADMIN_USER = {
+            username: 'admin',
+            password: 'secretpassword', // Change this to your desired secret password
+            name: 'Administrator',
+            profilePic: 'https://placehold.co/50x50/ff0000/ffffff?text=ADM'
+        };
 
-                // Transpose the data: iterate through columns to create user objects
-                // We'll use the length of usernames as the number of users
-                for (let i = 0; i < usernames.length; i++) {
-                    // Ensure all arrays have data for this index to avoid errors
-                    const userObj = {
-                        username: usernames[i] || '',
-                        password: passwords[i] || '', // SECURITY WARNING: Plain text password
-                        name: names[i] || '',
-                        profilePic: profilePics[i] || 'https://placehold.co/50x50/cccccc/ffffff?text=?' // Placeholder for missing pic
-                    };
-                    usersData.push(userObj);
-                }
-                return usersData;
-            }
+        // Firestore Collection References
+        const userRolesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_roles`);
+        const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
 
-            // Function to fetch user data
-            async function fetchUserData() {
-                loadingIndicator.classList.remove('hidden');
-                loginButton.disabled = true; // Disable login button while loading
-                try {
-                    const response = await fetch('https://awilh37.github.io/data/z.html');
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const htmlContent = await response.text(); // Get as text (HTML)
-                    users = parseUserData(htmlContent);
 
-                    if (users.length === 0) {
-                        showMessage("No user data loaded from z.html. Login will not work.", 'error');
-                    } else {
-                        showMessage("User data loaded successfully!", 'info');
-                        setTimeout(hideMessage, 3000); // Hide info message after 3 seconds
-                    }
-
-                } catch (error) {
-                    console.error("Failed to fetch user data from z.html:", error);
-                    showMessage(`Failed to load user data: ${error.message}. Please check the URL and content of z.html.`, 'error');
-                } finally {
-                    loadingIndicator.classList.add('hidden');
-                    loginButton.disabled = false; // Re-enable login button
-                }
-            }
-
-            // Initialize: Check saved login, then fetch user data
-            const storedUser = localStorage.getItem('loggedInUser');
-            if (storedUser) {
-                try {
-                    const user = JSON.parse(storedUser);
-                    handleLoginSuccess(user); // If user is found, assume they are logged in
-                } catch (e) {
-                    console.error("Error parsing stored user data:", e);
-                    localStorage.removeItem('loggedInUser'); // Clear invalid data
-                    showMessage("Saved login data corrupted. Please log in again.", 'error');
-                }
-            }
-
-            // Fetch user data when the page loads
-            fetchUserData();
-
-            // Event listener for form submission
-            loginForm.addEventListener('submit', (event) => {
-                event.preventDefault(); // Prevent default form submission (page reload)
-
-                const enteredUsername = usernameInput.value.toLowerCase(); // Case-insensitive comparison
-                const enteredPassword = passwordInput.value;
-
-                // Check if users data is loaded
-                if (users.length === 0) {
-                    showMessage("User data not loaded yet or empty. Please wait or check connection.", 'error');
-                    return;
-                }
-
-                // Find the user in our data
-                const foundUser = users.find(
-                    user => user.username.toLowerCase() === enteredUsername && user.password === enteredPassword
-                );
-
-                if (foundUser) {
-                    handleLoginSuccess(foundUser);
+        // --- Log System Functions (Firestore Integrated) ---
+        async function addLogEntry(action, details = {}) {
+            const timestamp = new Date().toISOString(); // Use ISO string for consistent sorting in Firestore
+            const log = {
+                timestamp: timestamp,
+                action: action,
+                ...details
+            };
+            try {
+                if (auth.currentUser) { // Only log if authenticated
+                    await addDoc(activityLogsCollectionRef, log);
+                    console.log("Log added to Firestore:", log);
                 } else {
-                    showMessage('Invalid username or password. Please try again.', 'error');
+                    console.warn("Not authenticated to add log to Firestore. Logged locally (backup):", log);
+                    // Fallback to local storage for unauthenticated logs (optional, for debugging if not authenticated)
+                    const logs = JSON.parse(localStorage.getItem('activityLogsBackup') || '[]');
+                    logs.push(log);
+                    localStorage.setItem('activityLogsBackup', JSON.stringify(logs));
+                }
+            } catch (e) {
+                console.error("Error saving log to Firestore:", e);
+                showMessage("Error: Could not save log to cloud.", 'error');
+            }
+            // renderLogs is handled by the onSnapshot listener for activityLogsCollectionRef
+        }
+
+        function populateLogFilterTypes() {
+            const uniqueTypes = new Set(firestoreActivityLogs.map(log => log.action));
+            logFilterType.innerHTML = '<option value="all">All Types</option>';
+            uniqueTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                logFilterType.appendChild(option);
+            });
+        }
+
+        function renderLogs() {
+            logEntriesContainer.innerHTML = '';
+            let logsToDisplay = [...firestoreActivityLogs]; // Use a copy of the live data
+
+            // Apply Filters
+            const selectedType = logFilterType.value;
+            const searchText = logSearchText.value.toLowerCase();
+            const sortOrder = document.querySelector('input[name="logSortOrder"]:checked').value;
+
+            let filteredLogs = logsToDisplay.filter(log => {
+                const matchesType = selectedType === 'all' || log.action === selectedType;
+                const logContent = JSON.stringify(log).toLowerCase();
+                const matchesText = logContent.includes(searchText);
+                return matchesType && matchesText;
+            });
+
+            // Apply Sorting (using timestamp from Firestore)
+            filteredLogs.sort((a, b) => {
+                const dateA = new Date(a.timestamp);
+                const dateB = new Date(b.timestamp);
+                if (sortOrder === 'newest') {
+                    return dateB.getTime() - dateA.getTime();
+                } else {
+                    return dateA.getTime() - dateB.getTime();
                 }
             });
 
-            // Event listener for logout button
-            logoutButton.addEventListener('click', handleLogout);
+            if (filteredLogs.length === 0) {
+                logEntriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No matching logs found.</p>';
+                return;
+            }
+
+            filteredLogs.forEach(log => {
+                const logDiv = document.createElement('div');
+                logDiv.className = 'log-entry';
+                let detailsHtml = '';
+                for (const key in log) {
+                    if (key !== 'timestamp' && key !== 'action' && key !== 'id') { // 'id' is Firestore doc ID
+                        detailsHtml += ` <strong>${key}:</strong> ${log[key]};`;
+                    }
+                }
+                logDiv.innerHTML = `<strong>[${new Date(log.timestamp).toLocaleString()}] ${log.action}:</strong>${detailsHtml}`;
+                logEntriesContainer.appendChild(logDiv);
+            });
+        }
+
+        async function clearLogs() {
+             if (!confirm("Are you sure you want to clear ALL activity logs from Firestore? This cannot be undone.")) {
+                return;
+            }
+
+            showMessage("Clearing logs...", 'info');
+            try {
+                const querySnapshot = await getDocs(activityLogsCollectionRef);
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                addLogEntry("Logs Cleared", { by: auth.currentUser ? auth.currentUser.uid : 'Unknown' });
+                showMessage('Activity logs cleared from Firestore.', 'success');
+            } catch (e) {
+                console.error("Error clearing logs from Firestore:", e);
+                showMessage("Failed to clear logs from Firestore.", 'error');
+            }
+        }
+        // --- End Log System Functions ---
+
+
+        // --- User Management Functions (Firestore Integrated) ---
+        async function saveUserRolesToFirestore(rolesMap) {
+            try {
+                // Get the current roles from Firestore to determine what changed
+                const oldRolesMap = firestoreUserRoles;
+
+                for (const username in rolesMap) {
+                    const newRole = rolesMap[username];
+                    const docRef = doc(userRolesCollectionRef, username); // Use username as document ID
+
+                    if (oldRolesMap[username] !== newRole) {
+                        await setDoc(docRef, { role: newRole }, { merge: true }); // Use merge to only update role
+                        addLogEntry("User Role Changed", {
+                            user: username,
+                            oldRole: oldRolesMap[username] || 'Member',
+                            newRole: newRole,
+                            by: SECRET_ADMIN_USER.username
+                        });
+                    }
+                }
+                showMessage("User roles saved to Firestore.", 'success');
+                setTimeout(hideMessage, 2000);
+            } catch (e) {
+                console.error("Error saving user roles to Firestore:", e);
+                showMessage("Failed to save user roles to Firestore.", 'error');
+            }
+        }
+
+        function renderUserRolesTable() {
+            userRolesTableBody.innerHTML = '';
+            // Filter out the SECRET_ADMIN_USER from the list to manage, as their role is implicit
+            const manageableUsers = users.filter(user => user.username !== SECRET_ADMIN_USER.username);
+
+            if (manageableUsers.length === 0) {
+                userRolesTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users to manage.</td></tr>';
+                return;
+            }
+
+            manageableUsers.forEach(user => {
+                const row = userRolesTableBody.insertRow();
+                const userNameCell = row.insertCell();
+                const userUsernameCell = row.insertCell();
+                const userRoleCell = row.insertCell();
+
+                userNameCell.textContent = user.name;
+                userUsernameCell.textContent = user.username;
+
+                const select = document.createElement('select');
+                select.className = 'border rounded-lg p-1';
+                select.setAttribute('data-username', user.username);
+
+                ROLES.forEach(role => {
+                    const option = document.createElement('option');
+                    option.value = role;
+                    option.textContent = role;
+                    select.appendChild(option);
+                });
+
+                // Set the current selected role, defaulting to 'Member' if not found in Firestore
+                select.value = firestoreUserRoles[user.username]?.role || 'Member';
+
+                userRoleCell.appendChild(select);
+            });
+        }
+
+        function collectAndSaveRoles() {
+            const newRolesMap = {};
+            const roleSelects = userRolesTableBody.querySelectorAll('select[data-username]');
+
+            roleSelects.forEach(select => {
+                const username = select.getAttribute('data-username');
+                const newRole = select.value;
+                newRolesMap[username] = newRole;
+            });
+            saveUserRolesToFirestore(newRolesMap);
+        }
+        // --- End User Management Functions ---
+
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'error') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type} w-full`; // Reset classes and apply new ones
+            messageBox.classList.remove('hidden');
+        }
+
+        // Function to hide messages
+        function hideMessage() {
+            messageBox.classList.add('hidden');
+        }
+
+        // Function to handle successful login
+        function handleLoginSuccess(user) {
+            // Store basic login info in localStorage, but actual roles are from Firestore
+            localStorage.setItem('loggedInUser', JSON.stringify({
+                username: user.username,
+                name: user.name,
+                profilePic: user.profilePic,
+                isAdmin: user.username === SECRET_ADMIN_USER.username
+            }));
+
+            showMessage(`Welcome, ${user.name}!`, 'success');
+            loginForm.classList.add('hidden');
+            logoutButton.classList.remove('hidden');
+
+            if (user.username === SECRET_ADMIN_USER.username) {
+                adminPanel.classList.remove('hidden');
+                addLogEntry("Admin Login", { user: user.username });
+            } else {
+                addLogEntry("User Login", { user: user.username });
+            }
+        }
+
+        // Function to handle logout
+        function handleLogout() {
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            if (loggedInUser) {
+                const user = JSON.parse(loggedInUser);
+                addLogEntry("Logout", { user: user.username, isAdmin: user.isAdmin });
+            } else {
+                 addLogEntry("Logout", { user: "Unknown" });
+            }
+
+            localStorage.removeItem('loggedInUser');
+            showMessage('You have been logged out.', 'info');
+            loginForm.classList.remove('hidden');
+            logoutButton.classList.add('hidden');
+            adminPanel.classList.add('hidden');
+            logViewer.classList.add('hidden');
+            userManagementPanel.classList.add('hidden');
+            usernameInput.value = '';
+            passwordInput.value = '';
+        }
+
+        // Function to parse the user data from the fetched HTML table
+        function parseUserData(htmlString) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+            const table = doc.querySelector('table');
+
+            if (!table) {
+                console.error("No table found in z.html content.");
+                showMessage("Error: User data table not found in z.html.", 'error');
+                return [];
+            }
+
+            const rows = table.querySelectorAll('tr');
+            if (rows.length < 4) { // Need at least 4 rows for username, password, name, profile pic
+                console.error("Not enough rows in z.html table for user data (expected at least 4).");
+                showMessage("Error: z.html table structure is unexpected.", 'error');
+                return [];
+            }
+
+            const usersData = [];
+            const usernames = Array.from(rows[0].querySelectorAll('th, td')).map(cell => cell.textContent.trim());
+            const passwords = Array.from(rows[1].querySelectorAll('td')).map(cell => cell.textContent.trim());
+            const names = Array.from(rows[2].querySelectorAll('td')).map(cell => cell.textContent.trim());
+            const profilePics = Array.from(rows[3].querySelectorAll('td')).map(cell => cell.textContent.trim());
+
+            // Transpose the data: iterate through columns to create user objects
+            for (let i = 0; i < usernames.length; i++) {
+                const userObj = {
+                    username: usernames[i] || '',
+                    password: passwords[i] || '', // SECURITY WARNING: Plain text password
+                    name: names[i] || '',
+                    profilePic: profilePics[i] || 'https://placehold.co/50x50/cccccc/ffffff?text=?' // Placeholder for missing pic
+                };
+                usersData.push(userObj);
+            }
+            return usersData;
+        }
+
+        // Function to fetch initial user data (from z.html)
+        async function fetchInitialUserData() {
+            loadingIndicator.classList.remove('hidden');
+            loginButton.disabled = true;
+            try {
+                addLogEntry("Attempting to fetch initial user data from z.html");
+                const response = await fetch('https://awilh37.github.io/data/z.html');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const htmlContent = await response.text();
+                users = parseUserData(htmlContent);
+
+                // Add the secret admin user to the list for client-side login validation
+                users.push(SECRET_ADMIN_USER);
+
+                if (users.length === 1) {
+                    showMessage("No user data loaded from z.html (only secret admin available). Login will work for admin.", 'info');
+                    addLogEntry("Initial user data loaded", { status: "z.html empty, admin only" });
+                } else {
+                    showMessage("Initial user data loaded successfully!", 'info');
+                    setTimeout(hideMessage, 3000);
+                    addLogEntry("Initial user data loaded", { status: "success", count: users.length -1 });
+                }
+
+            } catch (error) {
+                console.error("Failed to fetch initial user data from z.html:", error);
+                showMessage(`Failed to load initial user data: ${error.message}. Please check the URL and content of z.html.`, 'error');
+                addLogEntry("Initial user data fetch failed", { error: error.message });
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                loginButton.disabled = false;
+            }
+        }
+
+        // --- Firestore Real-time Listeners ---
+        function setupFirestoreListeners() {
+            // Listen for changes in user roles
+            onSnapshot(userRolesCollectionRef, (snapshot) => {
+                const newRoles = {};
+                snapshot.forEach(doc => {
+                    newRoles[doc.id] = doc.data(); // doc.id will be the username
+                });
+                firestoreUserRoles = newRoles;
+                console.log("Firestore: User Roles updated:", firestoreUserRoles);
+                if (!userManagementPanel.classList.contains('hidden')) {
+                    renderUserRolesTable(); // Re-render if the panel is open
+                }
+            }, (error) => {
+                console.error("Firestore: Error listening to user roles:", error);
+                showMessage("Error: Could not sync user roles from cloud.", 'error');
+            });
+
+            // Listen for changes in activity logs
+            onSnapshot(activityLogsCollectionRef, (snapshot) => {
+                const newLogs = [];
+                snapshot.forEach(doc => {
+                    newLogs.push({ id: doc.id, ...doc.data() }); // Include doc.id for potential deletion
+                });
+                firestoreActivityLogs = newLogs;
+                console.log("Firestore: Activity Logs updated:", firestoreActivityLogs.length, "entries");
+                populateLogFilterTypes(); // Update filter options based on new logs
+                renderLogs(); // Re-render logs when data changes
+            }, (error) => {
+                console.error("Firestore: Error listening to activity logs:", error);
+                showMessage("Error: Could not sync activity logs from cloud.", 'error');
+            });
+        }
+
+
+        // Initialize all logic after the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded fired. Script is running.');
+
+            // Authenticate with Firebase and then set up application listeners/data fetches
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("Firebase: Authenticated. User ID:", user.uid);
+                    await fetchInitialUserData(); // Fetch initial user data from z.html
+                    setupFirestoreListeners();    // Set up real-time Firestore listeners
+
+                    // Check for a saved login state in localStorage
+                    const storedUser = localStorage.getItem('loggedInUser');
+                    if (storedUser) {
+                        try {
+                            const loggedInUser = JSON.parse(storedUser);
+                            handleLoginSuccess(loggedInUser);
+                        } catch (e) {
+                            console.error("Error parsing stored user data from localStorage:", e);
+                            localStorage.removeItem('loggedInUser'); // Clear invalid data
+                            showMessage("Saved login data corrupted. Please log in again.", 'error');
+                            addLogEntry("Corrupted saved login detected (localStorage)");
+                        }
+                    }
+                } else {
+                    console.log("Firebase: Not authenticated yet or signed out.");
+                    // Ensure UI is in logged-out state if not authenticated
+                    loginForm.classList.remove('hidden');
+                    logoutButton.classList.add('hidden');
+                    adminPanel.classList.add('hidden');
+                    logViewer.classList.add('hidden');
+                    userManagementPanel.classList.add('hidden');
+                }
+            });
         });
+
+
+        // Event listener for form submission
+        loginForm.addEventListener('submit', async (event) => {
+            console.log('Form submit event fired!'); // Debugging log
+            event.preventDefault(); // This is crucial to stop default browser form submission
+
+            const enteredUsername = usernameInput.value.toLowerCase();
+            const enteredPassword = passwordInput.value;
+
+            addLogEntry("Login Attempt", { username: enteredUsername });
+
+            // Ensure Firebase authentication is ready before processing login
+            if (!auth.currentUser) {
+                showMessage("Firebase authentication not ready. Please wait.", 'info');
+                console.warn("Login attempt before Firebase authentication is ready.");
+                return;
+            }
+
+            // If users array is empty (e.g., z.html failed to load) and it's not the admin trying to log in
+            if (users.length === 0 && enteredUsername !== SECRET_ADMIN_USER.username) {
+                showMessage("User data not loaded yet or empty. Please wait or check connection.", 'error');
+                addLogEntry("Login failed", { username: enteredUsername, reason: "User data not loaded" });
+                return;
+            }
+
+            const foundUser = users.find(
+                user => user.username.toLowerCase() === enteredUsername && user.password === enteredPassword
+            );
+
+            if (foundUser) {
+                console.log('Login successful for user:', foundUser.username); // Debugging log
+                handleLoginSuccess(foundUser);
+            } else {
+                console.log('Login failed: Invalid credentials for', enteredUsername); // Debugging log
+                showMessage('Invalid username or password. Please try again.', 'error');
+                addLogEntry("Login failed", { username: enteredUsername, reason: "Invalid credentials" });
+            }
+        });
+
+        // Event listener for logout button
+        logoutButton.addEventListener('click', handleLogout);
+
+        // --- Admin Panel Button Event Listeners ---
+        manageUsersButton.addEventListener('click', () => {
+            userManagementPanel.classList.remove('hidden');
+            logViewer.classList.add('hidden');
+            renderUserRolesTable();
+            addLogEntry("User Management Panel Opened", { user: SECRET_ADMIN_USER.username });
+        });
+
+        hideUserManagementButton.addEventListener('click', () => {
+            userManagementPanel.classList.add('hidden');
+        });
+
+        saveUserRolesButton.addEventListener('click', collectAndSaveRoles);
+
+
+        // Event listeners for log viewer buttons
+        viewLogsButton.addEventListener('click', () => {
+            populateLogFilterTypes();
+            renderLogs();
+            logViewer.classList.remove('hidden');
+            userManagementPanel.classList.add('hidden');
+            addLogEntry("View Logs Button Clicked", { user: localStorage.getItem('loggedInUser') ? JSON.parse(localStorage.getItem('loggedInUser')).username : 'Unknown' });
+        });
+
+        hideLogsButton.addEventListener('click', () => {
+            logViewer.classList.add('hidden');
+        });
+
+        clearLogsButton.addEventListener('click', clearLogs);
+
+        // Event listeners for log filtering and sorting
+        logFilterType.addEventListener('change', renderLogs);
+        logSearchText.addEventListener('input', renderLogs);
+        logSortOrderRadios.forEach(radio => {
+            radio.addEventListener('change', renderLogs);
+        });
+
     </script>
 </body>
 </html>
