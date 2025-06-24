@@ -248,10 +248,10 @@
 
     <script type="module">
         // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js"; // Updated SDK version
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js"; // Added Analytics
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js"; // Updated SDK version
-        import { getFirestore, doc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js"; // Updated SDK version
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -264,12 +264,12 @@
             measurementId: "G-H0Z4C2185Y"
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId; // Use projectId as default appId outside Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(firebaseApp); // Initialize Analytics
+        const analytics = getAnalytics(firebaseApp);
         const db = getFirestore(firebaseApp);
         const auth = getAuth(firebaseApp);
 
@@ -697,14 +697,25 @@
                         }
                     }
                 } else {
-                    console.log("Firebase: Not authenticated yet or signed out.");
-                    firebaseAuthReady = true; // Also set to true if not authenticated, so login attempts can proceed (and fail if unauthenticated users can't log)
-                    // Ensure UI is in logged-out state if not authenticated
-                    loginForm.classList.remove('hidden');
-                    logoutButton.classList.add('hidden');
-                    adminPanel.classList.add('hidden');
-                    logViewer.classList.add('hidden');
-                    userManagementPanel.classList.add('hidden');
+                    console.log("Firebase: Not authenticated yet or signed out. Attempting anonymous sign-in.");
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                            console.log("Firebase: Signed in with custom token (for Canvas environment).");
+                        } else {
+                            await signInAnonymously(auth);
+                            console.log("Firebase: Signed in anonymously (for general web deployment).");
+                        }
+                    } catch (error) {
+                        console.error("Firebase: Anonymous/Custom authentication failed:", error);
+                        showMessage(`Firebase authentication failed: ${error.message}. Firestore features may not work.`, 'error');
+                    } finally {
+                        firebaseAuthReady = true; // Auth process completed, regardless of success
+                        // We still need to fetch initial data and setup listeners even if auth fails,
+                        // so the app can function locally to some extent or provide context.
+                        await fetchInitialUserData();
+                        setupFirestoreListeners();
+                    }
                 }
             });
         });
@@ -712,7 +723,7 @@
 
         // Event listener for form submission
         loginForm.addEventListener('submit', async (event) => {
-            console.log('Form submit event fired!'); // Debugging log
+            console.log('Form submit event fired!');
             event.preventDefault(); // This is crucial to stop default browser form submission
 
             const enteredUsername = usernameInput.value.toLowerCase();
@@ -726,34 +737,60 @@
                 console.warn("Login attempt before Firebase authentication is ready.");
                 return;
             }
-            if (!auth.currentUser) {
-                // This means Firebase is ready, but the user is not authenticated.
-                // Depending on security rules, this might be a valid state for anonymous login,
-                // or it might indicate a problem if the app requires a specific auth type.
-                console.warn("Login attempt when Firebase is ready but no current user is authenticated.");
-                // We'll let the login logic proceed; it will likely fail if it tries to write to Firestore
-                // without the necessary auth.
+
+            // Attempt admin login (local check)
+            if (enteredUsername === SECRET_ADMIN_USER.username && enteredPassword === SECRET_ADMIN_USER.password) {
+                handleLoginSuccess(SECRET_ADMIN_USER);
+                return; // Admin logged in, stop here
             }
 
-
-            // If users array is empty (e.g., z.html failed to load) and it's not the admin trying to log in
-            if (users.length === 0 && enteredUsername !== SECRET_ADMIN_USER.username) {
-                showMessage("User data not loaded yet or empty. Please wait or check connection.", 'error');
-                addLogEntry("Login failed", { username: enteredUsername, reason: "User data not loaded" });
-                return;
-            }
-
-            const foundUser = users.find(
-                user => user.username.toLowerCase() === enteredUsername && user.password === enteredPassword
+            // For other users, attempt Firebase Email/Password Authentication
+            // IMPORTANT: The usernames from z.html are NOT emails.
+            // For this to work, users MUST be created in Firebase Authentication
+            // with an email and password, and the username from z.html would need
+            // to map to that email.
+            // For now, given z.html structure, we will use signInWithEmailAndPassword
+            // if the username *looks like* an email (contains @).
+            // Otherwise, we fall back to the insecure z.html local password check.
+            let foundUserFromZHtml = users.find(
+                user => user.username.toLowerCase() === enteredUsername
             );
 
-            if (foundUser) {
-                console.log('Login successful for user:', foundUser.username); // Debugging log
-                handleLoginSuccess(foundUser);
+            if (enteredUsername.includes('@') && enteredUsername.includes('.')) { // Simple check for email format
+                try {
+                    console.log(`Attempting Firebase Email/Password login for: ${enteredUsername}`);
+                    const userCredential = await signInWithEmailAndPassword(auth, enteredUsername, enteredPassword);
+                    const firebaseUser = userCredential.user;
+                    console.log("Firebase Email/Password login successful:", firebaseUser.uid);
+
+                    // Find corresponding user details from z.html for display
+                    let displayUser = foundUserFromZHtml || {
+                        username: firebaseUser.email, // Use email as username if not found in z.html
+                        name: firebaseUser.displayName || firebaseUser.email,
+                        profilePic: firebaseUser.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U'
+                    };
+                    handleLoginSuccess(displayUser);
+                    addLogEntry("Firebase Email/Password Login", { user: enteredUsername, firebaseUid: firebaseUser.uid });
+
+                } catch (error) {
+                    console.error("Firebase Email/Password login failed:", error);
+                    let errorMessage = 'Firebase login failed. Please check your email and password.';
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                        errorMessage = 'Invalid email or password.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = 'Invalid email format for Firebase login.';
+                    }
+                    showMessage(errorMessage, 'error');
+                    addLogEntry("Firebase Email/Password Login Failed", { user: enteredUsername, error: error.message });
+                }
+            } else if (foundUserFromZHtml && foundUserFromZHtml.password === enteredPassword) {
+                // Fallback to z.html local password check if it's not an email-like username
+                console.log('Login successful via z.html (insecure) for user:', foundUserFromZHtml.username);
+                handleLoginSuccess(foundUserFromZHtml);
+                addLogEntry("Local Z.html Login (Insecure)", { user: enteredUsername });
             } else {
-                console.log('Login failed: Invalid credentials for', enteredUsername); // Debugging log
-                showMessage('Invalid username or password. Please try again.', 'error');
-                addLogEntry("Login failed", { username: enteredUsername, reason: "Invalid credentials" });
+                showMessage('Invalid username or password.', 'error');
+                addLogEntry("Login failed", { username: enteredUsername, reason: "Invalid credentials (no Firebase email or z.html match)" });
             }
         });
 
