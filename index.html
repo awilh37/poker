@@ -248,20 +248,20 @@
 
     <script type="module">
         // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js"; // Updated SDK version
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js"; // Added Analytics
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js"; // Updated SDK version
+        import { getFirestore, doc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js"; // Updated SDK version
 
         // --- Firebase Configuration ---
-        // IMPORTANT: Replace these placeholder values with your actual Firebase project configuration
-        // You can find these in your Firebase Project Settings -> General -> Your apps
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_FIREBASE_APP_ID"
+        const firebaseConfig = {
+            apiKey: "AIzaSyBefsHEBuiRyJ31NzF885ac3ugCefzngTU",
+            authDomain: "wps-3-be723.firebaseapp.com",
+            projectId: "wps-3-be723",
+            storageBucket: "wps-3-be723.firebasestorage.app",
+            messagingSenderId: "420146617877",
+            appId: "1:420146617877:web:ea2e06a690732da76fb81c",
+            measurementId: "G-H0Z4C2185Y"
         };
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId; // Use projectId as default appId outside Canvas
@@ -269,6 +269,7 @@
 
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(firebaseApp); // Initialize Analytics
         const db = getFirestore(firebaseApp);
         const auth = getAuth(firebaseApp);
 
