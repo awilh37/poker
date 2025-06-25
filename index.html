@@ -173,8 +173,8 @@
                 <table class="user-table text-sm md:text-base">
                     <thead>
                         <tr>
-                            <th>User ID (UID)</th>
-                            <th>Email</th>
+                            <th>Display Name</th>
+                            <th>Chip Count</th>
                             <th>Role</th>
                         </tr>
                     </thead>
@@ -186,7 +186,7 @@
             </div>
             <div class="flex justify-between space-x-2 mt-4">
                 <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Save Roles
+                    Save Changes
                 </button>
                 <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Hide Panel
@@ -274,26 +274,25 @@
             </div>
         </div>
 
-        <!-- Logged In Users Panel (Initially hidden) -->
+        <!-- All Users Panel (Initially hidden, repurposed from LoggedInUsersPanel) -->
         <div id="loggedInUsersPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl lg:max-w-2xl">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">Currently Logged-in Users</h3>
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">User Directory</h3>
             <div class="overflow-x-auto">
                 <table class="user-table text-sm md:text-base">
                     <thead>
                         <tr>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Logged In Since</th>
+                            <th>Display Name</th>
+                            <th>Chip Count</th>
                         </tr>
                     </thead>
                     <tbody id="loggedInUsersTableBody">
                         <!-- User rows will be rendered here by JavaScript -->
-                        <tr><td colspan="3" class="text-center text-gray-500 py-4">Loading...</td></tr>
+                        <tr><td colspan="2" class="text-center text-gray-500 py-4">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
             <div class="flex justify-center mt-4">
-                <button id="hideLoggedInUsersPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
+                <button id="hideUserDirectoryPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Close
                 </button>
             </div>
@@ -373,9 +372,9 @@
         const hideAccountManagementButton = document.getElementById('hideAccountManagementButton');
 
         const viewLoggedInUsersButton = document.getElementById('viewLoggedInUsersButton');
-        const loggedInUsersPanel = document.getElementById('loggedInUsersPanel');
-        const loggedInUsersTableBody = document.getElementById('loggedInUsersTableBody');
-        const hideLoggedInUsersPanelButton = document.getElementById('hideLoggedInUsersPanelButton');
+        const loggedInUsersPanel = document.getElementById('loggedInUsersPanel'); // This is the div for the User Directory
+        const loggedInUsersTableBody = document.getElementById('loggedInUsersTableBody'); // This is the tbody for the User Directory
+        const hideUserDirectoryPanelButton = document.getElementById('hideUserDirectoryPanelButton'); // Updated ID
 
 
         const logFilterType = document.getElementById('logFilterType');
@@ -552,80 +551,110 @@
 
 
         // --- User Management Functions (Firestore Integrated) ---
-        async function saveUserRolesToFirestore(rolesMap) {
+        async function saveUserChangesToFirestore(changesMap) { // Renamed and updated parameter
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
-                showMessage("You do not have permission to save user roles.", 'error');
-                addLogEntry("Save Roles Attempt Failed", { reason: "Permission denied", by: auth.currentUser?.uid });
+                showMessage("You do not have permission to save user changes.", 'error');
+                addLogEntry("Save User Changes Attempt Failed", { reason: "Permission denied", by: auth.currentUser?.uid });
                 return;
             }
 
             const currentUserIsOwner = isOwner(auth.currentUser.uid);
+            showMessage("Saving user changes...", 'info');
 
-            showMessage("Saving user roles...", 'info');
             try {
-                // Fetch current roles directly from Firestore for a more robust oldRolesMap
-                // This helps if the local firestoreUserRoles is slightly stale, though listeners should keep it fresh.
+                // Fetch current roles and profiles for robust old value checks and to avoid unnecessary writes.
                 const rolesSnapshot = await getDocs(userRolesCollectionRef);
                 const currentFirestoreRoles = {};
-                rolesSnapshot.forEach(doc => {
-                    currentFirestoreRoles[doc.id] = doc.data();
-                });
+                rolesSnapshot.forEach(doc => currentFirestoreRoles[doc.id] = doc.data());
 
-                for (const uid in rolesMap) {
-                    const newRole = rolesMap[uid];
-                    const oldRole = currentFirestoreRoles[uid]?.role || 'player'; // Default to 'player'
+                const profilesSnapshot = await getDocs(userProfilesCollectionRef);
+                const currentFirestoreProfiles = {};
+                profilesSnapshot.forEach(doc => currentFirestoreProfiles[doc.id] = doc.data());
 
-                    // **Permission checks for assigning roles**
-                    // 1. Only an owner (or SUPER_ADMIN_UID) can assign the 'owner' role.
-                    if (newRole === 'owner' && !currentUserIsOwner) {
-                        showMessage(`You do not have permission to assign the 'owner' role to ${uid}.`, 'error');
-                        addLogEntry("Assign Owner Role Failed", { targetUser: uid, attemptedBy: auth.currentUser.uid, reason: "Not an owner" });
-                        continue; // Skip this user
+                for (const uid in changesMap) {
+                    const { newRole, newChipCount } = changesMap[uid];
+                    const oldRole = currentFirestoreRoles[uid]?.role || 'player';
+                    const oldChipCount = currentFirestoreProfiles[uid]?.chip_count; // Can be undefined or number
+
+                    let roleChanged = oldRole !== newRole;
+                    // Chip count comparison needs to handle undefined and ensure numeric comparison
+                    let chipCountChanged = typeof oldChipCount === 'undefined' || oldChipCount !== newChipCount;
+                    if (typeof newChipCount !== 'number') { // Ensure newChipCount is a number before saving
+                        showMessage(`Invalid chip count for user ${uid}. Must be a number.`, 'error');
+                        addLogEntry("Invalid Chip Count Input", {targetUser: uid, value: newChipCount});
+                        continue; // Skip this user if chip count is not a number
                     }
 
-                    // 2. An admin cannot change an owner's role. Only another owner can.
-                    if (oldRole === 'owner' && uid !== auth.currentUser.uid && !currentUserIsOwner) {
-                         showMessage(`You do not have permission to change the role of an owner (${uid}).`, 'error');
-                         addLogEntry("Modify Owner Role Failed", { targetUser: uid, attemptedBy: auth.currentUser.uid, reason: "Target is owner, user is not" });
-                         continue; // Skip this user
-                    }
 
-                    // 3. Prevent SUPER_ADMIN_UID from being changed to anything other than 'owner' by anyone, including self if not careful.
-                    //    SUPER_ADMIN_UID should always retain owner-equivalent privileges.
-                    //    Best practice: SUPER_ADMIN's role is 'owner' in Firestore or they are implicitly owner.
-                    //    This table should ideally disable editing for SUPER_ADMIN_UID.
-                    if (uid === SUPER_ADMIN_UID && newRole !== 'owner') {
-                        showMessage(`The SUPER_ADMIN account (${uid}) role cannot be changed from 'owner'.`, 'error');
-                        addLogEntry("SUPER_ADMIN Role Change Blocked", { targetUser: uid, attemptedRole: newRole, by: auth.currentUser.uid });
-                        continue;
-                    }
+                    // **Permission Checks**
+                    // These apply to both role and chip count changes for simplicity unless specific fine-grained control is needed.
+                    // If a user cannot have their role changed, they likely shouldn't have chip count changed by that admin either.
 
-                    // 4. Prevent last owner from disabling/demoting themselves (SUPER_ADMIN_UID is a fallback)
-                    if (uid === auth.currentUser.uid && currentUserIsOwner && (newRole === 'disabled' || newRole === 'player' || newRole === 'admin')) {
-                        const owners = Object.keys(firestoreUserRoles).filter(id => firestoreUserRoles[id]?.role === 'owner');
-                        if (owners.length === 1 && owners[0] === uid && uid !== SUPER_ADMIN_UID) { // Only one explicit owner, and it's the current user (not SUPER_ADMIN)
-                           showMessage("You cannot demote or disable the last owner account. Assign 'owner' to another user first.", 'error');
+                    // 0. SUPER_ADMIN_UID: Role must be 'owner', chip count cannot be changed by non-owners (effectively, should not be changed by anyone but system/self if needed)
+                    if (uid === SUPER_ADMIN_UID) {
+                        if (newRole !== 'owner') {
+                            showMessage(`SUPER_ADMIN (${uid}) role cannot be changed from 'owner'.`, 'error');
+                            addLogEntry("SUPER_ADMIN Role Change Blocked", { attemptedRole: newRole, by: auth.currentUser.uid });
+                            roleChanged = false; // Do not proceed with role change
+                        }
+                        // For SUPER_ADMIN, only allow chip count change if current user is owner (which SUPER_ADMIN is).
+                        // Effectively, this means SUPER_ADMIN can change their own chips if UI allowed, or another owner could.
+                        // But generally, we want to protect SUPER_ADMIN from accidental changes by other admins.
+                        // The UI already disables these fields if current user is not owner.
+                        // This server-side check ensures it.
+                        if (!currentUserIsOwner && chipCountChanged) {
+                             showMessage(`Chip count for SUPER_ADMIN (${uid}) cannot be changed by non-owners.`, 'error');
+                             addLogEntry("SUPER_ADMIN Chip Count Change Blocked", { by: auth.currentUser.uid });
+                             chipCountChanged = false; // Do not proceed
+                        }
+                    }
+                    // 1. Only an owner can assign the 'owner' role.
+                    else if (newRole === 'owner' && !currentUserIsOwner) {
+                        showMessage(`You do not have permission to assign 'owner' role to ${uid}.`, 'error');
+                        addLogEntry("Assign Owner Role Failed", { targetUser: uid, by: auth.currentUser.uid });
+                        roleChanged = false;
+                    }
+                    // 2. An admin cannot change an owner's role or chip count. Only another owner can.
+                    else if (oldRole === 'owner' && !currentUserIsOwner) {
+                        if (roleChanged) {
+                            showMessage(`You do not have permission to change role of owner ${uid}.`, 'error');
+                            addLogEntry("Modify Owner Role Failed", { targetUser: uid, by: auth.currentUser.uid });
+                            roleChanged = false;
+                        }
+                        if (chipCountChanged) {
+                            showMessage(`You do not have permission to change chip count of owner ${uid}.`, 'error');
+                            addLogEntry("Modify Owner Chip Count Failed", { targetUser: uid, by: auth.currentUser.uid });
+                            chipCountChanged = false;
+                        }
+                    }
+                    // 3. Prevent last owner from demoting themselves (SUPER_ADMIN is a fallback).
+                    else if (uid === auth.currentUser.uid && currentUserIsOwner && (newRole === 'disabled' || newRole === 'player' || newRole === 'admin')) {
+                        const ownersInFirestore = Object.keys(currentFirestoreRoles).filter(id => currentFirestoreRoles[id]?.role === 'owner');
+                        // Check against currentFirestoreRoles which is fresh from DB
+                        if (ownersInFirestore.length === 1 && ownersInFirestore[0] === uid && uid !== SUPER_ADMIN_UID) {
+                           showMessage("Cannot demote the last owner. Assign 'owner' to another user first.", 'error');
                            addLogEntry("Last Owner Demotion Blocked", { user: uid, newRole: newRole });
-                           continue;
+                           roleChanged = false;
                         }
                     }
 
+                    // Proceed with updates if changes are valid and permissible
+                    if (roleChanged) {
+                        const roleDocRef = doc(userRolesCollectionRef, uid);
+                        await setDoc(roleDocRef, { role: newRole }, { merge: true });
+                        addLogEntry("User Role Changed", { targetUser: uid, oldRole, newRole, by: auth.currentUser.email });
+                    }
 
-                    const docRef = doc(userRolesCollectionRef, uid);
-                    if (oldRole !== newRole) { // Only update if role actually changed
-                        await setDoc(docRef, { role: newRole }, { merge: true });
-                        addLogEntry("User Role Changed", {
-                            targetUser: uid,
-                            oldRole: oldRole,
-                            newRole: newRole,
-                            by: auth.currentUser.email || auth.currentUser.uid
-                        });
+                    if (chipCountChanged && typeof newChipCount === 'number') { // Double check it's a number
+                        const profileDocRef = doc(userProfilesCollectionRef, uid);
+                        await setDoc(profileDocRef, { chip_count: newChipCount }, { merge: true });
+                        addLogEntry("User Chip Count Changed", { targetUser: uid, oldChipCount: oldChipCount === undefined ? "N/A" : oldChipCount, newChipCount, by: auth.currentUser.email });
                     }
                 }
-                showMessage("User roles processed and saved to Firestore.", 'success');
+                showMessage("User changes processed and saved to Firestore.", 'success');
             } catch (e) {
-                console.error("Error saving user roles to Firestore:", e);
-                showMessage("Failed to save user roles to Firestore.", 'error');
+                console.error("Error saving user changes to Firestore:", e);
+                showMessage("Failed to save user changes.", 'error');
             }
         }
 
@@ -642,18 +671,31 @@
             const currentUserIsOwner = isOwner(currentUserId);
 
 
+            allFirebaseUsersData.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '')); // Sort by display name
+
             allFirebaseUsersData.forEach(user => {
                 const row = userRolesTableBody.insertRow();
-                const userIdCell = row.insertCell();
-                const userEmailCell = row.insertCell();
+                const displayNameCell = row.insertCell();
+                const chipCountCell = row.insertCell(); // New cell for chip count
                 const userRoleCell = row.insertCell();
 
-                userIdCell.textContent = user.uid;
-                userEmailCell.textContent = user.email || 'N/A';
+                displayNameCell.textContent = user.displayName || user.email || 'N/A'; // Display name, fallback to email
 
+                // Chip count input
+                const chipInput = document.createElement('input');
+                chipInput.type = 'number';
+                chipInput.className = 'border rounded-lg p-1 w-20 text-sm'; // Added w-20 for width
+                chipInput.setAttribute('data-uid', user.uid);
+                chipInput.setAttribute('name', `chip_count_${user.uid}`);
+                chipInput.value = (typeof user.chip_count === 'number') ? user.chip_count : 0;
+                chipCountCell.appendChild(chipInput);
+
+                // Role select dropdown
                 const select = document.createElement('select');
-                select.className = 'border rounded-lg p-1';
+                select.className = 'border rounded-lg p-1 text-sm';
                 select.setAttribute('data-uid', user.uid);
+                select.setAttribute('name', `role_${user.uid}`);
+
 
                 const userCurrentRole = getCurrentUserRole(user.uid);
 
@@ -666,30 +708,28 @@
 
                 select.value = userCurrentRole;
 
-                // **Disable select element based on permissions**
-                let disableSelect = false;
-                // 1. If current user doesn't have admin access at all, all selects are disabled.
+                // **Disable select element and chip input based on permissions**
+                let disableFields = false; // Combined flag for both role select and chip input
+                // 1. If current user doesn't have admin access at all, all fields are disabled.
                 if (!currentUserIsAdminOrOwner) {
-                    disableSelect = true;
+                    disableFields = true;
                 } else {
-                    // 2. SUPER_ADMIN_UID's role dropdown should be disabled to prevent accidental changes.
-                    //    Their role is implicitly 'owner' or should be set to 'owner' in Firestore.
+                    // 2. SUPER_ADMIN_UID's role dropdown and chip input should be disabled.
                     if (user.uid === SUPER_ADMIN_UID) {
-                        disableSelect = true;
+                        disableFields = true;
                         select.value = 'owner'; // Visually reflect owner status
                     }
-                    // 3. If the target user is an 'owner' and the current user is not an 'owner', disable.
-                    //    (Admins cannot change Owners' roles).
+                    // 3. If the target user is an 'owner' and the current user is not an 'owner', disable fields.
+                    //    (Admins cannot change Owners' roles or chip counts).
                     else if (userCurrentRole === 'owner' && !currentUserIsOwner) {
-                        disableSelect = true;
+                        disableFields = true;
                     }
-                    // 4. If the role option is 'owner' and the current user is not an 'owner', that specific option should be disabled.
-                    //    (Admins cannot assign 'owner' to anyone).
-                    //    This is handled per-option below.
                 }
-                select.disabled = disableSelect;
+                select.disabled = disableFields;
+                chipInput.disabled = disableFields; // Disable chip input based on the same logic
 
-                // Disable the 'owner' option if the current user is not an owner.
+                // Specific option disabling for roles (doesn't apply to chip_count input directly)
+                // Disable the 'owner' role option if the current user is not an owner.
                 if (!currentUserIsOwner) {
                     const ownerOption = select.querySelector('option[value="owner"]');
                     if (ownerOption) {
@@ -697,7 +737,7 @@
                     }
                 }
 
-                // Prevent last owner from disabling/demoting self via dropdown directly
+                // Prevent last owner from disabling/demoting self via dropdown directly (UI hint)
                 // This is a UI hint; server-side/save function has the definitive check.
                 if (user.uid === currentUserId && currentUserIsOwner) {
                     const ownersInFirestore = Object.keys(firestoreUserRoles).filter(id => firestoreUserRoles[id]?.role === 'owner');
@@ -714,67 +754,98 @@
             });
         }
 
-        function collectAndSaveRoles() {
+        function collectAndSaveChanges() { // Function definition renamed
             const newRolesMap = {};
-            const roleSelects = userRolesTableBody.querySelectorAll('select[data-uid]');
+            const changesMap = {}; // Will store { uid: { newRole: 'role', newChipCount: 123 } }
+            const rows = userRolesTableBody.querySelectorAll('tr');
 
-            roleSelects.forEach(select => {
-                const uid = select.getAttribute('data-uid');
-                const newRole = select.value;
-                newRolesMap[uid] = newRole;
+            rows.forEach(row => {
+                const roleSelect = row.querySelector('select[data-uid]');
+                const chipInput = row.querySelector('input[type="number"][data-uid]');
+
+                if (roleSelect && chipInput) {
+                    const uid = roleSelect.getAttribute('data-uid');
+                    const newRole = roleSelect.value;
+                    const newChipCount = parseInt(chipInput.value, 10);
+
+                    if (isNaN(newChipCount)) {
+                        showMessage(`Invalid chip count for user with UID ${uid}. Please enter a valid number.`, 'error');
+                        // Potentially skip this user or handle error more gracefully
+                        return; // Skip this row if chip count is not a number
+                    }
+                    changesMap[uid] = { newRole, newChipCount };
+                }
             });
-            saveUserRolesToFirestore(newRolesMap);
+
+            if (Object.keys(changesMap).length > 0) {
+                saveUserChangesToFirestore(changesMap); // Call the renamed function
+            } else {
+                showMessage("No user data found to save.", "info");
+            }
         }
         // --- End User Management Functions ---
 
-        // --- Logged-in Users Panel Functions ---
-        function showLoggedInUsersPanel() {
-            showPanel(loggedInUsersPanel);
-            renderLoggedInUsersTable(); // Initial render
-            addLogEntry("Logged-in Users Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid });
+        // --- "User Directory" Panel Functions (formerly Logged-in Users Panel) ---
+        async function showUserDirectoryPanel() { // Renamed and made async
+            showPanel(loggedInUsersPanel); // loggedInUsersPanel is the ID of the div
+            await renderUserDirectoryTable(); // Renamed and made async
+            addLogEntry("User Directory Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid });
         }
 
-        function hideLoggedInUsersPanel() {
+        function hideUserDirectoryPanel() { // Renamed
             loggedInUsersPanel.classList.add('hidden');
-            // Determine what panel to show when closing this one.
-            // If admin, show admin panel. Otherwise, perhaps account management or nothing specific (main login/logout view).
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser && loggedInUser.hasAdminAccess) {
                 showPanel(adminPanel);
             } else if (loggedInUser) {
-                // For players, maybe show account management or just ensure other specific panels are hidden.
-                // For now, let's not force another panel to open, just hide this one.
-                // If viewLoggedInUsersButton is the only thing they see besides logout, they go back to that state.
+                // For regular users, perhaps show account management or simply hide, returning to default view.
+                // Default view logic after login is handled by onAuthStateChanged or handleLoginSuccess.
+                // If they were viewing their account, maybe go back there. For now, just hide.
             }
         }
 
-        function renderLoggedInUsersTable() {
-            loggedInUsersTableBody.innerHTML = ''; // Clear existing rows
+        async function renderUserDirectoryTable() { // Renamed and made async
+            loggedInUsersTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">Loading users...</td></tr>'; // Update colspan
 
-            if (firestoreActiveSessions.length === 0) {
-                loggedInUsersTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users currently logged in.</td></tr>';
-                return;
-            }
+            try {
+                const querySnapshot = await getDocs(userProfilesCollectionRef);
+                const users = [];
+                querySnapshot.forEach(doc => {
+                    users.push(doc.data());
+                });
 
-            // Sort by login time, newest first
-            const sortedSessions = [...firestoreActiveSessions].sort((a, b) => new Date(b.loginTime) - new Date(a.loginTime));
+                loggedInUsersTableBody.innerHTML = ''; // Clear existing rows
 
-            sortedSessions.forEach(session => {
-                const row = loggedInUsersTableBody.insertRow();
-                const emailCell = row.insertCell();
-                const roleCell = row.insertCell();
-                const loginTimeCell = row.insertCell();
-
-                emailCell.textContent = session.email || 'N/A';
-                roleCell.textContent = session.role || 'N/A';
-                try {
-                    loginTimeCell.textContent = new Date(session.loginTime).toLocaleString();
-                } catch (e) {
-                    loginTimeCell.textContent = session.loginTime; // Fallback if date is invalid
+                if (users.length === 0) {
+                    loggedInUsersTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">No users found in the directory.</td></tr>'; // Update colspan
+                    return;
                 }
-            });
+
+                // Sort users by displayName, case-insensitive
+                users.sort((a, b) => {
+                    const nameA = a.displayName?.toLowerCase() || '';
+                    const nameB = b.displayName?.toLowerCase() || '';
+                    if (nameA < nameB) return -1;
+                    if (nameA > nameB) return 1;
+                    return 0;
+                });
+
+                users.forEach(user => {
+                    const row = loggedInUsersTableBody.insertRow();
+                    const displayNameCell = row.insertCell();
+                    const chipCountCell = row.insertCell();
+
+                    displayNameCell.textContent = user.displayName || 'N/A';
+                    chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0'; // Default to 0 if undefined
+                });
+
+            } catch (error) {
+                console.error("Error fetching user profiles for directory:", error);
+                loggedInUsersTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-red-500 py-4">Error loading users.</td></tr>';
+                showMessage("Could not load user directory.", "error");
+            }
         }
-        // --- End Logged-in Users Panel Functions ---
+        // --- End "User Directory" Panel Functions ---
 
 
         // --- Account Management Functions ---
@@ -894,15 +965,33 @@
             // Ensure a user profile exists in Firestore for the logged-in Firebase user
             if (user) {
                 const userProfileRef = doc(userProfilesCollectionRef, user.uid);
-                await setDoc(userProfileRef, {
+                // Prepare base user data
+                const userData = {
                     uid: user.uid,
                     email: user.email || null,
-                    displayName: user.displayName || null,
+                    displayName: user.displayName || user.email || 'Anonymous', // Ensure displayName has a fallback
                     photoURL: user.photoURL || null,
                     lastLogin: new Date().toISOString(),
                     role: userRole // Ensure profile reflects the determined role
-                }, { merge: true });
-                console.log("User profile updated/created in Firestore:", user.uid, "with role:", userRole);
+                };
+
+                // Check if the user profile document already exists to set chip_count only for new users
+                const userProfileSnap = await getDoc(userProfileRef);
+                if (!userProfileSnap.exists()) {
+                    userData.chip_count = 0; // Initialize chip_count for new users
+                    console.log("New user profile created with initial chip_count: 0 for user:", user.uid);
+                } else {
+                    // If user exists, chip_count is managed elsewhere (e.g., admin panel)
+                    // We can ensure it exists if it somehow got deleted, but default to not overwriting it.
+                    const existingData = userProfileSnap.data();
+                    if (typeof existingData.chip_count === 'undefined') {
+                        userData.chip_count = 0; // Add if missing, though ideally it shouldn't be.
+                         console.log("Existing user profile was missing chip_count. Initialized to 0 for user:", user.uid);
+                    }
+                }
+
+                await setDoc(userProfileRef, userData, { merge: true });
+                console.log("User profile updated/created in Firestore:", user.uid, "with role:", userRole, "and chip_count handling.");
 
                 // Add to active_sessions collection
                 const activeSessionRef = doc(activeSessionsCollectionRef, user.uid);
@@ -1210,10 +1299,11 @@
                     firestoreActiveSessions = newSessions;
                     console.log("Firestore: Active Sessions snapshot processed. Sessions count:", firestoreActiveSessions.length);
 
-                    // If the logged-in users panel is currently visible, re-render it
-                    if (!loggedInUsersPanel.classList.contains('hidden')) {
-                        renderLoggedInUsersTable();
-                    }
+                    // If the logged-in users panel (now User Directory) is currently visible, re-render it
+                    // This specific panel is now populated on-demand when opened, not via this activeSessions listener.
+                    // if (!loggedInUsersPanel.classList.contains('hidden')) {
+                    // renderUserDirectoryTable(); // No longer call from here; it fetches all profiles.
+                    // }
 
                     if (!initialSessionsLoadDone) {
                         initialSessionsLoadDone = true;
@@ -1368,7 +1458,7 @@
             showPanel(adminPanel); // Assuming only admins/owners see this button in the first place
         });
 
-        saveUserRolesButton.addEventListener('click', collectAndSaveRoles);
+        saveUserRolesButton.addEventListener('click', collectAndSaveChanges); // Updated function name
 
 
         // Event listeners for log viewer buttons
@@ -1421,18 +1511,18 @@
 
         linkGoogleAccountButton.addEventListener('click', handleGoogleLink);
 
-        // --- Logged-in Users Panel Button Event Listeners ---
-        viewLoggedInUsersButton.addEventListener('click', () => {
+        // --- User Directory Panel Button Event Listeners ---
+        viewLoggedInUsersButton.addEventListener('click', () => { // ID of the button remains viewLoggedInUsersButton
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser && (loggedInUser.role === 'player' || loggedInUser.role === 'admin' || loggedInUser.role === 'owner')) {
-                showLoggedInUsersPanel();
+                showUserDirectoryPanel(); // Call updated function
             } else {
                 showMessage("You do not have permission to view this.", 'error');
-                 addLogEntry("View Logged-in Users Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
+                 addLogEntry("View User Directory Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
             }
         });
 
-        hideLoggedInUsersPanelButton.addEventListener('click', hideLoggedInUsersPanel);
+        hideUserDirectoryPanelButton.addEventListener('click', hideUserDirectoryPanel); // Use updated ID and function
 
     </script>
 </body>
