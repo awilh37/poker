@@ -354,7 +354,7 @@
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
         let firestoreActivityLogs = []; // Stores logs fetched from Firestore
 
-        const ROLES = ['Member', 'Moderator', 'Banned']; // Defined roles for the system
+        const ROLES = ['Member', 'Moderator', 'Admin', 'Banned']; // Defined roles for the system
 
         // Firestore Collection References (implicitly pointing to 'user-data' database)
         const userRolesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_roles`);
