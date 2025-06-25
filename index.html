@@ -95,52 +95,31 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="text-gray-600">Loading user data...</span>
+            <span class="text-gray-600">Loading...</span>
         </div>
 
-        <!-- Login Form -->
-        <form id="loginForm" class="w-full">
-            <div class="mb-4">
-                <label for="username" class="block text-gray-700 text-sm font-semibold mb-2">Username</label>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out"
-                    placeholder="Enter your username"
-                    required
-                >
-            </div>
-            <div class="mb-6">
-                <label for="password">Password</label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    class="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out"
-                    placeholder="Enter your password"
-                    required
-                >
-            </div>
-            <button
-                type="submit"
-                id="loginButton"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
-            >
-                Log In
-            </button>
+        <!-- Login Buttons (Email/Password fields removed) -->
+        <div id="loginButtonsContainer" class="w-full flex flex-col items-center space-y-3">
             <button
                 type="button"
                 id="googleLoginButton"
-                class="w-full mt-3 flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+                class="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
             >
-                <!-- Google Icon SVG (example, you might use a proper library or image) -->
+                <!-- Google Icon SVG -->
                 <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12.0001 4.5V7.5L17.2501 7.5C17.0279 8.65312 16.3989 9.69736 15.4883 10.4514C14.5776 11.2054 13.4357 11.6212 12.2501 11.6212C9.40006 11.6212 6.99999 9.40871 6.99999 6.55871C6.99999 3.70871 9.40006 1.49621 12.2501 1.49621C13.6874 1.49621 14.9754 2.05267 15.9388 2.92305L18.1565 0.705359C16.5912 -0.80332 14.4754 -1.54716e-07 12.2501 -1.54716e-07C7.26627 -1.54716e-07 3.00006 4.26627 3.00006 9.25006C3.00006 14.2338 7.26627 18.5 12.2501 18.5C14.6738 18.5 16.6346 17.6534 18.0626 16.1436C19.5398 14.6338 19.9999 12.3501 19.9999 9.94006C19.9999 9.25006 19.9312 8.57506 19.8001 7.92506L12.0001 7.92506V4.5Z" fill="#fff"/>
                 </svg>
                 Sign In with Google
             </button>
-        </form>
+            <button
+                type="button"
+                id="emailPasswordLoginButton"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+            >
+                Sign In with Email/Password (Placeholder)
+            </button>
+        </div>
+
 
         <!-- Message Box for Login Status -->
         <div id="messageBox" class="message-box hidden w-full"></div>
@@ -159,7 +138,7 @@
             <p class="text-gray-600 mb-6">
                 Welcome, Administrator! From here, you can manage users, game data, and other aspects of the WPS system.
                 <br>
-                <strong class="text-red-500">Note: Data is now stored in Firestore.</strong>
+                <strong class="text-red-500">Note: User management will now only show the default admin. For full user management, a Firebase Authentication user list would be required.</strong>
             </p>
             <div class="space-y-4">
                 <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
@@ -184,7 +163,7 @@
         <div id="userManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md">
             <h3 class="text-2xl font-bold text-gray-700 mb-4 text-center">User Management</h3>
             <p class="text-gray-600 mb-4 text-center">
-                Assign roles to users. Changes are saved to Firestore.
+                This panel currently only shows the local admin user for role assignment. For full Firebase user management, this section would need to query Firebase Authentication user list (requires server-side or Cloud Functions).
             </p>
             <div class="overflow-x-auto">
                 <table class="user-table">
@@ -197,13 +176,13 @@
                     </thead>
                     <tbody id="userRolesTableBody">
                         <!-- User rows will be rendered here -->
-                        <tr><td colspan="3" class="text-center text-gray-500">Loading users...</td></tr>
+                        <tr><td colspan="3" class="text-center text-gray-500">No users to manage.</td></tr>
                     </tbody>
                 </table>
             </div>
             <div class="flex justify-between space-x-2 mt-4">
                 <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    Save Roles
+                    Save Roles (No Effect on Firebase Users)
                 </button>
                 <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
                     Hide Panel
@@ -328,11 +307,10 @@
 
 
         // --- DOM Elements ---
-        const loginForm = document.getElementById('loginForm');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const loginButton = document.getElementById('loginButton');
+        // Removed usernameInput, passwordInput, loginButton
+        const loginButtonsContainer = document.getElementById('loginButtonsContainer');
         const googleLoginButton = document.getElementById('googleLoginButton');
+        const emailPasswordLoginButton = document.getElementById('emailPasswordLoginButton'); // Placeholder
         const messageBox = document.getElementById('messageBox');
         const logoutButton = document.getElementById('logoutButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -367,7 +345,7 @@
         const logSearchText = document.getElementById('logSearchText');
         const logSortOrderRadios = document.querySelectorAll('input[name="logSortOrder"]');
 
-        let users = []; // All fetched users from z.html (used for initial login)
+        let users = []; // This will now just contain the SECRET_ADMIN_USER for management purposes
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
         let firestoreActivityLogs = []; // Stores logs fetched from Firestore
 
@@ -385,8 +363,8 @@
         const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
 
         // Initially disable login buttons until Firebase Auth is ready
-        loginButton.disabled = true;
         googleLoginButton.disabled = true;
+        emailPasswordLoginButton.disabled = true;
 
 
         // --- Log System Functions (Firestore Integrated) ---
@@ -398,9 +376,6 @@
                 ...details
             };
             try {
-                // Ensure auth.currentUser exists before attempting to log to Firestore
-                // If it doesn't exist, it means Firebase Auth hasn't completed or failed.
-                // In such cases, we log to localStorage as a backup.
                 if (auth.currentUser && auth.currentUser.uid) {
                     await addDoc(activityLogsCollectionRef, log);
                     console.log("Log added to Firestore:", log);
@@ -414,7 +389,6 @@
                 console.error("Error saving log to Firestore:", e);
                 showMessage("Error: Could not save log to cloud.", 'error');
             }
-            // renderLogs is handled by the onSnapshot listener for activityLogsCollectionRef
         }
 
         function populateLogFilterTypes() {
@@ -430,9 +404,8 @@
 
         function renderLogs() {
             logEntriesContainer.innerHTML = '';
-            let logsToDisplay = [...firestoreActivityLogs]; // Use a copy of the live data
+            let logsToDisplay = [...firestoreActivityLogs];
 
-            // Apply Filters
             const selectedType = logFilterType.value;
             const searchText = logSearchText.value.toLowerCase();
             const sortOrder = document.querySelector('input[name="logSortOrder"]:checked').value;
@@ -444,7 +417,6 @@
                 return matchesType && matchesText;
             });
 
-            // Apply Sorting (using timestamp from Firestore)
             filteredLogs.sort((a, b) => {
                 const dateA = new Date(a.timestamp);
                 const dateB = new Date(b.timestamp);
@@ -465,7 +437,7 @@
                 logDiv.className = 'log-entry';
                 let detailsHtml = '';
                 for (const key in log) {
-                    if (key !== 'timestamp' && key !== 'action' && key !== 'id') { // 'id' is Firestore doc ID
+                    if (key !== 'timestamp' && key !== 'action' && key !== 'id') {
                         detailsHtml += ` <strong>${key}:</strong> ${log[key]};`;
                     }
                 }
@@ -510,15 +482,14 @@
             }
 
             try {
-                // Get the current roles from Firestore to determine what changed
                 const oldRolesMap = firestoreUserRoles;
 
                 for (const username in rolesMap) {
                     const newRole = rolesMap[username];
-                    const docRef = doc(userRolesCollectionRef, username); // Use username as document ID
+                    const docRef = doc(userRolesCollectionRef, username);
 
-                    if (oldRolesMap[username]?.role !== newRole) { // Check if role actually changed
-                        await setDoc(docRef, { role: newRole }, { merge: true }); // Use merge to only update role
+                    if (oldRolesMap[username]?.role !== newRole) {
+                        await setDoc(docRef, { role: newRole }, { merge: true });
                         addLogEntry("User Role Changed", {
                             user: username,
                             oldRole: oldRolesMap[username]?.role || 'Member',
@@ -537,8 +508,8 @@
 
         function renderUserRolesTable() {
             userRolesTableBody.innerHTML = '';
-            // Filter out the SECRET_ADMIN_USER from the list to manage, as their role is implicit
-            const manageableUsers = users.filter(user => user.username !== SECRET_ADMIN_USER.username);
+            // Only the SECRET_ADMIN_USER is manageable in this simplified setup without z.html
+            const manageableUsers = [SECRET_ADMIN_USER]; // Always include the secret admin
 
             if (manageableUsers.length === 0) {
                 userRolesTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users to manage.</td></tr>';
@@ -565,7 +536,6 @@
                     select.appendChild(option);
                 });
 
-                // Set the current selected role, defaulting to 'Member' if not found in Firestore
                 select.value = firestoreUserRoles[user.username]?.role || 'Member';
 
                 userRoleCell.appendChild(select);
@@ -593,7 +563,7 @@
             userProfilePic.src = displayUser.profilePic || firebaseUser?.photoURL || 'https://placehold.co/100x100/cccccc/ffffff?text=U';
             userProfilePic.alt = `${displayUser.name || displayUser.username}'s profile picture`;
             currentUserName.textContent = displayUser.name || firebaseUser?.displayName || 'N/A';
-            currentUserUsername.textContent = `Username: ${displayUser.username || firebaseUser?.email || firebaseUser?.uid}`;
+            currentUserUsername.textContent = `Email: ${displayUser.username || firebaseUser?.email || 'N/A'}`; // Changed to Email
 
             let providerId = 'Unknown';
             if (firebaseUser) {
@@ -601,26 +571,23 @@
                 if (providers.includes('google.com')) {
                     providerId = 'Google';
                     linkGoogleAccountButton.classList.add('hidden'); // Already linked with Google
-                } else if (providers.includes('password') || providers.includes('anonymous')) {
-                    // Show link button if it's email/password or anonymous (or z.html-based)
-                    providerId = providers.includes('password') ? 'Email/Password' : 'Anonymous';
-                    linkGoogleAccountButton.classList.remove('hidden');
-                } else {
-                    linkGoogleAccountButton.classList.remove('hidden'); // Default to showing link if unsure
+                } else if (providers.includes('password')) {
+                    providerId = 'Email/Password';
+                    linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google
+                } else if (providers.includes('anonymous')) {
+                    providerId = 'Anonymous';
+                    linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google
                 }
             } else {
-                // This case should ideally not happen if a user is "logged in" via handleLoginSuccess
-                // but if it does, it's a local z.html only login without Firebase session
-                providerId = 'Local (z.html - No Firebase)';
-                linkGoogleAccountButton.classList.remove('hidden'); // Allow linking for this case
+                providerId = 'No Firebase Session'; // Should not happen if this panel is shown
+                linkGoogleAccountButton.classList.remove('hidden');
             }
             currentUserProvider.textContent = `Provider: ${providerId}`;
         }
 
         async function handleGoogleLink() {
-            // Ensure there's a current Firebase Auth user (could be anonymous)
             if (!auth.currentUser) {
-                showMessage("No active Firebase user session to link accounts. Please try logging in again.", 'error');
+                showMessage("No active Firebase user session to link accounts. Please sign in first.", 'error');
                 return;
             }
 
@@ -630,20 +597,18 @@
                 const linkedUser = result.user;
                 console.log("Account linked successfully with Google:", linkedUser);
 
-                // Update localStorage with new provider info and re-render
-                // It's important to update the localStorage 'loggedInUser' with the Firebase Auth details
-                // for consistent display across sessions, especially if they were previously z.html only.
                 const updatedLoggedInUser = {
                     username: linkedUser.email || linkedUser.uid,
                     name: linkedUser.displayName || linkedUser.email,
                     profilePic: linkedUser.photoURL,
-                    isAdmin: linkedUser.email === SECRET_ADMIN_USER.username // Re-evaluate admin status
+                    isAdmin: linkedUser.email === SECRET_ADMIN_USER.username,
+                    firebaseUid: linkedUser.uid
                 };
                 localStorage.setItem('loggedInUser', JSON.stringify(updatedLoggedInUser));
                 
                 showMessage("Account successfully linked with Google!", 'success');
                 addLogEntry("Account Linked", { user: linkedUser.email || linkedUser.uid, provider: "Google" });
-                renderAccountManagementPanel(updatedLoggedInUser); // Re-render with new data
+                renderAccountManagementPanel(updatedLoggedInUser);
             } catch (error) {
                 console.error("Error linking Google account:", error);
                 let errorMessage = "Failed to link Google account.";
@@ -653,6 +618,8 @@
                     errorMessage = "Google login window was closed.";
                 } else if (error.code === 'auth/invalid-credential') {
                     errorMessage = "Invalid Google credential or already linked to a different account.";
+                } else if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = "The email associated with this Google account is already in use by another login method. Please sign in with that method and then link.";
                 }
                 showMessage(errorMessage, 'error');
                 addLogEntry("Account Link Failed", { user: auth.currentUser?.uid || 'Unknown', provider: "Google", error: error.message });
@@ -660,7 +627,7 @@
         }
 
         function showPanel(panelToShow) {
-            const panels = [loginForm, adminPanel, userManagementPanel, logViewer, accountManagementPanel];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, logViewer, accountManagementPanel];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -673,7 +640,7 @@
         // Function to display messages to the user
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
-            messageBox.className = `message-box ${type} w-full`; // Reset classes and apply new ones
+            messageBox.className = `message-box ${type} w-full`;
             messageBox.classList.remove('hidden');
         }
 
@@ -683,17 +650,14 @@
         }
 
         // Function to handle successful login
-        // This function now centralizes UI updates and localStorage based on the *conceptual* user
-        // which might be an z.html local user mapped to a Firebase anonymous UID.
-        function handleLoginSuccess(userObjectToDisplay) { // Renamed parameter for clarity
-            // Use current Firebase user if available, otherwise fallback to z.html data for display
+        function handleLoginSuccess(userObjectToDisplay) {
             const firebaseUser = auth.currentUser;
             const finalUserForLocalStorage = {
                 username: firebaseUser?.email || userObjectToDisplay.username || firebaseUser?.uid,
                 name: firebaseUser?.displayName || userObjectToDisplay.name,
                 profilePic: firebaseUser?.photoURL || userObjectToDisplay.profilePic,
-                isAdmin: userObjectToDisplay.username === SECRET_ADMIN_USER.username, // Admin check remains for secret
-                firebaseUid: firebaseUser?.uid // Store Firebase UID for consistent tracking
+                isAdmin: userObjectToDisplay.username === SECRET_ADMIN_USER.username,
+                firebaseUid: firebaseUser?.uid
             };
 
             localStorage.setItem('loggedInUser', JSON.stringify(finalUserForLocalStorage));
@@ -701,11 +665,11 @@
             showMessage(`Welcome, ${finalUserForLocalStorage.name}!`, 'success');
             
             if (finalUserForLocalStorage.isAdmin) {
-                showPanel(adminPanel); // Show admin panel for admin
+                showPanel(adminPanel);
                 addLogEntry("Admin Login", { user: finalUserForLocalStorage.username });
             } else {
-                showPanel(accountManagementPanel); // Show account management for regular users
-                renderAccountManagementPanel(finalUserForLocalStorage); // Populate account management details
+                showPanel(accountManagementPanel);
+                renderAccountManagementPanel(finalUserForLocalStorage);
                 addLogEntry("User Login", { user: finalUserForLocalStorage.username });
             }
             logoutButton.classList.remove('hidden');
@@ -721,11 +685,10 @@
                  addLogEntry("Logout", { user: "Unknown" });
             }
 
-            // Set the flag to true before signing out
             isLoggingOut = true; 
             try {
                 if (auth.currentUser) {
-                    await auth.signOut(); // Sign out from Firebase Auth
+                    await auth.signOut();
                     console.log("Firebase: Signed out.");
                 }
             } catch (error) {
@@ -734,112 +697,58 @@
 
             localStorage.removeItem('loggedInUser');
             showMessage('You have been logged out.', 'info');
-            showPanel(loginForm); // Go back to login form
+            showPanel(loginButtonsContainer); // Show login buttons directly
             logoutButton.classList.add('hidden');
-            usernameInput.value = '';
-            passwordInput.value = '';
+            // No need to clear username/password inputs as they are removed
         }
 
-        // Function to parse the user data from the fetched HTML table
-        function parseUserData(htmlString) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlString, 'text/html');
-            const table = doc.querySelector('table');
-
-            if (!table) {
-                console.error("No table found in z.html content.");
-                showMessage("Error: User data table not found in z.html.", 'error');
-                return [];
-            }
-
-            const rows = table.querySelectorAll('tr');
-            if (rows.length < 4) { // Need at least 4 rows for username, password, name, profile pic
-                console.error("Not enough rows in z.html table for user data (expected at least 4).");
-                showMessage("Error: z.html table structure is unexpected.", 'error');
-                return [];
-            }
-
-            const usersData = [];
-            const usernames = Array.from(rows[0].querySelectorAll('th, td')).map(cell => cell.textContent.trim());
-            const passwords = Array.from(rows[1].querySelectorAll('td')).map(cell => cell.textContent.trim());
-            const names = Array.from(rows[2].querySelectorAll('td')).map(cell => cell.textContent.trim());
-            const profilePics = Array.from(rows[3].querySelectorAll('td')).map(cell => cell.textContent.trim());
-
-            // Transpose the data: iterate through columns to create user objects
-            for (let i = 0; i < usernames.length; i++) {
-                const userObj = {
-                    username: usernames[i] || '',
-                    password: passwords[i] || '', // SECURITY WARNING: Plain text password
-                    name: names[i] || '',
-                    profilePic: profilePics[i] || 'https://placehold.co/50x50/cccccc/ffffff?text=?' // Placeholder for missing pic
-                };
-                usersData.push(userObj);
-            }
-            return usersData;
-        }
-
-        // Function to fetch initial user data (from z.html)
-        async function fetchInitialUserData() {
+        // --- Initial Data Loading (Simplified since z.html is removed) ---
+        async function loadInitialData() {
             loadingIndicator.classList.remove('hidden');
             try {
-                addLogEntry("Attempting to fetch initial user data from z.html");
-                const response = await fetch('https://awilh37.github.io/data/z.html');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const htmlContent = await response.text();
-                users = parseUserData(htmlContent);
+                // Since z.html is removed, 'users' array will only contain SECRET_ADMIN_USER
+                users = [SECRET_ADMIN_USER]; // Initialize users array with just the admin
+                showMessage("System ready. Please sign in with Google.", 'info');
+                addLogEntry("Application Initialized");
 
-                // Add the secret admin user to the list for client-side login validation
-                users.push(SECRET_ADMIN_USER);
-
-                if (users.length === 1) {
-                    showMessage("No user data loaded from z.html (only secret admin available). Login will work for admin.", 'info');
-                    addLogEntry("Initial user data loaded", { status: "z.html empty, admin only" });
-                } else {
-                    showMessage("Initial user data loaded successfully!", 'info');
-                    setTimeout(hideMessage, 3000);
-                    addLogEntry("Initial user data loaded", { status: "success", count: users.length -1 });
-                }
-
-            }
-            catch (error) {
-                console.error("Failed to fetch initial user data from z.html:", error);
-                showMessage(`Failed to load initial user data: ${error.message}. Please check the URL and content of z.html.`, 'error');
-                addLogEntry("Initial user data fetch failed", { error: error.message });
+            } catch (error) {
+                console.error("Failed to initialize local data:", error);
+                showMessage(`Failed to load initial data: ${error.message}.`, 'error');
+                addLogEntry("Initial data load failed", { error: error.message });
             } finally {
                 loadingIndicator.classList.add('hidden');
+                // Re-enable login buttons here after initial data (even minimal) is ready
+                googleLoginButton.disabled = false;
+                emailPasswordLoginButton.disabled = false; // Still disabled but enable the button
             }
         }
 
         // --- Firestore Real-time Listeners ---
         function setupFirestoreListeners() {
-            // Listen for changes in user roles
             onSnapshot(userRolesCollectionRef, (snapshot) => {
                 const newRoles = {};
                 snapshot.forEach(doc => {
-                    newRoles[doc.id] = doc.data(); // doc.id will be the username
+                    newRoles[doc.id] = doc.data();
                 });
                 firestoreUserRoles = newRoles;
                 console.log("Firestore: User Roles updated:", firestoreUserRoles);
                 if (!userManagementPanel.classList.contains('hidden')) {
-                    renderUserRolesTable(); // Re-render if the panel is open
+                    renderUserRolesTable();
                 }
             }, (error) => {
                 console.error("Firestore: Error listening to user roles:", error);
                 showMessage("Error: Could not sync user roles from cloud.", 'error');
             });
 
-            // Listen for changes in activity logs
             onSnapshot(activityLogsCollectionRef, (snapshot) => {
                 const newLogs = [];
                 snapshot.forEach(doc => {
-                    newLogs.push({ id: doc.id, ...doc.data() }); // Include doc.id for potential deletion
+                    newLogs.push({ id: doc.id, ...doc.data() });
                 });
                 firestoreActivityLogs = newLogs;
                 console.log("Firestore: Activity Logs updated:", firestoreActivityLogs.length, "entries");
-                populateLogFilterTypes(); // Update filter options based on new logs
-                renderLogs(); // Re-render logs when data changes
+                populateLogFilterTypes();
+                renderLogs();
             }, (error) => {
                 console.error("Firestore: Error listening to activity logs:", error);
                 showMessage("Error: Could not sync activity logs from cloud.", 'error');
@@ -851,17 +760,17 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOMContentLoaded fired. Script is running.');
 
-            // Authenticate with Firebase and then set up application listeners/data fetches
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // User is authenticated (could be anonymous from Canvas runtime, email/password, or Google)
+                    // User is authenticated (from Google, Email/Password, or custom token from Canvas)
                     console.log("Firebase: Authenticated. User ID:", user.uid, "Provider:", user.providerData[0]?.providerId || 'N/A');
                     firebaseAuthReady = true;
-                    loginButton.disabled = false;
+                    // Ensure buttons are enabled after auth state is confirmed
                     googleLoginButton.disabled = false;
+                    emailPasswordLoginButton.disabled = false;
 
-                    await fetchInitialUserData(); // Always fetch initial user data regardless of auth state
-                    setupFirestoreListeners();    // Always set up real-time Firestore listeners
+                    await loadInitialData(); // Load minimal local data (just admin)
+                    setupFirestoreListeners(); // Setup Firestore listeners
 
                     // Check for a saved login state in localStorage
                     const storedUser = localStorage.getItem('loggedInUser');
@@ -871,27 +780,24 @@
                             handleLoginSuccess(loggedInUser);
                         } catch (e) {
                             console.error("Error parsing stored user data from localStorage:", e);
-                            localStorage.removeItem('loggedInUser'); // Clear invalid data
+                            localStorage.removeItem('loggedInUser');
                             showMessage("Saved login data corrupted. Please log in again.", 'error');
                             addLogEntry("Corrupted saved login detected (localStorage)");
                         }
                     } else {
-                        // If Firebase Auth has a user but localStorage doesn't,
-                        // create a display user from Firebase data (e.g., direct Google sign-in)
+                        // If Firebase Auth has a user but localStorage doesn't, create a display user from Firebase data
                         const displayUser = {
                             username: user.email || user.uid,
                             name: user.displayName || user.email || 'Anonymous User',
                             profilePic: user.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U',
-                            isAdmin: user.email === SECRET_ADMIN_USER.username // Simple admin check
+                            isAdmin: user.email === SECRET_ADMIN_USER.username
                         };
                         handleLoginSuccess(displayUser);
                     }
 
                 } else { // No Firebase user is currently authenticated
-                    // This block runs when onAuthStateChanged initially detects no user, or after a signOut.
-                    // We only try to signInAnonymously if in the Canvas environment (via initialAuthToken)
-                    // or if it's the very first load and not a logout.
                     if (initialAuthToken) {
+                        // In Canvas environment, sign in with custom token provided
                         console.log("Firebase: Canvas environment detected. Signing in with custom token.");
                         try {
                             await signInWithCustomToken(auth, initialAuthToken);
@@ -900,118 +806,39 @@
                             showMessage(`Firebase custom auth failed: ${error.message}. Firestore features may not work.`, 'error');
                         } finally {
                             firebaseAuthReady = true;
-                            loginButton.disabled = false;
                             googleLoginButton.disabled = false;
-                            await fetchInitialUserData();
+                            emailPasswordLoginButton.disabled = false;
+                            await loadInitialData();
                             setupFirestoreListeners();
                         }
                     } else if (!isLoggingOut) {
-                         // For regular web deployment, show login form immediately if no user
-                         // and not currently logging out. Anonymous sign-in will be on-demand.
-                        console.log("Firebase: Not authenticated. Displaying login form.");
-                        firebaseAuthReady = true; // Still mark as ready for login attempts
-                        loginButton.disabled = false;
+                        // For regular web deployment, show login buttons and don't auto-authenticate
+                        console.log("Firebase: Not authenticated. Displaying login options.");
+                        firebaseAuthReady = true;
                         googleLoginButton.disabled = false;
-                        showPanel(loginForm);
+                        emailPasswordLoginButton.disabled = false;
+                        showPanel(loginButtonsContainer);
                         logoutButton.classList.add('hidden');
-                        await fetchInitialUserData();
+                        await loadInitialData();
                         setupFirestoreListeners();
                     } else {
-                        // If isLoggingOut is true, we intentionally signed out.
-                        // Do nothing here, let the UI remain on the login form.
-                        console.log("Firebase: User logged out manually. Not re-authenticating anonymously.");
-                        firebaseAuthReady = true; // Still mark as ready so login form can be used
-                        loginButton.disabled = false;
+                        // User explicitly logged out, keep displaying login form
+                        console.log("Firebase: User logged out manually. Not re-authenticating.");
+                        firebaseAuthReady = true;
                         googleLoginButton.disabled = false;
-                        showPanel(loginForm); // Ensure login form is visible
+                        emailPasswordLoginButton.disabled = false;
+                        showPanel(loginButtonsContainer);
                         logoutButton.classList.add('hidden');
-                        isLoggingOut = false; // Reset the flag
+                        isLoggingOut = false;
                     }
                 }
             });
         });
 
 
-        // Event listener for form submission (Email/Password or Z.html)
-        loginForm.addEventListener('submit', async (event) => {
-            console.log('Form submit event fired!');
-            event.preventDefault(); // This is crucial to stop default browser form submission
+        // Removed event listener for loginForm.submit as it no longer exists
 
-            const enteredUsername = usernameInput.value.toLowerCase();
-            const enteredPassword = passwordInput.value;
-
-            addLogEntry("Login Attempt", { username: enteredUsername });
-
-            if (!firebaseAuthReady) {
-                showMessage("Firebase authentication is not ready yet. Please wait a moment and try again.", 'info');
-                console.warn("Login attempt before Firebase authentication is ready.");
-                return;
-            }
-            
-            // Explicitly ensure an anonymous user is signed in if not already, for z.html users to link accounts
-            if (!auth.currentUser) {
-                try {
-                    await signInAnonymously(auth);
-                    console.log("Firebase: Signed in anonymously for z.html login flow.");
-                } catch (error) {
-                    console.error("Firebase: Failed to sign in anonymously:", error);
-                    showMessage("Could not establish a Firebase session for login. Please refresh.", 'error');
-                    addLogEntry("Login Failed: Anonymous Sign-in Failed", { username: enteredUsername, error: error.message });
-                    return;
-                }
-            }
-
-            // Attempt admin login (local check for secret admin)
-            if (enteredUsername === SECRET_ADMIN_USER.username && enteredPassword === SECRET_ADMIN_USER.password) {
-                handleLoginSuccess(SECRET_ADMIN_USER);
-                return;
-            }
-
-            // For other users, prioritize Firebase Email/Password Authentication
-            if (enteredUsername.includes('@') && enteredUsername.includes('.')) { // Simple check for email format
-                try {
-                    console.log(`Attempting Firebase Email/Password login for: ${enteredUsername}`);
-                    const userCredential = await signInWithEmailAndPassword(auth, enteredUsername, enteredPassword);
-                    const firebaseUser = userCredential.user;
-                    console.log("Firebase Email/Password login successful:", firebaseUser.uid);
-
-                    let displayUser = users.find(u => u.username.toLowerCase() === enteredUsername) || {
-                        username: firebaseUser.email,
-                        name: firebaseUser.displayName || firebaseUser.email,
-                        profilePic: firebaseUser.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U'
-                    };
-                    handleLoginSuccess(displayUser);
-                    addLogEntry("Firebase Email/Password Login", { user: enteredUsername, firebaseUid: firebaseUser.uid });
-
-                } catch (error) {
-                    console.error("Firebase Email/Password login failed:", error);
-                    let errorMessage = 'Firebase login failed. Please check your email and password.';
-                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                        errorMessage = 'Invalid email or password.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        errorMessage = 'Invalid email format for Firebase login.';
-                    }
-                    showMessage(errorMessage, 'error');
-                    addLogEntry("Firebase Email/Password Login Failed", { user: enteredUsername, error: error.message });
-                }
-            } else {
-                // Fallback to z.html local password check if it's not an email-like username
-                let foundUserFromZHtml = users.find(
-                    user => user.username.toLowerCase() === enteredUsername && user.password === enteredPassword
-                );
-                if (foundUserFromZHtml) {
-                    console.log('Login successful via z.html (insecure) for user:', foundUserFromZHtml.username);
-                    // For z.html users, an anonymous Firebase Auth session should now exist (see explicit signInAnonymously above).
-                    handleLoginSuccess(foundUserFromZHtml);
-                    addLogEntry("Local Z.html Login (Insecure)", { user: enteredUsername });
-                } else {
-                    showMessage('Invalid username or password.', 'error');
-                    addLogEntry("Login failed", { username: enteredUsername, reason: "Invalid credentials (no Firebase email or z.html match)" });
-                }
-            }
-        });
-
-        // Event listener for Google Login Button
+        // Event listener for Google Login Button (primary login method)
         googleLoginButton.addEventListener('click', async () => {
             console.log('Google Login button clicked.');
             addLogEntry("Google Login Attempt");
@@ -1021,25 +848,15 @@
                 return;
             }
             
-            // Ensure an anonymous user is signed in if not already, before trying Google sign-in
-            if (!auth.currentUser) {
-                try {
-                    await signInAnonymously(auth);
-                    console.log("Firebase: Signed in anonymously for Google login flow.");
-                } catch (error) {
-                    console.error("Firebase: Failed to sign in anonymously before Google login:", error);
-                    showMessage("Could not establish a Firebase session for Google login. Please refresh.", 'error');
-                    addLogEntry("Google Login Failed: Anonymous Sign-in Pre-requisite Failed", {});
-                    return;
-                }
-            }
-
             try {
+                // If an anonymous user exists from previous session (unlikely with new flow, but safe to handle)
+                // or if no user, signInWithPopup will handle it.
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
                 console.log("Google Sign-In successful:", user);
 
-                let displayUser = users.find(u => u.username.toLowerCase() === user.email?.toLowerCase()) || {
+                // Use Firebase user info directly for display and storage
+                let displayUser = {
                     username: user.email,
                     name: user.displayName,
                     profilePic: user.photoURL
@@ -1063,6 +880,12 @@
             }
         });
 
+        // Placeholder for Email/Password Login
+        emailPasswordLoginButton.addEventListener('click', () => {
+            showMessage("Email/Password login is not yet implemented. Please use Google Sign-In.", 'info');
+            addLogEntry("Email/Password Login Button Clicked", { status: "Not Implemented" });
+        });
+
 
         // Event listener for logout button
         logoutButton.addEventListener('click', handleLogout);
@@ -1075,7 +898,7 @@
         });
 
         hideUserManagementButton.addEventListener('click', () => {
-            showPanel(adminPanel); // Go back to admin panel
+            showPanel(adminPanel);
         });
 
         saveUserRolesButton.addEventListener('click', collectAndSaveRoles);
@@ -1090,7 +913,7 @@
         });
 
         hideLogsButton.addEventListener('click', () => {
-            showPanel(adminPanel); // Go back to admin panel
+            showPanel(adminPanel);
         });
 
         clearLogsButton.addEventListener('click', clearLogs);
@@ -1107,7 +930,7 @@
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser) {
                 showPanel(accountManagementPanel);
-                renderAccountManagementPanel(loggedInUser); // Pass localStorage data, but panel will prioritize Firebase Auth
+                renderAccountManagementPanel(loggedInUser);
                 addLogEntry("Account Management Panel Opened", { user: loggedInUser.username });
             } else {
                 showMessage("Please log in to manage your account.", 'info');
@@ -1115,12 +938,11 @@
         });
 
         hideAccountManagementButton.addEventListener('click', () => {
-            // If admin is logged in, return to admin panel, otherwise to login form
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser && loggedInUser.isAdmin) {
                 showPanel(adminPanel);
             } else {
-                showPanel(loginForm);
+                showPanel(loginButtonsContainer); // Go back to login options
             }
         });
 
