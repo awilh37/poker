@@ -86,8 +86,8 @@
 <body class="bg-gray-100 font-inter">
 
     <!-- Main Login Container -->
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm flex flex-col items-center">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">WPS Login</h2>
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl flex flex-col items-center">
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">WPS Login</h2>
 
         <!-- Loading Indicator -->
         <div id="loadingIndicator" class="hidden flex items-center justify-center p-4">
@@ -103,7 +103,7 @@
             <button
                 type="button"
                 id="googleLoginButton"
-                class="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+                class="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
             >
                 <!-- Google Icon SVG -->
                 <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -116,53 +116,61 @@
 
 
         <!-- Message Box for Login Status -->
-        <div id="messageBox" class="message-box hidden w-full"></div>
+        <div id="messageBox" class="message-box hidden w-full text-sm md:text-base"></div>
 
         <!-- Logout Button (Initially hidden) -->
         <button
             id="logoutButton"
-            class="hidden mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+            class="hidden mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
         >
             Logout
         </button>
 
+        <!-- "View Logged-in Users" Button (Initially hidden) -->
+        <button
+            id="viewLoggedInUsersButton"
+            class="hidden mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
+        >
+            View Logged-in Users
+        </button>
+
         <!-- Admin Panel (Initially hidden) -->
         <div id="adminPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full text-center">
-            <h3 class="text-2xl font-bold text-gray-700 mb-4">Admin Panel</h3>
-            <p class="text-gray-600 mb-6">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Admin Panel</h3>
+            <p class="text-gray-600 mb-6 text-sm md:text-base">
                 Welcome, Administrator! From here, you can manage users, game data, and other aspects of the WPS system.
                 <br>
                 <strong class="text-red-500">Note: User management will only show users who have logged in via Firebase Auth.</strong>
             </p>
             <div class="space-y-4">
-                <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Manage Users
                 </button>
-                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Manage Game Data
                 </button>
-                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Configure Games
                 </button>
-                <button id="viewLogsButton" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="viewLogsButton" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     View Activity Logs
                 </button>
-                <button id="manageAccountButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="manageAccountButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Account Management
                 </button>
             </div>
         </div>
 
         <!-- User Management Panel (Initially hidden) -->
-        <div id="userManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md">
-            <h3 class="text-2xl font-bold text-gray-700 mb-4 text-center">User Management</h3>
-            <p class="text-gray-600 mb-4 text-center">
+        <div id="userManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg lg:max-w-xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">User Management</h3>
+            <p class="text-gray-600 mb-4 text-center text-sm md:text-base">
                 Assign roles to users who have logged in.
                 <br>
                 <strong class="text-red-500">Important: This is a client-side role management for demonstration. For production, consider using Firebase Cloud Functions for secure role assignment.</strong>
             </p>
             <div class="overflow-x-auto">
-                <table class="user-table">
+                <table class="user-table text-sm md:text-base">
                     <thead>
                         <tr>
                             <th>User ID (UID)</th>
@@ -177,43 +185,43 @@
                 </table>
             </div>
             <div class="flex justify-between space-x-2 mt-4">
-                <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Save Roles
                 </button>
-                <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Hide Panel
                 </button>
             </div>
         </div>
 
         <!-- Account Management Panel (Initially hidden) -->
-        <div id="accountManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md text-center">
-            <h3 class="text-2xl font-bold text-gray-700 mb-4">Account Management</h3>
+        <div id="accountManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg text-center">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Account Management</h3>
             <div class="flex flex-col items-center space-y-4">
-                <img id="userProfilePic" class="w-24 h-24 rounded-full border-4 border-blue-400 shadow-md" src="" alt="Profile Picture">
-                <p class="text-xl font-semibold text-gray-800" id="currentUserName"></p>
-                <p class="text-gray-600" id="currentUserUsername"></p>
-                <p class="text-gray-500 text-sm" id="currentUserProvider"></p>
+                <img id="userProfilePic" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-blue-400 shadow-md" src="" alt="Profile Picture">
+                <p class="text-xl md:text-2xl font-semibold text-gray-800" id="currentUserName"></p>
+                <p class="text-gray-600 text-sm md:text-base" id="currentUserUsername"></p>
+                <p class="text-gray-500 text-xs md:text-sm" id="currentUserProvider"></p>
 
                 <div class="w-full space-y-3 pt-4 border-t border-gray-200 mt-4">
                     <button
                         type="button"
                         id="linkGoogleAccountButton"
-                        class="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
+                        class="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
                     >
                         <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12.0001 4.5V7.5L17.2501 7.5C17.0279 8.65312 16.3989 9.69736 15.4883 10.4514C14.5776 11.2054 13.4357 11.6212 12.2501 11.6212C9.40006 11.6212 6.99999 9.40871 6.99999 6.55871C6.99999 3.70871 9.40006 1.49621 12.2501 1.49621C13.6874 1.49621 14.9754 2.05267 15.9388 2.92305L18.1565 0.705359C16.5912 -0.80332 14.4754 -1.54716e-07 12.2501 -1.54716e-07C7.26627 -1.54716e-07 3.00006 4.26627 3.00006 9.25006C3.00006 14.2338 7.26627 18.5 12.2501 18.5C14.6738 18.5 16.6346 17.6534 18.0626 16.1436C19.5398 14.6338 19.9999 12.3501 19.9999 9.94006C19.9999 9.25006 19.9312 8.57506 19.8001 7.92506L12.0001 7.92506V4.5Z" fill="#fff"/>
                         </svg>
                         Link with Google
                     </button>
-                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                         Change Password (Placeholder)
                     </button>
-                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                         Update Profile (Placeholder)
                     </button>
                 </div>
-                <button id="hideAccountManagementButton" class="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="hideAccountManagementButton" class="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Close Account Management
                 </button>
             </div>
@@ -221,25 +229,25 @@
 
 
         <!-- Activity Log Viewer (Initially hidden) -->
-        <div id="logViewer" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md">
-            <h3 class="text-2xl font-bold text-gray-700 mb-4 text-center">Activity Logs</h3>
+        <div id="logViewer" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg lg:max-w-xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">Activity Logs</h3>
 
             <!-- Log Filters and Sort -->
             <div class="flex flex-wrap items-center justify-between mb-4 space-y-2 md:space-y-0">
                 <div class="w-full md:w-1/2 pr-0 md:pr-2">
                     <label for="logFilterType" class="block text-gray-700 text-sm font-semibold mb-1">Filter by Type:</label>
-                    <select id="logFilterType" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="logFilterType" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
                         <option value="all">All Types</option>
                         <!-- Options will be populated by JS -->
                     </select>
                 </div>
                 <div class="w-full md:w-1/2 pl-0 md:pl-2">
                     <label for="logSearchText" class="block text-gray-700 text-sm font-semibold mb-1">Search Text:</label>
-                    <input type="text" id="logSearchText" placeholder="Search logs..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="logSearchText" placeholder="Search logs..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
                 </div>
                 <div class="w-full mt-3">
                     <label class="block text-gray-700 text-sm font-semibold mb-1">Sort Order:</label>
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-4 text-sm md:text-base">
                         <label class="inline-flex items-center">
                             <input type="radio" name="logSortOrder" value="newest" checked class="form-radio text-blue-600">
                             <span class="ml-2 text-gray-700">Newest First</span>
@@ -252,16 +260,41 @@
                 </div>
             </div>
 
-            <div id="logEntries" class="max-h-60 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white mb-4">
+            <div id="logEntries" class="max-h-60 md:max-h-80 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white mb-4 text-xs md:text-sm">
                 <!-- Log entries will be rendered here -->
                 <p class="text-gray-500 text-center">No logs yet.</p>
             </div>
             <div class="flex justify-between space-x-2">
-                <button id="clearLogsButton" class="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="clearLogsButton" class="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Clear Logs
                 </button>
-                <button id="hideLogsButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                <button id="hideLogsButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Hide Logs
+                </button>
+            </div>
+        </div>
+
+        <!-- Logged In Users Panel (Initially hidden) -->
+        <div id="loggedInUsersPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl lg:max-w-2xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">Currently Logged-in Users</h3>
+            <div class="overflow-x-auto">
+                <table class="user-table text-sm md:text-base">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Logged In Since</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loggedInUsersTableBody">
+                        <!-- User rows will be rendered here by JavaScript -->
+                        <tr><td colspan="3" class="text-center text-gray-500 py-4">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-center mt-4">
+                <button id="hideLoggedInUsersPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
+                    Close
                 </button>
             </div>
         </div>
@@ -339,6 +372,11 @@
         const linkGoogleAccountButton = document.getElementById('linkGoogleAccountButton');
         const hideAccountManagementButton = document.getElementById('hideAccountManagementButton');
 
+        const viewLoggedInUsersButton = document.getElementById('viewLoggedInUsersButton');
+        const loggedInUsersPanel = document.getElementById('loggedInUsersPanel');
+        const loggedInUsersTableBody = document.getElementById('loggedInUsersTableBody');
+        const hideLoggedInUsersPanelButton = document.getElementById('hideLoggedInUsersPanelButton');
+
 
         const logFilterType = document.getElementById('logFilterType');
         const logSearchText = document.getElementById('logSearchText');
@@ -347,6 +385,7 @@
         let allFirebaseUsersData = []; // Stores user profiles fetched from Firestore
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
         let firestoreActivityLogs = []; // Stores logs fetched from Firestore
+        let firestoreActiveSessions = []; // Stores active sessions from Firestore
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
 
@@ -376,11 +415,12 @@
         const userRolesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_roles`);
         const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
         const userProfilesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_profiles`);
+        const activeSessionsCollectionRef = collection(db, `artifacts/${appId}/public/data/active_sessions`);
 
 
         // --- Utility Functions ---
         function showPanel(panelToShow) {
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, logViewer, accountManagementPanel, loadingIndicator];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, logViewer, accountManagementPanel, loggedInUsersPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -687,6 +727,55 @@
         }
         // --- End User Management Functions ---
 
+        // --- Logged-in Users Panel Functions ---
+        function showLoggedInUsersPanel() {
+            showPanel(loggedInUsersPanel);
+            renderLoggedInUsersTable(); // Initial render
+            addLogEntry("Logged-in Users Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid });
+        }
+
+        function hideLoggedInUsersPanel() {
+            loggedInUsersPanel.classList.add('hidden');
+            // Determine what panel to show when closing this one.
+            // If admin, show admin panel. Otherwise, perhaps account management or nothing specific (main login/logout view).
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (loggedInUser && loggedInUser.hasAdminAccess) {
+                showPanel(adminPanel);
+            } else if (loggedInUser) {
+                // For players, maybe show account management or just ensure other specific panels are hidden.
+                // For now, let's not force another panel to open, just hide this one.
+                // If viewLoggedInUsersButton is the only thing they see besides logout, they go back to that state.
+            }
+        }
+
+        function renderLoggedInUsersTable() {
+            loggedInUsersTableBody.innerHTML = ''; // Clear existing rows
+
+            if (firestoreActiveSessions.length === 0) {
+                loggedInUsersTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users currently logged in.</td></tr>';
+                return;
+            }
+
+            // Sort by login time, newest first
+            const sortedSessions = [...firestoreActiveSessions].sort((a, b) => new Date(b.loginTime) - new Date(a.loginTime));
+
+            sortedSessions.forEach(session => {
+                const row = loggedInUsersTableBody.insertRow();
+                const emailCell = row.insertCell();
+                const roleCell = row.insertCell();
+                const loginTimeCell = row.insertCell();
+
+                emailCell.textContent = session.email || 'N/A';
+                roleCell.textContent = session.role || 'N/A';
+                try {
+                    loginTimeCell.textContent = new Date(session.loginTime).toLocaleString();
+                } catch (e) {
+                    loginTimeCell.textContent = session.loginTime; // Fallback if date is invalid
+                }
+            });
+        }
+        // --- End Logged-in Users Panel Functions ---
+
 
         // --- Account Management Functions ---
         function renderAccountManagementPanel(displayUser) {
@@ -814,6 +903,20 @@
                     role: userRole // Ensure profile reflects the determined role
                 }, { merge: true });
                 console.log("User profile updated/created in Firestore:", user.uid, "with role:", userRole);
+
+                // Add to active_sessions collection
+                const activeSessionRef = doc(activeSessionsCollectionRef, user.uid);
+                try {
+                    await setDoc(activeSessionRef, {
+                        email: user.email || 'N/A',
+                        role: userRole,
+                        loginTime: new Date().toISOString()
+                    }, { merge: true }); // merge:true to update if session doc already exists
+                    console.log("User session added/updated in active_sessions:", user.uid);
+                } catch (e) {
+                    console.error("Error adding/updating user session to active_sessions:", e);
+                    // Non-critical, so don't block login, but log it.
+                }
             }
 
             // ** 'Disabled' role check - This is handled in Step 3 of the plan, will be added here later **
@@ -860,19 +963,46 @@
                 addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole });
             }
             logoutButton.classList.remove('hidden');
+            // Show viewLoggedInUsersButton if user has appropriate role
+            const userRoleForButton = finalUserForLocalStorage.role;
+            if (userRoleForButton === 'player' || userRoleForButton === 'admin' || userRoleForButton === 'owner') {
+                viewLoggedInUsersButton.classList.remove('hidden');
+            } else {
+                viewLoggedInUsersButton.classList.add('hidden');
+            }
         }
 
         // Function to handle logout
         async function handleLogout() {
-            const loggedInUser = localStorage.getItem('loggedInUser');
-            if (loggedInUser) {
-                const user = JSON.parse(loggedInUser);
-                addLogEntry("Logout", { user: user.username, isAdmin: user.isAdmin, firebaseUid: user.firebaseUid });
+            const loggedInUserString = localStorage.getItem('loggedInUser');
+            let firebaseUidToClear = null;
+
+            if (loggedInUserString) {
+                const user = JSON.parse(loggedInUserString);
+                firebaseUidToClear = user.firebaseUid; // Get UID before clearing localStorage
+                addLogEntry("Logout", { user: user.username, isAdmin: user.hasAdminAccess, firebaseUid: user.firebaseUid });
+            } else if (auth.currentUser) {
+                // Fallback if localStorage was cleared but auth session still exists
+                firebaseUidToClear = auth.currentUser.uid;
+                addLogEntry("Logout", { user: auth.currentUser.email || "Unknown (from auth)", firebaseUid: auth.currentUser.uid });
             } else {
                  addLogEntry("Logout", { user: "Unknown" });
             }
 
-            isLoggingOut = true; 
+            isLoggingOut = true;
+
+            // Attempt to remove from active_sessions, regardless of signOut success
+            if (firebaseUidToClear) {
+                try {
+                    const activeSessionRef = doc(activeSessionsCollectionRef, firebaseUidToClear);
+                    await deleteDoc(activeSessionRef);
+                    console.log("User session removed from active_sessions:", firebaseUidToClear);
+                } catch (e) {
+                    console.error("Error removing user session from active_sessions:", e);
+                    // Non-critical, log and continue logout
+                }
+            }
+
             try {
                 if (auth.currentUser) {
                     await signOut(auth); // Use Firebase signOut function
@@ -887,7 +1017,42 @@
             showMessage('You have been logged out.', 'info');
             showPanel(loginButtonsContainer);
             logoutButton.classList.add('hidden');
+            // Hide other panels that might have been open
+            adminPanel.classList.add('hidden');
+            userManagementPanel.classList.add('hidden');
+            logViewer.classList.add('hidden');
+            accountManagementPanel.classList.add('hidden');
+            if (document.getElementById('loggedInUsersPanel')) { // Check if it exists yet
+                document.getElementById('loggedInUsersPanel').classList.add('hidden');
+            }
+            if (document.getElementById('viewLoggedInUsersButton')) { // Check if it exists yet
+                document.getElementById('viewLoggedInUsersButton').classList.add('hidden');
+            }
         }
+
+        // Best-effort cleanup on tab close / navigation
+        window.addEventListener('beforeunload', async (event) => {
+            // Check if there's a logged-in user according to Firebase Auth directly
+            if (auth.currentUser && !isLoggingOut) { // !isLoggingOut to prevent double execution during normal logout
+                console.log('beforeunload: Attempting to clear active session for user:', auth.currentUser.uid);
+                try {
+                    const activeSessionRef = doc(activeSessionsCollectionRef, auth.currentUser.uid);
+                    // Note: This is a best-effort. Complex async operations in beforeunload are not guaranteed.
+                    // For very critical session cleanup, server-side heartbeats or timeouts are more robust.
+                    // Here, we make a fire-and-forget attempt.
+                    deleteDoc(activeSessionRef).then(() => {
+                        console.log('beforeunload: Session cleanup call for', auth.currentUser.uid, 'completed.');
+                    }).catch(e => {
+                        console.warn('beforeunload: Error in session cleanup call for', auth.currentUser.uid, e);
+                    });
+                    // Some browsers might require a returnValue to be set to show a confirmation dialog
+                    // event.preventDefault(); // If you want to try and show a confirmation
+                    // event.returnValue = ''; // Necessary for some browsers
+                } catch (e) {
+                    console.warn("Error during beforeunload session cleanup for user:", auth.currentUser.uid, e);
+                }
+            }
+        });
 
         // --- Initial Data Loading (fetches user profiles) ---
         async function loadInitialData() {
@@ -1021,7 +1186,7 @@
                     firestoreActivityLogs = newLogs;
                     console.log("Firestore: Activity Logs snapshot processed. Logs count:", firestoreActivityLogs.length);
                     populateLogFilterTypes();
-                    renderLogs();
+                    renderLogs(); // This renders if log viewer is open
                     if (!initialLogsLoadDone) {
                         initialLogsLoadDone = true;
                         console.log("Firestore: Initial Activity Logs loaded.");
@@ -1034,7 +1199,36 @@
                 });
             });
 
-            return Promise.all([rolesPromise, profilesPromise, logsPromise]);
+            // Promise for Active Sessions
+            const activeSessionsPromise = new Promise((resolve, reject) => {
+                let initialSessionsLoadDone = false;
+                const unsubscribeSessions = onSnapshot(activeSessionsCollectionRef, (snapshot) => {
+                    const newSessions = [];
+                    snapshot.forEach(doc => {
+                        newSessions.push({ id: doc.id, ...doc.data() });
+                    });
+                    firestoreActiveSessions = newSessions;
+                    console.log("Firestore: Active Sessions snapshot processed. Sessions count:", firestoreActiveSessions.length);
+
+                    // If the logged-in users panel is currently visible, re-render it
+                    if (!loggedInUsersPanel.classList.contains('hidden')) {
+                        renderLoggedInUsersTable();
+                    }
+
+                    if (!initialSessionsLoadDone) {
+                        initialSessionsLoadDone = true;
+                        console.log("Firestore: Initial Active Sessions loaded.");
+                        resolve();
+                    }
+                }, (error) => {
+                    console.error("Firestore: Error listening to active sessions:", error);
+                    showMessage("Error: Could not sync active sessions from cloud.", 'error');
+                    reject(error);
+                });
+                // Consider storing unsubscribeSessions if needed
+            });
+
+            return Promise.all([rolesPromise, profilesPromise, logsPromise, activeSessionsPromise]);
         }
 
 
@@ -1226,6 +1420,19 @@
         });
 
         linkGoogleAccountButton.addEventListener('click', handleGoogleLink);
+
+        // --- Logged-in Users Panel Button Event Listeners ---
+        viewLoggedInUsersButton.addEventListener('click', () => {
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (loggedInUser && (loggedInUser.role === 'player' || loggedInUser.role === 'admin' || loggedInUser.role === 'owner')) {
+                showLoggedInUsersPanel();
+            } else {
+                showMessage("You do not have permission to view this.", 'error');
+                 addLogEntry("View Logged-in Users Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
+            }
+        });
+
+        hideLoggedInUsersPanelButton.addEventListener('click', hideLoggedInUsersPanel);
 
     </script>
 </body>
