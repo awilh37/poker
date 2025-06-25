@@ -658,8 +658,10 @@
             if (!dataLoadedAndListenersSetup) {
                 showPanel(loadingIndicator); // Show loading indicator while data is fetched
                 loadingIndicator.querySelector('span').textContent = 'Loading user data...';
-                await loadInitialData(); // Load user profiles
-                setupFirestoreListeners(); // Set up real-time listeners for roles and logs
+                await loadInitialData(); // Load user profiles first, if needed separately
+                console.log("handleLoginSuccess: Setting up Firestore listeners and awaiting initial data...");
+                await setupFirestoreListeners(); // Wait for listeners to load initial data
+                console.log("handleLoginSuccess: Firestore listeners initial data loaded.");
                 dataLoadedAndListenersSetup = true;
             }
 
@@ -762,75 +764,107 @@
             console.log("setupFirestoreListeners: Attempting to set up listeners...");
             if (!auth.currentUser) {
                 console.warn("setupFirestoreListeners: Skipping listener setup, no authenticated user.");
-                return;
+                return Promise.resolve(); // Resolve immediately if no user
             }
 
-            // Listen for changes in user roles
-            onSnapshot(userRolesCollectionRef, (snapshot) => {
-                const newRoles = {};
-                snapshot.forEach(doc => {
-                    newRoles[doc.id] = doc.data();
-                });
-                firestoreUserRoles = newRoles;
-                console.log("Firestore: User Roles updated:", firestoreUserRoles);
-                if (!userManagementPanel.classList.contains('hidden')) {
-                    renderUserRolesTable();
-                }
-                const currentUser = auth.currentUser;
-                if (currentUser) {
-                    const storedUser = JSON.parse(localStorage.getItem('loggedInUser'));
-                    if (storedUser) {
-                         const currentRole = firestoreUserRoles[currentUser.uid]?.role || 'Member';
-                         const isAdmin = (currentUser.uid === SUPER_ADMIN_UID || currentRole === 'admin');
-                         if (storedUser.isAdmin !== isAdmin) {
-                             console.log("Admin status changed, re-rendering UI.");
-                             storedUser.isAdmin = isAdmin;
-                             storedUser.role = currentRole;
-                             localStorage.setItem('loggedInUser', JSON.stringify(storedUser));
-                             // Re-evaluate current panel based on new admin status
-                             if (isAdmin) {
-                                showPanel(adminPanel);
-                             } else {
-                                showPanel(accountManagementPanel);
-                                renderAccountManagementPanel(storedUser);
-                             }
-                         }
+            // Promise for User Roles
+            const rolesPromise = new Promise((resolve, reject) => {
+                let initialRolesLoadDone = false;
+                const unsubscribeRoles = onSnapshot(userRolesCollectionRef, (snapshot) => {
+                    const newRoles = {};
+                    snapshot.forEach(doc => {
+                        newRoles[doc.id] = doc.data();
+                    });
+                    firestoreUserRoles = newRoles;
+                    console.log("Firestore: User Roles snapshot processed. Roles count:", Object.keys(firestoreUserRoles).length);
+
+                    if (!userManagementPanel.classList.contains('hidden')) {
+                        renderUserRolesTable();
                     }
-                }
-            }, (error) => {
-                console.error("Firestore: Error listening to user roles:", error);
-                showMessage("Error: Could not sync user roles from cloud.", 'error');
+
+                    const currentUser = auth.currentUser;
+                    if (currentUser) {
+                        const storedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+                        if (storedUser) {
+                            const currentRole = firestoreUserRoles[currentUser.uid]?.role || 'Member';
+                            const isAdminUser = (currentUser.uid === SUPER_ADMIN_UID || currentRole === 'admin');
+                            if (storedUser.isAdmin !== isAdminUser) {
+                                console.log("Real-time: Admin status changed by roles listener, re-rendering UI.");
+                                storedUser.isAdmin = isAdminUser;
+                                storedUser.role = currentRole;
+                                localStorage.setItem('loggedInUser', JSON.stringify(storedUser));
+                                if (isAdminUser) {
+                                    showPanel(adminPanel);
+                                } else {
+                                    showPanel(accountManagementPanel);
+                                    renderAccountManagementPanel(storedUser);
+                                }
+                            }
+                        }
+                    }
+
+                    if (!initialRolesLoadDone) {
+                        initialRolesLoadDone = true;
+                        console.log("Firestore: Initial User Roles loaded.");
+                        resolve();
+                    }
+                }, (error) => {
+                    console.error("Firestore: Error listening to user roles:", error);
+                    showMessage("Error: Could not sync user roles from cloud.", 'error');
+                    reject(error);
+                });
+                // Consider storing unsubscribeRoles if you need to detach listeners later
             });
 
-            // Listen for changes in user profiles (to update the user management table)
-            onSnapshot(userProfilesCollectionRef, (snapshot) => {
-                allFirebaseUsersData = [];
-                snapshot.forEach(doc => {
-                    allFirebaseUsersData.push(doc.data());
+            // Promise for User Profiles
+            const profilesPromise = new Promise((resolve, reject) => {
+                let initialProfilesLoadDone = false;
+                const unsubscribeProfiles = onSnapshot(userProfilesCollectionRef, (snapshot) => {
+                    allFirebaseUsersData = [];
+                    snapshot.forEach(doc => {
+                        allFirebaseUsersData.push(doc.data());
+                    });
+                    console.log("Firestore: User Profiles snapshot processed. Profiles count:", allFirebaseUsersData.length);
+                    if (!userManagementPanel.classList.contains('hidden')) {
+                        renderUserRolesTable();
+                    }
+                    if (!initialProfilesLoadDone) {
+                        initialProfilesLoadDone = true;
+                        console.log("Firestore: Initial User Profiles loaded.");
+                        resolve();
+                    }
+                }, (error) => {
+                    console.error("Firestore: Error listening to user profiles:", error);
+                    showMessage("Error: Could not sync user profiles from cloud.", 'error');
+                    reject(error);
                 });
-                console.log("Firestore: User Profiles updated:", allFirebaseUsersData.length);
-                if (!userManagementPanel.classList.contains('hidden')) {
-                    renderUserRolesTable();
-                }
-            }, (error) => {
-                console.error("Firestore: Error listening to user profiles:", error);
-                showMessage("Error: Could not sync user profiles from cloud.", 'error');
             });
 
-            // Listen for changes in activity logs
-            onSnapshot(activityLogsCollectionRef, (snapshot) => {
-                const newLogs = [];
-                snapshot.forEach(doc => {
-                    newLogs.push({ id: doc.id, ...doc.data() });
+            // Promise for Activity Logs
+            const logsPromise = new Promise((resolve, reject) => {
+                let initialLogsLoadDone = false;
+                const unsubscribeLogs = onSnapshot(activityLogsCollectionRef, (snapshot) => {
+                    const newLogs = [];
+                    snapshot.forEach(doc => {
+                        newLogs.push({ id: doc.id, ...doc.data() });
+                    });
+                    firestoreActivityLogs = newLogs;
+                    console.log("Firestore: Activity Logs snapshot processed. Logs count:", firestoreActivityLogs.length);
+                    populateLogFilterTypes();
+                    renderLogs();
+                    if (!initialLogsLoadDone) {
+                        initialLogsLoadDone = true;
+                        console.log("Firestore: Initial Activity Logs loaded.");
+                        resolve();
+                    }
+                }, (error) => {
+                    console.error("Firestore: Error listening to activity logs:", error);
+                    showMessage("Error: Could not sync activity logs from cloud.", 'error');
+                    reject(error);
                 });
-                firestoreActivityLogs = newLogs;
-                console.log("Firestore: Activity Logs updated:", firestoreActivityLogs.length, "entries");
-                populateLogFilterTypes();
-                renderLogs();
-            }, (error) => {
-                console.error("Firestore: Error listening to activity logs:", error);
-                showMessage("Error: Could not sync activity logs from cloud.", 'error');
             });
+
+            return Promise.all([rolesPromise, profilesPromise, logsPromise]);
         }
 
 
