@@ -222,6 +222,7 @@
 
                 <div class="w-full space-y-3 pt-4 border-t border-gray-200 mt-4">
                     <button
+                        type="button"
                         id="linkGoogleAccountButton"
                         class="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
                     >
@@ -323,13 +324,15 @@
 
         // Track Firebase authentication readiness
         let firebaseAuthReady = false;
+        let isLoggingOut = false; // New flag to track logout state
+
 
         // --- DOM Elements ---
         const loginForm = document.getElementById('loginForm');
         const usernameInput = document.getElementById('username');
         const passwordInput = document.getElementById('password');
         const loginButton = document.getElementById('loginButton');
-        const googleLoginButton = document.getElementById('googleLoginButton'); // New Google Login Button
+        const googleLoginButton = document.getElementById('googleLoginButton');
         const messageBox = document.getElementById('messageBox');
         const logoutButton = document.getElementById('logoutButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -349,7 +352,7 @@
         const hideLogsButton = document.getElementById('hideLogsButton');
 
         // Account Management elements
-        const manageAccountButton = document.getElementById('manageAccountButton'); // Button in Admin Panel
+        const manageAccountButton = document.getElementById('manageAccountButton');
         const accountManagementPanel = document.getElementById('accountManagementPanel');
         const userProfilePic = document.getElementById('userProfilePic');
         const currentUserName = document.getElementById('currentUserName');
@@ -391,12 +394,14 @@
                 ...details
             };
             try {
-                if (auth.currentUser) { // Only log if authenticated
+                // Ensure auth.currentUser exists before attempting to log to Firestore
+                // If it doesn't exist, it means Firebase Auth hasn't completed or failed.
+                // In such cases, we log to localStorage as a backup.
+                if (auth.currentUser && auth.currentUser.uid) {
                     await addDoc(activityLogsCollectionRef, log);
                     console.log("Log added to Firestore:", log);
                 } else {
-                    console.warn("Not authenticated to add log to Firestore. Logged locally (backup):", log);
-                    // Fallback to local storage for unauthenticated logs (optional, for debugging if not authenticated)
+                    console.warn("Firebase Auth not ready or user not authenticated. Logged locally (backup):", log);
                     const logs = JSON.parse(localStorage.getItem('activityLogsBackup') || '[]');
                     logs.push(log);
                     localStorage.setItem('activityLogsBackup', JSON.stringify(logs));
@@ -470,6 +475,11 @@
                 return;
             }
 
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to clear logs.", 'error');
+                return;
+            }
+
             showMessage("Clearing logs...", 'info');
             try {
                 const querySnapshot = await getDocs(activityLogsCollectionRef);
@@ -478,7 +488,7 @@
                     deletePromises.push(deleteDoc(doc.ref));
                 });
                 await Promise.all(deletePromises);
-                addLogEntry("Logs Cleared", { by: auth.currentUser ? auth.currentUser.uid : 'Unknown' });
+                addLogEntry("Logs Cleared", { by: auth.currentUser.uid });
                 showMessage('Activity logs cleared from Firestore.', 'success');
             } catch (e) {
                 console.error("Error clearing logs from Firestore:", e);
@@ -490,6 +500,11 @@
 
         // --- User Management Functions (Firestore Integrated) ---
         async function saveUserRolesToFirestore(rolesMap) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to save user roles.", 'error');
+                return;
+            }
+
             try {
                 // Get the current roles from Firestore to determine what changed
                 const oldRolesMap = firestoreUserRoles;
@@ -498,13 +513,13 @@
                     const newRole = rolesMap[username];
                     const docRef = doc(userRolesCollectionRef, username); // Use username as document ID
 
-                    if (oldRolesMap[username] !== newRole) {
+                    if (oldRolesMap[username]?.role !== newRole) { // Check if role actually changed
                         await setDoc(docRef, { role: newRole }, { merge: true }); // Use merge to only update role
                         addLogEntry("User Role Changed", {
                             user: username,
-                            oldRole: oldRolesMap[username] || 'Member',
+                            oldRole: oldRolesMap[username]?.role || 'Member',
                             newRole: newRole,
-                            by: SECRET_ADMIN_USER.username
+                            by: auth.currentUser.email || auth.currentUser.uid
                         });
                     }
                 }
@@ -568,38 +583,40 @@
 
 
         // --- Account Management Functions ---
-        function renderAccountManagementPanel(user) {
-            userProfilePic.src = user.profilePic || 'https://placehold.co/100x100/cccccc/ffffff?text=U';
-            userProfilePic.alt = `${user.name || user.username}'s profile picture`;
-            currentUserName.textContent = user.name || 'N/A';
-            currentUserUsername.textContent = `Username: ${user.username}`;
-
-            // Determine auth provider
+        function renderAccountManagementPanel(displayUser) {
             const firebaseUser = auth.currentUser;
+
+            userProfilePic.src = displayUser.profilePic || firebaseUser?.photoURL || 'https://placehold.co/100x100/cccccc/ffffff?text=U';
+            userProfilePic.alt = `${displayUser.name || displayUser.username}'s profile picture`;
+            currentUserName.textContent = displayUser.name || firebaseUser?.displayName || 'N/A';
+            currentUserUsername.textContent = `Username: ${displayUser.username || firebaseUser?.email || firebaseUser?.uid}`;
+
             let providerId = 'Unknown';
-            if (firebaseUser && firebaseUser.providerData.length > 0) {
+            if (firebaseUser) {
                 const providers = firebaseUser.providerData.map(p => p.providerId);
                 if (providers.includes('google.com')) {
                     providerId = 'Google';
                     linkGoogleAccountButton.classList.add('hidden'); // Already linked with Google
-                } else if (providers.includes('password')) {
-                    providerId = 'Email/Password';
-                    linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google
-                } else if (providers.includes('anonymous')) {
-                    providerId = 'Anonymous';
-                    linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google
+                } else if (providers.includes('password') || providers.includes('anonymous')) {
+                    // Show link button if it's email/password or anonymous (or z.html-based)
+                    providerId = providers.includes('password') ? 'Email/Password' : 'Anonymous';
+                    linkGoogleAccountButton.classList.remove('hidden');
+                } else {
+                    linkGoogleAccountButton.classList.remove('hidden'); // Default to showing link if unsure
                 }
             } else {
-                // If no firebaseUser or providerData, assume it's a z.html local login for display purposes
-                providerId = 'Local (z.html)';
-                linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google (if they have email/password)
+                // This case should ideally not happen if a user is "logged in" via handleLoginSuccess
+                // but if it does, it's a local z.html only login without Firebase session
+                providerId = 'Local (z.html - No Firebase)';
+                linkGoogleAccountButton.classList.remove('hidden'); // Allow linking for this case
             }
             currentUserProvider.textContent = `Provider: ${providerId}`;
         }
 
         async function handleGoogleLink() {
+            // Ensure there's a current Firebase Auth user (could be anonymous)
             if (!auth.currentUser) {
-                showMessage("No user is currently logged in to link accounts.", 'error');
+                showMessage("No active Firebase user session to link accounts. Please try logging in again.", 'error');
                 return;
             }
 
@@ -609,17 +626,20 @@
                 const linkedUser = result.user;
                 console.log("Account linked successfully with Google:", linkedUser);
 
-                // Update localStorage with new provider info if needed, and re-render
-                const storedUser = JSON.parse(localStorage.getItem('loggedInUser'));
-                if (storedUser) {
-                    storedUser.profilePic = linkedUser.photoURL || storedUser.profilePic;
-                    storedUser.name = linkedUser.displayName || storedUser.name;
-                    localStorage.setItem('loggedInUser', JSON.stringify(storedUser));
-                }
+                // Update localStorage with new provider info and re-render
+                // It's important to update the localStorage 'loggedInUser' with the Firebase Auth details
+                // for consistent display across sessions, especially if they were previously z.html only.
+                const updatedLoggedInUser = {
+                    username: linkedUser.email || linkedUser.uid,
+                    name: linkedUser.displayName || linkedUser.email,
+                    profilePic: linkedUser.photoURL,
+                    isAdmin: linkedUser.email === SECRET_ADMIN_USER.username // Re-evaluate admin status
+                };
+                localStorage.setItem('loggedInUser', JSON.stringify(updatedLoggedInUser));
                 
                 showMessage("Account successfully linked with Google!", 'success');
                 addLogEntry("Account Linked", { user: linkedUser.email || linkedUser.uid, provider: "Google" });
-                renderAccountManagementPanel(storedUser || { username: linkedUser.email, name: linkedUser.displayName, profilePic: linkedUser.photoURL });
+                renderAccountManagementPanel(updatedLoggedInUser); // Re-render with new data
             } catch (error) {
                 console.error("Error linking Google account:", error);
                 let errorMessage = "Failed to link Google account.";
@@ -627,6 +647,8 @@
                     errorMessage = "This Google account is already linked to another user.";
                 } else if (error.code === 'auth/popup-closed-by-user') {
                     errorMessage = "Google login window was closed.";
+                } else if (error.code === 'auth/invalid-credential') {
+                    errorMessage = "Invalid Google credential or already linked to a different account.";
                 }
                 showMessage(errorMessage, 'error');
                 addLogEntry("Account Link Failed", { user: auth.currentUser?.uid || 'Unknown', provider: "Google", error: error.message });
@@ -657,25 +679,30 @@
         }
 
         // Function to handle successful login
-        function handleLoginSuccess(user) {
-            // Store basic login info in localStorage, but actual roles are from Firestore
-            localStorage.setItem('loggedInUser', JSON.stringify({
-                username: user.username,
-                name: user.name,
-                profilePic: user.profilePic,
-                isAdmin: user.username === SECRET_ADMIN_USER.username
-            }));
+        // This function now centralizes UI updates and localStorage based on the *conceptual* user
+        // which might be an z.html local user mapped to a Firebase anonymous UID.
+        function handleLoginSuccess(userObjectToDisplay) { // Renamed parameter for clarity
+            // Use current Firebase user if available, otherwise fallback to z.html data for display
+            const firebaseUser = auth.currentUser;
+            const finalUserForLocalStorage = {
+                username: firebaseUser?.email || userObjectToDisplay.username || firebaseUser?.uid,
+                name: firebaseUser?.displayName || userObjectToDisplay.name,
+                profilePic: firebaseUser?.photoURL || userObjectToDisplay.profilePic,
+                isAdmin: userObjectToDisplay.username === SECRET_ADMIN_USER.username, // Admin check remains for secret
+                firebaseUid: firebaseUser?.uid // Store Firebase UID for consistent tracking
+            };
 
-            showMessage(`Welcome, ${user.name}!`, 'success');
+            localStorage.setItem('loggedInUser', JSON.stringify(finalUserForLocalStorage));
+
+            showMessage(`Welcome, ${finalUserForLocalStorage.name}!`, 'success');
             
-            // Determine which panel to show after login
-            if (user.username === SECRET_ADMIN_USER.username) {
+            if (finalUserForLocalStorage.isAdmin) {
                 showPanel(adminPanel); // Show admin panel for admin
-                addLogEntry("Admin Login", { user: user.username });
+                addLogEntry("Admin Login", { user: finalUserForLocalStorage.username });
             } else {
                 showPanel(accountManagementPanel); // Show account management for regular users
-                renderAccountManagementPanel(user); // Populate account management details
-                addLogEntry("User Login", { user: user.username });
+                renderAccountManagementPanel(finalUserForLocalStorage); // Populate account management details
+                addLogEntry("User Login", { user: finalUserForLocalStorage.username });
             }
             logoutButton.classList.remove('hidden');
         }
@@ -690,6 +717,8 @@
                  addLogEntry("Logout", { user: "Unknown" });
             }
 
+            // Set the flag to true before signing out
+            isLoggingOut = true; 
             try {
                 if (auth.currentUser) {
                     await auth.signOut(); // Sign out from Firebase Auth
@@ -749,7 +778,7 @@
         async function fetchInitialUserData() {
             loadingIndicator.classList.remove('hidden');
             loginButton.disabled = true;
-            googleLoginButton.disabled = true; // Disable Google login button too
+            googleLoginButton.disabled = true;
             try {
                 addLogEntry("Attempting to fetch initial user data from z.html");
                 const response = await fetch('https://awilh37.github.io/data/z.html');
@@ -771,7 +800,9 @@
                     addLogEntry("Initial user data loaded", { status: "success", count: users.length -1 });
                 }
 
-            } catch (error) {
+            }
+            // Catch block for error handling
+            catch (error) {
                 console.error("Failed to fetch initial user data from z.html:", error);
                 showMessage(`Failed to load initial user data: ${error.message}. Please check the URL and content of z.html.`, 'error');
                 addLogEntry("Initial user data fetch failed", { error: error.message });
@@ -834,7 +865,10 @@
                     if (storedUser) {
                         try {
                             const loggedInUser = JSON.parse(storedUser);
-                            handleLoginSuccess(loggedInUser);
+                            // If localStorage has a user, and Firebase Auth also has a user,
+                            // ensure they are consistent or use the Firebase one as primary truth.
+                            // Here, we re-handle login to ensure display is based on Firebase Auth.
+                            handleLoginSuccess(loggedInUser); // Use localStorage data for display
                         } catch (e) {
                             console.error("Error parsing stored user data from localStorage:", e);
                             localStorage.removeItem('loggedInUser'); // Clear invalid data
@@ -842,37 +876,47 @@
                             addLogEntry("Corrupted saved login detected (localStorage)");
                         }
                     } else {
-                        // If Firebase Auth has a user but localStorage doesn't, it means they might have signed in
-                        // via a different provider (e.g., Google directly) or cleared localStorage.
-                        // We should now use the Firebase user info.
+                        // If Firebase Auth has a user but localStorage doesn't,
+                        // this means a new Firebase session (e.g., from direct Google login)
+                        // or previous localStorage was cleared.
+                        // Create a temporary user object from Firebase data for handleLoginSuccess.
                         const displayUser = {
-                            username: user.email || user.uid, // Use email as username if available
+                            username: user.email || user.uid,
                             name: user.displayName || user.email || 'Anonymous User',
                             profilePic: user.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U',
-                            isAdmin: user.email === SECRET_ADMIN_USER.username // Simple admin check for Google users
+                            isAdmin: user.email === SECRET_ADMIN_USER.username // Simple admin check
                         };
                         handleLoginSuccess(displayUser);
                     }
 
-                } else {
-                    console.log("Firebase: Not authenticated yet or signed out. Attempting anonymous sign-in.");
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                            console.log("Firebase: Signed in with custom token (for Canvas environment).");
-                        } else {
-                            await signInAnonymously(auth);
-                            console.log("Firebase: Signed in anonymously (for general web deployment).");
+                } else { // No Firebase user is currently authenticated
+                    // Only attempt anonymous sign-in if not currently logging out
+                    if (!isLoggingOut) {
+                        console.log("Firebase: Not authenticated yet or signed out. Attempting anonymous sign-in.");
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                                console.log("Firebase: Signed in with custom token (for Canvas environment).");
+                            } else {
+                                await signInAnonymously(auth);
+                                console.log("Firebase: Signed in anonymously (for general web deployment).");
+                            }
+                        } catch (error) {
+                            console.error("Firebase: Anonymous/Custom authentication failed:", error);
+                            showMessage(`Firebase authentication failed: ${error.message}. Firestore features may not work.`, 'error');
+                        } finally {
+                            firebaseAuthReady = true;
+                            await fetchInitialUserData();
+                            setupFirestoreListeners();
                         }
-                    } catch (error) {
-                        console.error("Firebase: Anonymous/Custom authentication failed:", error);
-                        showMessage(`Firebase authentication failed: ${error.message}. Firestore features may not work.`, 'error');
-                    } finally {
-                        firebaseAuthReady = true; // Auth process completed, regardless of success
-                        // We still need to fetch initial data and setup listeners even if auth fails,
-                        // so the app can function locally to some extent or provide context.
-                        await fetchInitialUserData();
-                        setupFirestoreListeners();
+                    } else {
+                        // If isLoggingOut is true, it means we just signed out manually.
+                        // Do not automatically sign in anonymously; let the login form be displayed.
+                        console.log("Firebase: User logged out manually. Not re-authenticating anonymously.");
+                        firebaseAuthReady = true; // Still mark as ready so login form can be used
+                        showPanel(loginForm); // Ensure login form is visible
+                        logoutButton.classList.add('hidden'); // Ensure logout button is hidden
+                        isLoggingOut = false; // Reset the flag
                     }
                 }
             });
@@ -894,26 +938,31 @@
                 console.warn("Login attempt before Firebase authentication is ready.");
                 return;
             }
+            if (!auth.currentUser) {
+                 showMessage("Firebase user session not established. Please refresh or try again.", 'error');
+                 console.error("auth.currentUser is null during login form submission.");
+                 addLogEntry("Login Failed: No Firebase user session", { username: enteredUsername });
+                 return;
+            }
+
 
             // Attempt admin login (local check for secret admin)
             if (enteredUsername === SECRET_ADMIN_USER.username && enteredPassword === SECRET_ADMIN_USER.password) {
-                // If the admin user from secret_admin_user needs to be a Firebase Auth user as well,
-                // you would sign them in with signInWithEmailAndPassword here.
-                // For simplicity, we are keeping it as a local check for now.
+                // For the SECRET_ADMIN_USER, we still primarily use the local check for simplicity.
+                // If you want this admin to be a Firebase Auth user, you would create them in Firebase Auth
+                // with an email (e.g., admin@yourdomain.com) and use signInWithEmailAndPassword.
                 handleLoginSuccess(SECRET_ADMIN_USER);
                 return;
             }
 
             // For other users, prioritize Firebase Email/Password Authentication
-            // If the username looks like an email (contains @ and .)
-            if (enteredUsername.includes('@') && enteredUsername.includes('.')) {
+            if (enteredUsername.includes('@') && enteredUsername.includes('.')) { // Simple check for email format
                 try {
                     console.log(`Attempting Firebase Email/Password login for: ${enteredUsername}`);
                     const userCredential = await signInWithEmailAndPassword(auth, enteredUsername, enteredPassword);
                     const firebaseUser = userCredential.user;
                     console.log("Firebase Email/Password login successful:", firebaseUser.uid);
 
-                    // Try to find matching user details from z.html or use Firebase user info
                     let displayUser = users.find(u => u.username.toLowerCase() === enteredUsername) || {
                         username: firebaseUser.email,
                         name: firebaseUser.displayName || firebaseUser.email,
@@ -940,6 +989,8 @@
                 );
                 if (foundUserFromZHtml) {
                     console.log('Login successful via z.html (insecure) for user:', foundUserFromZHtml.username);
+                    // For z.html users, we assume an anonymous Firebase Auth session exists.
+                    // The handleLoginSuccess will then store their z.html details with this anonymous UID.
                     handleLoginSuccess(foundUserFromZHtml);
                     addLogEntry("Local Z.html Login (Insecure)", { user: enteredUsername });
                 } else {
@@ -958,13 +1009,23 @@
                 showMessage("Firebase authentication is not ready yet. Please wait a moment and try again.", 'info');
                 return;
             }
+            
+            // It's possible that onAuthStateChanged signed in anonymously, but then the user clicks Google Login.
+            // signInWithPopup usually handles linking the anonymous account automatically,
+            // but explicitly ensuring auth.currentUser here provides clearer intent.
+            if (!auth.currentUser) {
+                showMessage("Firebase user session not established. Please refresh or try again.", 'error');
+                console.error("auth.currentUser is null before Google sign-in popup.");
+                addLogEntry("Google Login Failed: No Firebase user session", {});
+                return;
+            }
 
             try {
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
                 console.log("Google Sign-In successful:", user);
 
-                // Use Firebase user info for display, potentially blending with z.html data if available
+                // Try to find matching user details from z.html or use Firebase user info
                 let displayUser = users.find(u => u.username.toLowerCase() === user.email?.toLowerCase()) || {
                     username: user.email,
                     name: user.displayName,
@@ -981,8 +1042,6 @@
                 } else if (error.code === 'auth/cancelled-popup-request') {
                     errorMessage = "Popup blocked or already open.";
                 } else if (error.code === 'auth/account-exists-with-different-credential') {
-                     // Handle case where user tries to sign in with Google, but an account
-                     // already exists with the same email using a different provider (e.g., email/password)
                      errorMessage = `An account already exists with this email using a different login method.`;
                      console.warn(errorMessage, "Provider ID:", error.customData.email, error.credential.providerId);
                 }
@@ -1035,7 +1094,7 @@
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser) {
                 showPanel(accountManagementPanel);
-                renderAccountManagementPanel(loggedInUser);
+                renderAccountManagementPanel(loggedInUser); // Pass localStorage data, but panel will prioritize Firebase Auth
                 addLogEntry("Account Management Panel Opened", { user: loggedInUser.username });
             } else {
                 showMessage("Please log in to manage your account.", 'info');
@@ -1048,7 +1107,10 @@
             if (loggedInUser && loggedInUser.isAdmin) {
                 showPanel(adminPanel);
             } else {
-                showPanel(loginForm); // Or main app page
+                // If not admin, they are a regular user. We should send them back to the
+                // account management panel's equivalent of "main app screen", which for now
+                // is just the login form itself, or perhaps a placeholder main app screen.
+                showPanel(loginForm); // Or navigate to a 'main_app_page.html'
             }
         });
 
