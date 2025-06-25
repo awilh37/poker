@@ -298,7 +298,7 @@
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp, 'user-data'); // Using named database 'user-data'
+        const db = getFirestore(firebaseApp, 'wps-database'); // Using named database 'wps-database'
         const auth = getAuth(firebaseApp);
         const googleProvider = new GoogleAuthProvider();
 
