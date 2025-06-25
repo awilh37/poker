@@ -384,6 +384,10 @@
         const userRolesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_roles`);
         const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
 
+        // Initially disable login buttons until Firebase Auth is ready
+        loginButton.disabled = true;
+        googleLoginButton.disabled = true;
+
 
         // --- Log System Functions (Firestore Integrated) ---
         async function addLogEntry(action, details = {}) {
@@ -777,8 +781,7 @@
         // Function to fetch initial user data (from z.html)
         async function fetchInitialUserData() {
             loadingIndicator.classList.remove('hidden');
-            loginButton.disabled = true;
-            googleLoginButton.disabled = true;
+            // Login buttons disabled here as a global state, re-enabled after auth check in onAuthStateChanged
             try {
                 addLogEntry("Attempting to fetch initial user data from z.html");
                 const response = await fetch('https://awilh37.github.io/data/z.html');
@@ -808,8 +811,7 @@
                 addLogEntry("Initial user data fetch failed", { error: error.message });
             } finally {
                 loadingIndicator.classList.add('hidden');
-                loginButton.disabled = false;
-                googleLoginButton.disabled = false;
+                // Buttons enabled by onAuthStateChanged after auth state is determined
             }
         }
 
@@ -856,19 +858,19 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     console.log("Firebase: Authenticated. User ID:", user.uid, "Provider:", user.providerData[0]?.providerId || 'N/A');
+                    firebaseAuthReady = true; // Set readiness to true
+                    loginButton.disabled = false; // Enable login buttons
+                    googleLoginButton.disabled = false;
+
                     await fetchInitialUserData(); // Fetch initial user data from z.html
                     setupFirestoreListeners();    // Set up real-time Firestore listeners
-                    firebaseAuthReady = true; // Set readiness to true AFTER listeners are set up
 
                     // Check for a saved login state in localStorage
                     const storedUser = localStorage.getItem('loggedInUser');
                     if (storedUser) {
                         try {
                             const loggedInUser = JSON.parse(storedUser);
-                            // If localStorage has a user, and Firebase Auth also has a user,
-                            // ensure they are consistent or use the Firebase one as primary truth.
-                            // Here, we re-handle login to ensure display is based on Firebase Auth.
-                            handleLoginSuccess(loggedInUser); // Use localStorage data for display
+                            handleLoginSuccess(loggedInUser);
                         } catch (e) {
                             console.error("Error parsing stored user data from localStorage:", e);
                             localStorage.removeItem('loggedInUser'); // Clear invalid data
@@ -877,9 +879,7 @@
                         }
                     } else {
                         // If Firebase Auth has a user but localStorage doesn't,
-                        // this means a new Firebase session (e.g., from direct Google login)
-                        // or previous localStorage was cleared.
-                        // Create a temporary user object from Firebase data for handleLoginSuccess.
+                        // create a display user from Firebase data.
                         const displayUser = {
                             username: user.email || user.uid,
                             name: user.displayName || user.email || 'Anonymous User',
@@ -906,6 +906,8 @@
                             showMessage(`Firebase authentication failed: ${error.message}. Firestore features may not work.`, 'error');
                         } finally {
                             firebaseAuthReady = true;
+                            loginButton.disabled = false; // Enable login buttons after auth attempt
+                            googleLoginButton.disabled = false;
                             await fetchInitialUserData();
                             setupFirestoreListeners();
                         }
@@ -917,6 +919,8 @@
                         showPanel(loginForm); // Ensure login form is visible
                         logoutButton.classList.add('hidden'); // Ensure logout button is hidden
                         isLoggingOut = false; // Reset the flag
+                        loginButton.disabled = false; // Enable login buttons
+                        googleLoginButton.disabled = false;
                     }
                 }
             });
@@ -938,8 +942,10 @@
                 console.warn("Login attempt before Firebase authentication is ready.");
                 return;
             }
+            // The !auth.currentUser check below is a secondary safeguard. The buttons should be disabled
+            // if auth.currentUser is not yet established.
             if (!auth.currentUser) {
-                 showMessage("Firebase user session not established. Please refresh or try again.", 'error');
+                 showMessage("A Firebase user session could not be established. Please refresh or try again.", 'error');
                  console.error("auth.currentUser is null during login form submission.");
                  addLogEntry("Login Failed: No Firebase user session", { username: enteredUsername });
                  return;
@@ -1010,11 +1016,10 @@
                 return;
             }
             
-            // It's possible that onAuthStateChanged signed in anonymously, but then the user clicks Google Login.
-            // signInWithPopup usually handles linking the anonymous account automatically,
-            // but explicitly ensuring auth.currentUser here provides clearer intent.
+            // The !auth.currentUser check below is a secondary safeguard. The buttons should be disabled
+            // if auth.currentUser is not yet established.
             if (!auth.currentUser) {
-                showMessage("Firebase user session not established. Please refresh or try again.", 'error');
+                showMessage("A Firebase user session could not be established. Please refresh or try again.", 'error');
                 console.error("auth.currentUser is null before Google sign-in popup.");
                 addLogEntry("Google Login Failed: No Firebase user session", {});
                 return;
