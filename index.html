@@ -354,7 +354,29 @@
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
         let firestoreActivityLogs = []; // Stores logs fetched from Firestore
 
-        const ROLES = ['Member', 'Moderator', 'Admin', 'Banned']; // Defined roles for the system
+        const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
+
+
+        // --- Role Helper Functions ---
+        function getCurrentUserRole(uid) {
+            if (!uid) return 'player'; // Default for cases where UID might be null
+            return firestoreUserRoles[uid]?.role || 'player'; // Default to 'player'
+        }
+
+        function isOwner(uid) {
+            if (!uid) return false;
+            // SUPER_ADMIN_UID is always considered an owner for bootstrapping purposes.
+            // Otherwise, explicit 'owner' role is required.
+            return uid === SUPER_ADMIN_UID || getCurrentUserRole(uid) === 'owner';
+        }
+
+        function hasAdminAccess(uid) {
+            if (!uid) return false;
+            const role = getCurrentUserRole(uid);
+            // SUPER_ADMIN_UID, 'owner', or 'admin' roles grant admin panel access.
+            return uid === SUPER_ADMIN_UID || role === 'owner' || role === 'admin';
+        }
+
 
         // Firestore Collection References (implicitly pointing to 'user-data' database)
         const userRolesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_roles`);
@@ -497,30 +519,76 @@
 
         // --- User Management Functions (Firestore Integrated) ---
         async function saveUserRolesToFirestore(rolesMap) {
-            if (!auth.currentUser || (auth.currentUser.uid !== SUPER_ADMIN_UID && firestoreUserRoles[auth.currentUser.uid]?.role !== 'admin')) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to save user roles.", 'error');
+                addLogEntry("Save Roles Attempt Failed", { reason: "Permission denied", by: auth.currentUser?.uid });
                 return;
             }
 
+            const currentUserIsOwner = isOwner(auth.currentUser.uid);
+
             showMessage("Saving user roles...", 'info');
             try {
-                const oldRolesMap = firestoreUserRoles;
+                // Fetch current roles directly from Firestore for a more robust oldRolesMap
+                // This helps if the local firestoreUserRoles is slightly stale, though listeners should keep it fresh.
+                const rolesSnapshot = await getDocs(userRolesCollectionRef);
+                const currentFirestoreRoles = {};
+                rolesSnapshot.forEach(doc => {
+                    currentFirestoreRoles[doc.id] = doc.data();
+                });
 
                 for (const uid in rolesMap) {
                     const newRole = rolesMap[uid];
-                    const docRef = doc(userRolesCollectionRef, uid);
+                    const oldRole = currentFirestoreRoles[uid]?.role || 'player'; // Default to 'player'
 
-                    if (oldRolesMap[uid]?.role !== newRole) { // Only update if role actually changed
+                    // **Permission checks for assigning roles**
+                    // 1. Only an owner (or SUPER_ADMIN_UID) can assign the 'owner' role.
+                    if (newRole === 'owner' && !currentUserIsOwner) {
+                        showMessage(`You do not have permission to assign the 'owner' role to ${uid}.`, 'error');
+                        addLogEntry("Assign Owner Role Failed", { targetUser: uid, attemptedBy: auth.currentUser.uid, reason: "Not an owner" });
+                        continue; // Skip this user
+                    }
+
+                    // 2. An admin cannot change an owner's role. Only another owner can.
+                    if (oldRole === 'owner' && uid !== auth.currentUser.uid && !currentUserIsOwner) {
+                         showMessage(`You do not have permission to change the role of an owner (${uid}).`, 'error');
+                         addLogEntry("Modify Owner Role Failed", { targetUser: uid, attemptedBy: auth.currentUser.uid, reason: "Target is owner, user is not" });
+                         continue; // Skip this user
+                    }
+
+                    // 3. Prevent SUPER_ADMIN_UID from being changed to anything other than 'owner' by anyone, including self if not careful.
+                    //    SUPER_ADMIN_UID should always retain owner-equivalent privileges.
+                    //    Best practice: SUPER_ADMIN's role is 'owner' in Firestore or they are implicitly owner.
+                    //    This table should ideally disable editing for SUPER_ADMIN_UID.
+                    if (uid === SUPER_ADMIN_UID && newRole !== 'owner') {
+                        showMessage(`The SUPER_ADMIN account (${uid}) role cannot be changed from 'owner'.`, 'error');
+                        addLogEntry("SUPER_ADMIN Role Change Blocked", { targetUser: uid, attemptedRole: newRole, by: auth.currentUser.uid });
+                        continue;
+                    }
+
+                    // 4. Prevent last owner from disabling/demoting themselves (SUPER_ADMIN_UID is a fallback)
+                    if (uid === auth.currentUser.uid && currentUserIsOwner && (newRole === 'disabled' || newRole === 'player' || newRole === 'admin')) {
+                        const owners = Object.keys(firestoreUserRoles).filter(id => firestoreUserRoles[id]?.role === 'owner');
+                        if (owners.length === 1 && owners[0] === uid && uid !== SUPER_ADMIN_UID) { // Only one explicit owner, and it's the current user (not SUPER_ADMIN)
+                           showMessage("You cannot demote or disable the last owner account. Assign 'owner' to another user first.", 'error');
+                           addLogEntry("Last Owner Demotion Blocked", { user: uid, newRole: newRole });
+                           continue;
+                        }
+                    }
+
+
+                    const docRef = doc(userRolesCollectionRef, uid);
+                    if (oldRole !== newRole) { // Only update if role actually changed
                         await setDoc(docRef, { role: newRole }, { merge: true });
                         addLogEntry("User Role Changed", {
                             targetUser: uid,
-                            oldRole: oldRolesMap[uid]?.role || 'Member',
+                            oldRole: oldRole,
                             newRole: newRole,
                             by: auth.currentUser.email || auth.currentUser.uid
                         });
                     }
                 }
-                showMessage("User roles saved to Firestore.", 'success');
+                showMessage("User roles processed and saved to Firestore.", 'success');
             } catch (e) {
                 console.error("Error saving user roles to Firestore:", e);
                 showMessage("Failed to save user roles to Firestore.", 'error');
@@ -535,18 +603,25 @@
                 return;
             }
 
+            const currentUserId = auth.currentUser?.uid;
+            const currentUserIsAdminOrOwner = hasAdminAccess(currentUserId);
+            const currentUserIsOwner = isOwner(currentUserId);
+
+
             allFirebaseUsersData.forEach(user => {
                 const row = userRolesTableBody.insertRow();
                 const userIdCell = row.insertCell();
                 const userEmailCell = row.insertCell();
                 const userRoleCell = row.insertCell();
 
-                userIdCell.textContent = user.uid; // Display UID
-                userEmailCell.textContent = user.email || 'N/A'; // Display email
+                userIdCell.textContent = user.uid;
+                userEmailCell.textContent = user.email || 'N/A';
 
                 const select = document.createElement('select');
                 select.className = 'border rounded-lg p-1';
-                select.setAttribute('data-uid', user.uid); // Use UID as data attribute
+                select.setAttribute('data-uid', user.uid);
+
+                const userCurrentRole = getCurrentUserRole(user.uid);
 
                 ROLES.forEach(role => {
                     const option = document.createElement('option');
@@ -555,12 +630,51 @@
                     select.appendChild(option);
                 });
 
-                select.value = firestoreUserRoles[user.uid]?.role || 'Member'; // Set role from Firestore
+                select.value = userCurrentRole;
 
-                // Disable select for the super admin or if the current user is not admin
-                if (user.uid === SUPER_ADMIN_UID || (auth.currentUser.uid !== SUPER_ADMIN_UID && firestoreUserRoles[auth.currentUser.uid]?.role !== 'admin')) {
-                    select.disabled = true;
+                // **Disable select element based on permissions**
+                let disableSelect = false;
+                // 1. If current user doesn't have admin access at all, all selects are disabled.
+                if (!currentUserIsAdminOrOwner) {
+                    disableSelect = true;
+                } else {
+                    // 2. SUPER_ADMIN_UID's role dropdown should be disabled to prevent accidental changes.
+                    //    Their role is implicitly 'owner' or should be set to 'owner' in Firestore.
+                    if (user.uid === SUPER_ADMIN_UID) {
+                        disableSelect = true;
+                        select.value = 'owner'; // Visually reflect owner status
+                    }
+                    // 3. If the target user is an 'owner' and the current user is not an 'owner', disable.
+                    //    (Admins cannot change Owners' roles).
+                    else if (userCurrentRole === 'owner' && !currentUserIsOwner) {
+                        disableSelect = true;
+                    }
+                    // 4. If the role option is 'owner' and the current user is not an 'owner', that specific option should be disabled.
+                    //    (Admins cannot assign 'owner' to anyone).
+                    //    This is handled per-option below.
                 }
+                select.disabled = disableSelect;
+
+                // Disable the 'owner' option if the current user is not an owner.
+                if (!currentUserIsOwner) {
+                    const ownerOption = select.querySelector('option[value="owner"]');
+                    if (ownerOption) {
+                        ownerOption.disabled = true;
+                    }
+                }
+
+                // Prevent last owner from disabling/demoting self via dropdown directly
+                // This is a UI hint; server-side/save function has the definitive check.
+                if (user.uid === currentUserId && currentUserIsOwner) {
+                    const ownersInFirestore = Object.keys(firestoreUserRoles).filter(id => firestoreUserRoles[id]?.role === 'owner');
+                    if (ownersInFirestore.length === 1 && ownersInFirestore[0] === user.uid && user.uid !== SUPER_ADMIN_UID) {
+                        ['disabled', 'player', 'admin'].forEach(roleToDisable => {
+                            const option = select.querySelector(`option[value="${roleToDisable}"]`);
+                            if (option) option.disabled = true;
+                        });
+                    }
+                }
+
 
                 userRoleCell.appendChild(select);
             });
@@ -665,8 +779,36 @@
                 dataLoadedAndListenersSetup = true;
             }
 
+            let userRole = getCurrentUserRole(user.uid); // Use helper, defaults to 'player'
+
+            // Ensure SUPER_ADMIN_UID has 'owner' role in Firestore for consistency and explicitness.
+            // The helper functions (isOwner, hasAdminAccess) will grant privileges regardless,
+            // but this makes the database state match the effective permissions.
+            if (user.uid === SUPER_ADMIN_UID && userRole !== 'owner') {
+                // Check against the raw firestoreUserRoles as getCurrentUserRole would default to 'player' if not set
+                if (firestoreUserRoles[user.uid]?.role !== 'owner') {
+                    console.log(`SUPER_ADMIN_UID (${user.uid}) logged in. Ensuring 'owner' role is set in Firestore.`);
+                    const superAdminRoleRef = doc(userRolesCollectionRef, user.uid);
+                    try {
+                        await setDoc(superAdminRoleRef, { role: 'owner' }, { merge: true });
+                        firestoreUserRoles[user.uid] = { role: 'owner' }; // Update local cache
+                        userRole = 'owner'; // Update userRole for the current execution context
+                        addLogEntry("SUPER_ADMIN Role Initialized/Verified", { uid: user.uid });
+                        console.log(`SUPER_ADMIN_UID (${user.uid}) role set to 'owner' in Firestore.`);
+                    } catch (e) {
+                        console.error("CRITICAL: Failed to set SUPER_ADMIN_UID role to 'owner' in Firestore:", e);
+                        showMessage("Critical: Failed to initialize SUPER_ADMIN role. Contact support.", "error");
+                        // Depending on policy, might want to halt login or restrict SUPER_ADMIN if this fails.
+                        // For now, proceed as helper functions provide override.
+                    }
+                } else {
+                     // If firestoreUserRoles already shows 'owner' (e.g. from listener update after another owner set it)
+                    userRole = 'owner';
+                }
+            }
+
+
             // Ensure a user profile exists in Firestore for the logged-in Firebase user
-            // This is crucial to capture new users who log in for the first time
             if (user) {
                 const userProfileRef = doc(userProfilesCollectionRef, user.uid);
                 await setDoc(userProfileRef, {
@@ -675,37 +817,53 @@
                     displayName: user.displayName || null,
                     photoURL: user.photoURL || null,
                     lastLogin: new Date().toISOString(),
-                    // Initialize role if it doesn't exist. This will be updated by the listener.
-                    role: firestoreUserRoles[user.uid]?.role || 'Member'
+                    role: userRole // Ensure profile reflects the determined role
                 }, { merge: true });
-                console.log("User profile updated/created in Firestore:", user.uid);
+                console.log("User profile updated/created in Firestore:", user.uid, "with role:", userRole);
             }
 
-            // After data is loaded and listeners are set up (and roles are synced),
-            // determine the user's role and show the appropriate panel.
-            const userRole = firestoreUserRoles[user.uid]?.role || 'Member';
-            const isAdmin = (user.uid === SUPER_ADMIN_UID || userRole === 'admin');
+            // ** 'Disabled' role check - This is handled in Step 3 of the plan, will be added here later **
+
+            // Determine admin access and prepare user data for local storage
+            const userHasAdminAccess = hasAdminAccess(user.uid);
 
             const finalUserForLocalStorage = {
                 username: user.email || user.uid,
                 name: user.displayName || user.email || 'Anonymous User',
                 profilePic: user.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U',
-                isAdmin: isAdmin,
+                hasAdminAccess: userHasAdminAccess, // Updated field name
                 firebaseUid: user.uid,
                 role: userRole
             };
-
             localStorage.setItem('loggedInUser', JSON.stringify(finalUserForLocalStorage));
 
-            showMessage(`Welcome, ${finalUserForLocalStorage.name}!`, 'success');
+            // ** 'Disabled' role check **
+            if (userRole === 'disabled') {
+                showMessage("Your account has been disabled. Please contact an administrator.", 'error');
+                addLogEntry("Disabled Account Login Attempt", { user: finalUserForLocalStorage.username, firebaseUid: user.uid });
+                // Ensure logout happens and no further UI is shown for a disabled user
+                // We need to make sure handleLogout doesn't try to re-trigger onAuthStateChanged logic that might re-run this.
+                // The isLoggingOut flag in handleLogout should prevent immediate re-login attempts.
+                // No need to show other panels or buttons.
+                isLoggingOut = true; // Set flag to prevent onAuthStateChanged from re-processing login
+                handleLogout(); // This will clear local storage and sign out from Firebase
+                showPanel(loginButtonsContainer); // Explicitly show login buttons after logout
+                messageBox.classList.remove('hidden'); // Ensure the disabled message stays visible
+                loadingIndicator.classList.add('hidden'); // Hide loading indicator
+                return; // Stop further execution for disabled users
+            }
+
+            // Show welcome message (or disabled message later)
+            showMessage(`Welcome, ${finalUserForLocalStorage.name}! Role: ${userRole}`, 'success');
             
-            if (finalUserForLocalStorage.isAdmin) {
+            if (userHasAdminAccess) {
                 showPanel(adminPanel);
-                addLogEntry("Admin Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid });
+                addLogEntry("Admin Panel Access", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole });
             } else {
-                showPanel(accountManagementPanel);
+                // Non-admins (e.g., 'player') see account management or a different default panel
+                showPanel(accountManagementPanel); // Assuming this is the default for 'player'
                 renderAccountManagementPanel(finalUserForLocalStorage);
-                addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid });
+                addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole });
             }
             logoutButton.classList.remove('hidden');
         }
@@ -785,15 +943,33 @@
                     const currentUser = auth.currentUser;
                     if (currentUser) {
                         const storedUser = JSON.parse(localStorage.getItem('loggedInUser'));
-                        if (storedUser) {
-                            const currentRole = firestoreUserRoles[currentUser.uid]?.role || 'Member';
-                            const isAdminUser = (currentUser.uid === SUPER_ADMIN_UID || currentRole === 'admin');
-                            if (storedUser.isAdmin !== isAdminUser) {
-                                console.log("Real-time: Admin status changed by roles listener, re-rendering UI.");
-                                storedUser.isAdmin = isAdminUser;
-                                storedUser.role = currentRole;
+                        if (storedUser && currentUser.uid === storedUser.firebaseUid) { // Ensure it's the currently logged-in user
+                             const newRoleDeterminedByListener = getCurrentUserRole(currentUser.uid);
+                             const newHasAdminAccess = hasAdminAccess(currentUser.uid);
+
+                             // Check if either role or admin access status has changed
+                             if (storedUser.role !== newRoleDeterminedByListener || storedUser.hasAdminAccess !== newHasAdminAccess) {
+                                 console.log(`Real-time: Role/access changed by listener for ${currentUser.uid}. Old role: ${storedUser.role}, New: ${newRoleDeterminedByListener}. Old AdminAccess: ${storedUser.hasAdminAccess}, New: ${newHasAdminAccess}`);
+
+                                 storedUser.role = newRoleDeterminedByListener;
+                                 storedUser.hasAdminAccess = newHasAdminAccess;
                                 localStorage.setItem('loggedInUser', JSON.stringify(storedUser));
-                                if (isAdminUser) {
+
+                                 // Handle 'disabled' role immediately if applied mid-session
+                                 if (newRoleDeterminedByListener === 'disabled') {
+                                    showMessage("Your account has been disabled. Please contact an administrator.", 'error');
+                                    addLogEntry("Account Disabled Mid-Session", { user: currentUser.email || currentUser.uid });
+                                    handleLogout(); // Force logout
+                                    // Resolve promise here as further UI updates for this user are irrelevant
+                                    if (!initialRolesLoadDone) {
+                                        initialRolesLoadDone = true;
+                                        console.log("Firestore: Initial User Roles loaded (resolved after disabled check).");
+                                        resolve();
+                                    }
+                                    return; // Stop further processing for this user in the listener
+                                 }
+
+                                 if (newHasAdminAccess) {
                                     showPanel(adminPanel);
                                 } else {
                                     showPanel(accountManagementPanel);
@@ -993,18 +1169,19 @@
         // --- Admin Panel Button Event Listeners ---
         manageUsersButton.addEventListener('click', () => {
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (loggedInUser && loggedInUser.isAdmin) {
+            // Use the new 'hasAdminAccess' field from localStorage
+            if (loggedInUser && loggedInUser.hasAdminAccess) {
                 showPanel(userManagementPanel);
-                renderUserRolesTable();
-                addLogEntry("User Management Panel Opened", { user: loggedInUser.username });
+                renderUserRolesTable(); // This will apply new role-based disabling of options
+                addLogEntry("User Management Panel Opened", { user: loggedInUser.username, role: loggedInUser.role });
             } else {
                 showMessage("You do not have administrative access to manage users.", 'error');
-                addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User' });
+                addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
             }
         });
 
         hideUserManagementButton.addEventListener('click', () => {
-            showPanel(adminPanel);
+            showPanel(adminPanel); // Assuming only admins/owners see this button in the first place
         });
 
         saveUserRolesButton.addEventListener('click', collectAndSaveRoles);
@@ -1013,14 +1190,14 @@
         // Event listeners for log viewer buttons
         viewLogsButton.addEventListener('click', () => {
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (loggedInUser && loggedInUser.isAdmin) {
+            if (loggedInUser && loggedInUser.hasAdminAccess) {
                 showPanel(logViewer);
                 populateLogFilterTypes();
                 renderLogs();
-                addLogEntry("View Logs Button Clicked", { user: loggedInUser.username });
+                addLogEntry("View Logs Button Clicked", { user: loggedInUser.username, role: loggedInUser.role });
             } else {
                  showMessage("You do not have administrative access to view logs.", 'error');
-                 addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User' });
+                 addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
             }
         });
 
