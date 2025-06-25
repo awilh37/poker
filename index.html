@@ -138,7 +138,7 @@
             <p class="text-gray-600 mb-6">
                 Welcome, Administrator! From here, you can manage users, game data, and other aspects of the WPS system.
                 <br>
-                <strong class="text-red-500">Note: User management will now only show the default admin. For full user management, a Firebase Authentication user list would be required.</strong>
+                <strong class="text-red-500">Note: User management will now only show users who have logged in via Firebase Auth.</strong>
             </p>
             <div class="space-y-4">
                 <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
@@ -163,26 +163,28 @@
         <div id="userManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md">
             <h3 class="text-2xl font-bold text-gray-700 mb-4 text-center">User Management</h3>
             <p class="text-gray-600 mb-4 text-center">
-                This panel currently only shows the local admin user for role assignment. For full Firebase user management, this section would need to query Firebase Authentication user list (requires server-side or Cloud Functions).
+                Assign roles to users who have logged in.
+                <br>
+                <strong class="text-red-500">Important: This is a client-side role management for demonstration. For production, consider using Firebase Cloud Functions for secure role assignment.</strong>
             </p>
             <div class="overflow-x-auto">
                 <table class="user-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Username</th>
+                            <th>User ID (UID)</th>
+                            <th>Email</th>
                             <th>Role</th>
                         </tr>
                     </thead>
                     <tbody id="userRolesTableBody">
                         <!-- User rows will be rendered here -->
-                        <tr><td colspan="3" class="text-center text-gray-500">No users to manage.</td></tr>
+                        <tr><td colspan="3" class="text-center text-gray-500">Loading users...</td></tr>
                     </tbody>
                 </table>
             </div>
             <div class="flex justify-between space-x-2 mt-4">
                 <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    Save Roles (No Effect on Firebase Users)
+                    Save Roles
                 </button>
                 <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
                     Hide Panel
@@ -296,27 +298,30 @@
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp);
+        // MODIFIED: Use a named database for Firestore
+        const db = getFirestore(firebaseApp, 'user-data'); // <<< Changed this line!
         const auth = getAuth(firebaseApp);
         const googleProvider = new GoogleAuthProvider();
 
 
         // Track Firebase authentication readiness
         let firebaseAuthReady = false;
-        let isLoggingOut = false; // New flag to track logout state
+        let isLoggingOut = false;
+
+        // --- Super Admin UID (REPLACE WITH YOUR OWN FIREBASE UID FOR INITIAL ADMIN ACCESS) ---
+        // To find your UID: Log in with Google, open browser console, type `auth.currentUser.uid` and press Enter.
+        const SUPER_ADMIN_UID = "Qr3XI0uNYrZ3AECim6XtRvp12MJ2"; // <<< IMPORTANT: DO NOT TOUCH THIS!
 
 
         // --- DOM Elements ---
-        // Removed usernameInput, passwordInput, loginButton
         const loginButtonsContainer = document.getElementById('loginButtonsContainer');
         const googleLoginButton = document.getElementById('googleLoginButton');
-        const emailPasswordLoginButton = document.getElementById('emailPasswordLoginButton'); // Placeholder
+        const emailPasswordLoginButton = document.getElementById('emailPasswordLoginButton');
         const messageBox = document.getElementById('messageBox');
         const logoutButton = document.getElementById('logoutButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const adminPanel = document.getElementById('adminPanel');
 
-        // Admin panel sub-sections
         const manageUsersButton = document.getElementById('manageUsersButton');
         const userManagementPanel = document.getElementById('userManagementPanel');
         const userRolesTableBody = document.getElementById('userRolesTableBody');
@@ -329,7 +334,6 @@
         const clearLogsButton = document.getElementById('clearLogsButton');
         const hideLogsButton = document.getElementById('hideLogsButton');
 
-        // Account Management elements
         const manageAccountButton = document.getElementById('manageAccountButton');
         const accountManagementPanel = document.getElementById('accountManagementPanel');
         const userProfilePic = document.getElementById('userProfilePic');
@@ -340,27 +344,21 @@
         const hideAccountManagementButton = document.getElementById('hideAccountManagementButton');
 
 
-        // Log filtering and sorting elements
         const logFilterType = document.getElementById('logFilterType');
         const logSearchText = document.getElementById('logSearchText');
         const logSortOrderRadios = document.querySelectorAll('input[name="logSortOrder"]');
 
-        let users = []; // This will now just contain the SECRET_ADMIN_USER for management purposes
-        let firestoreUserRoles = {}; // Stores roles fetched from Firestore
+        let allFirebaseUsersData = []; // Will store Firebase user profiles from Firestore `user_profiles`
+        let firestoreUserRoles = {}; // Stores roles fetched from Firestore `user_roles`
         let firestoreActivityLogs = []; // Stores logs fetched from Firestore
 
         const ROLES = ['Member', 'Moderator', 'Banned']; // Defined roles for the system
 
-        const SECRET_ADMIN_USER = {
-            username: 'admin',
-            password: 'secretpassword', // Change this to your desired secret password
-            name: 'Administrator',
-            profilePic: 'https://placehold.co/50x50/ff0000/ffffff?text=ADM'
-        };
-
         // Firestore Collection References
+        // These now implicitly point to the 'user-data' database due to the db initialization above.
         const userRolesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_roles`);
         const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
+        const userProfilesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_profiles`); // New collection for user profiles
 
         // Initially disable login buttons until Firebase Auth is ready
         googleLoginButton.disabled = true;
@@ -369,7 +367,7 @@
 
         // --- Log System Functions (Firestore Integrated) ---
         async function addLogEntry(action, details = {}) {
-            const timestamp = new Date().toISOString(); // Use ISO string for consistent sorting in Firestore
+            const timestamp = new Date().toISOString();
             const log = {
                 timestamp: timestamp,
                 action: action,
@@ -476,23 +474,24 @@
 
         // --- User Management Functions (Firestore Integrated) ---
         async function saveUserRolesToFirestore(rolesMap) {
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to save user roles.", 'error');
+            if (!auth.currentUser || (auth.currentUser.uid !== SUPER_ADMIN_UID && firestoreUserRoles[auth.currentUser.uid]?.role !== 'admin')) {
+                showMessage("You do not have permission to save user roles.", 'error');
                 return;
             }
 
+            showMessage("Saving user roles...", 'info');
             try {
                 const oldRolesMap = firestoreUserRoles;
 
-                for (const username in rolesMap) {
-                    const newRole = rolesMap[username];
-                    const docRef = doc(userRolesCollectionRef, username);
+                for (const uid in rolesMap) {
+                    const newRole = rolesMap[uid];
+                    const docRef = doc(userRolesCollectionRef, uid);
 
-                    if (oldRolesMap[username]?.role !== newRole) {
+                    if (oldRolesMap[uid]?.role !== newRole) {
                         await setDoc(docRef, { role: newRole }, { merge: true });
                         addLogEntry("User Role Changed", {
-                            user: username,
-                            oldRole: oldRolesMap[username]?.role || 'Member',
+                            targetUser: uid,
+                            oldRole: oldRolesMap[uid]?.role || 'Member',
                             newRole: newRole,
                             by: auth.currentUser.email || auth.currentUser.uid
                         });
@@ -508,26 +507,24 @@
 
         function renderUserRolesTable() {
             userRolesTableBody.innerHTML = '';
-            // Only the SECRET_ADMIN_USER is manageable in this simplified setup without z.html
-            const manageableUsers = [SECRET_ADMIN_USER]; // Always include the secret admin
-
-            if (manageableUsers.length === 0) {
-                userRolesTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users to manage.</td></tr>';
+            
+            if (allFirebaseUsersData.length === 0) {
+                userRolesTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users found. Users will appear here after they log in.</td></tr>';
                 return;
             }
 
-            manageableUsers.forEach(user => {
+            allFirebaseUsersData.forEach(user => {
                 const row = userRolesTableBody.insertRow();
-                const userNameCell = row.insertCell();
-                const userUsernameCell = row.insertCell();
+                const userIdCell = row.insertCell();
+                const userEmailCell = row.insertCell();
                 const userRoleCell = row.insertCell();
 
-                userNameCell.textContent = user.name;
-                userUsernameCell.textContent = user.username;
+                userIdCell.textContent = user.uid; // Display UID
+                userEmailCell.textContent = user.email || 'N/A'; // Display email
 
                 const select = document.createElement('select');
                 select.className = 'border rounded-lg p-1';
-                select.setAttribute('data-username', user.username);
+                select.setAttribute('data-uid', user.uid); // Use UID as data attribute
 
                 ROLES.forEach(role => {
                     const option = document.createElement('option');
@@ -536,7 +533,13 @@
                     select.appendChild(option);
                 });
 
-                select.value = firestoreUserRoles[user.username]?.role || 'Member';
+                select.value = firestoreUserRoles[user.uid]?.role || 'Member'; // Set role from Firestore
+
+                // Disable select for the super admin or if the current user is not admin
+                if (user.uid === SUPER_ADMIN_UID || (auth.currentUser.uid !== SUPER_ADMIN_UID && firestoreUserRoles[auth.currentUser.uid]?.role !== 'admin')) {
+                    select.disabled = true;
+                }
+
 
                 userRoleCell.appendChild(select);
             });
@@ -544,12 +547,12 @@
 
         function collectAndSaveRoles() {
             const newRolesMap = {};
-            const roleSelects = userRolesTableBody.querySelectorAll('select[data-username]');
+            const roleSelects = userRolesTableBody.querySelectorAll('select[data-uid]');
 
             roleSelects.forEach(select => {
-                const username = select.getAttribute('data-username');
+                const uid = select.getAttribute('data-uid');
                 const newRole = select.value;
-                newRolesMap[username] = newRole;
+                newRolesMap[uid] = newRole;
             });
             saveUserRolesToFirestore(newRolesMap);
         }
@@ -563,23 +566,23 @@
             userProfilePic.src = displayUser.profilePic || firebaseUser?.photoURL || 'https://placehold.co/100x100/cccccc/ffffff?text=U';
             userProfilePic.alt = `${displayUser.name || displayUser.username}'s profile picture`;
             currentUserName.textContent = displayUser.name || firebaseUser?.displayName || 'N/A';
-            currentUserUsername.textContent = `Email: ${displayUser.username || firebaseUser?.email || 'N/A'}`; // Changed to Email
+            currentUserUsername.textContent = `Email: ${displayUser.username || firebaseUser?.email || 'N/A'}`;
 
             let providerId = 'Unknown';
             if (firebaseUser) {
                 const providers = firebaseUser.providerData.map(p => p.providerId);
                 if (providers.includes('google.com')) {
                     providerId = 'Google';
-                    linkGoogleAccountButton.classList.add('hidden'); // Already linked with Google
+                    linkGoogleAccountButton.classList.add('hidden');
                 } else if (providers.includes('password')) {
                     providerId = 'Email/Password';
-                    linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google
+                    linkGoogleAccountButton.classList.remove('hidden');
                 } else if (providers.includes('anonymous')) {
                     providerId = 'Anonymous';
-                    linkGoogleAccountButton.classList.remove('hidden'); // Can link to Google
+                    linkGoogleAccountButton.classList.remove('hidden');
                 }
             } else {
-                providerId = 'No Firebase Session'; // Should not happen if this panel is shown
+                providerId = 'No Firebase Session';
                 linkGoogleAccountButton.classList.remove('hidden');
             }
             currentUserProvider.textContent = `Provider: ${providerId}`;
@@ -601,7 +604,7 @@
                     username: linkedUser.email || linkedUser.uid,
                     name: linkedUser.displayName || linkedUser.email,
                     profilePic: linkedUser.photoURL,
-                    isAdmin: linkedUser.email === SECRET_ADMIN_USER.username,
+                    isAdmin: (linkedUser.uid === SUPER_ADMIN_UID || firestoreUserRoles[linkedUser.uid]?.role === 'admin'),
                     firebaseUid: linkedUser.uid
                 };
                 localStorage.setItem('loggedInUser', JSON.stringify(updatedLoggedInUser));
@@ -650,14 +653,35 @@
         }
 
         // Function to handle successful login
-        function handleLoginSuccess(userObjectToDisplay) {
+        async function handleLoginSuccess(userObjectToDisplay) {
             const firebaseUser = auth.currentUser;
+            
+            // Ensure a user profile exists in Firestore for the logged-in Firebase user
+            if (firebaseUser) {
+                const userProfileRef = doc(userProfilesCollectionRef, firebaseUser.uid);
+                await setDoc(userProfileRef, {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email || null,
+                    displayName: firebaseUser.displayName || null,
+                    photoURL: firebaseUser.photoURL || null,
+                    lastLogin: new Date().toISOString()
+                }, { merge: true });
+                console.log("User profile updated/created in Firestore:", firebaseUser.uid);
+            }
+
+            const userRoleDoc = firestoreUserRoles[firebaseUser?.uid];
+            const userRole = userRoleDoc?.role || 'Member';
+
+            const isAdmin = (firebaseUser?.uid === SUPER_ADMIN_UID || userRole === 'admin');
+
+
             const finalUserForLocalStorage = {
-                username: firebaseUser?.email || userObjectToDisplay.username || firebaseUser?.uid,
-                name: firebaseUser?.displayName || userObjectToDisplay.name,
-                profilePic: firebaseUser?.photoURL || userObjectToDisplay.profilePic,
-                isAdmin: userObjectToDisplay.username === SECRET_ADMIN_USER.username,
-                firebaseUid: firebaseUser?.uid
+                username: firebaseUser?.email || firebaseUser?.uid,
+                name: firebaseUser?.displayName || firebaseUser?.email || 'Anonymous User',
+                profilePic: firebaseUser?.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U',
+                isAdmin: isAdmin,
+                firebaseUid: firebaseUser?.uid,
+                role: userRole
             };
 
             localStorage.setItem('loggedInUser', JSON.stringify(finalUserForLocalStorage));
@@ -666,11 +690,11 @@
             
             if (finalUserForLocalStorage.isAdmin) {
                 showPanel(adminPanel);
-                addLogEntry("Admin Login", { user: finalUserForLocalStorage.username });
+                addLogEntry("Admin Login", { user: finalUserForLocalStorage.username, firebaseUid: firebaseUser?.uid });
             } else {
                 showPanel(accountManagementPanel);
                 renderAccountManagementPanel(finalUserForLocalStorage);
-                addLogEntry("User Login", { user: finalUserForLocalStorage.username });
+                addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: firebaseUser?.uid });
             }
             logoutButton.classList.remove('hidden');
         }
@@ -680,7 +704,7 @@
             const loggedInUser = localStorage.getItem('loggedInUser');
             if (loggedInUser) {
                 const user = JSON.parse(loggedInUser);
-                addLogEntry("Logout", { user: user.username, isAdmin: user.isAdmin });
+                addLogEntry("Logout", { user: user.username, isAdmin: user.isAdmin, firebaseUid: user.firebaseUid });
             } else {
                  addLogEntry("Logout", { user: "Unknown" });
             }
@@ -697,34 +721,39 @@
 
             localStorage.removeItem('loggedInUser');
             showMessage('You have been logged out.', 'info');
-            showPanel(loginButtonsContainer); // Show login buttons directly
+            showPanel(loginButtonsContainer);
             logoutButton.classList.add('hidden');
-            // No need to clear username/password inputs as they are removed
         }
 
-        // --- Initial Data Loading (Simplified since z.html is removed) ---
+        // --- Initial Data Loading ---
         async function loadInitialData() {
             loadingIndicator.classList.remove('hidden');
             try {
-                // Since z.html is removed, 'users' array will only contain SECRET_ADMIN_USER
-                users = [SECRET_ADMIN_USER]; // Initialize users array with just the admin
+                // Fetch all user profiles from Firestore `user_profiles` collection
+                const querySnapshot = await getDocs(userProfilesCollectionRef);
+                allFirebaseUsersData = [];
+                querySnapshot.forEach(doc => {
+                    allFirebaseUsersData.push(doc.data());
+                });
+                console.log("Loaded Firebase user profiles:", allFirebaseUsersData.length);
+
                 showMessage("System ready. Please sign in with Google.", 'info');
                 addLogEntry("Application Initialized");
 
             } catch (error) {
-                console.error("Failed to initialize local data:", error);
+                console.error("Failed to initialize local data / fetch user profiles:", error);
                 showMessage(`Failed to load initial data: ${error.message}.`, 'error');
                 addLogEntry("Initial data load failed", { error: error.message });
             } finally {
                 loadingIndicator.classList.add('hidden');
-                // Re-enable login buttons here after initial data (even minimal) is ready
                 googleLoginButton.disabled = false;
-                emailPasswordLoginButton.disabled = false; // Still disabled but enable the button
+                emailPasswordLoginButton.disabled = false;
             }
         }
 
         // --- Firestore Real-time Listeners ---
         function setupFirestoreListeners() {
+            // Listen for changes in user roles
             onSnapshot(userRolesCollectionRef, (snapshot) => {
                 const newRoles = {};
                 snapshot.forEach(doc => {
@@ -735,10 +764,47 @@
                 if (!userManagementPanel.classList.contains('hidden')) {
                     renderUserRolesTable();
                 }
+                // Re-evaluate admin status if roles change while logged in
+                const currentUser = auth.currentUser;
+                if (currentUser) {
+                    const storedUser = JSON.parse(localStorage.getItem('loggedInUser'));
+                    if (storedUser) {
+                         const currentRole = firestoreUserRoles[currentUser.uid]?.role || 'Member';
+                         const isAdmin = (currentUser.uid === SUPER_ADMIN_UID || currentRole === 'admin');
+                         if (storedUser.isAdmin !== isAdmin) {
+                             console.log("Admin status changed, re-rendering UI.");
+                             storedUser.isAdmin = isAdmin;
+                             storedUser.role = currentRole;
+                             localStorage.setItem('loggedInUser', JSON.stringify(storedUser));
+                             if (isAdmin) {
+                                showPanel(adminPanel);
+                             } else {
+                                showPanel(accountManagementPanel);
+                                renderAccountManagementPanel(storedUser);
+                             }
+                         }
+                    }
+                }
             }, (error) => {
                 console.error("Firestore: Error listening to user roles:", error);
                 showMessage("Error: Could not sync user roles from cloud.", 'error');
             });
+
+            // Listen for changes in user profiles (to update the user management table)
+            onSnapshot(userProfilesCollectionRef, (snapshot) => {
+                allFirebaseUsersData = [];
+                snapshot.forEach(doc => {
+                    allFirebaseUsersData.push(doc.data());
+                });
+                console.log("Firestore: User Profiles updated:", allFirebaseUsersData.length);
+                if (!userManagementPanel.classList.contains('hidden')) {
+                    renderUserRolesTable();
+                }
+            }, (error) => {
+                console.error("Firestore: Error listening to user profiles:", error);
+                showMessage("Error: Could not sync user profiles from cloud.", 'error');
+            });
+
 
             onSnapshot(activityLogsCollectionRef, (snapshot) => {
                 const newLogs = [];
@@ -762,17 +828,15 @@
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // User is authenticated (from Google, Email/Password, or custom token from Canvas)
+                    // User is authenticated
                     console.log("Firebase: Authenticated. User ID:", user.uid, "Provider:", user.providerData[0]?.providerId || 'N/A');
                     firebaseAuthReady = true;
-                    // Ensure buttons are enabled after auth state is confirmed
                     googleLoginButton.disabled = false;
                     emailPasswordLoginButton.disabled = false;
 
-                    await loadInitialData(); // Load minimal local data (just admin)
-                    setupFirestoreListeners(); // Setup Firestore listeners
+                    await loadInitialData();
+                    setupFirestoreListeners();
 
-                    // Check for a saved login state in localStorage
                     const storedUser = localStorage.getItem('loggedInUser');
                     if (storedUser) {
                         try {
@@ -785,19 +849,19 @@
                             addLogEntry("Corrupted saved login detected (localStorage)");
                         }
                     } else {
-                        // If Firebase Auth has a user but localStorage doesn't, create a display user from Firebase data
+                        // This case handles direct Google sign-in (new session)
                         const displayUser = {
                             username: user.email || user.uid,
                             name: user.displayName || user.email || 'Anonymous User',
                             profilePic: user.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U',
-                            isAdmin: user.email === SECRET_ADMIN_USER.username
+                            isAdmin: (user.uid === SUPER_ADMIN_UID || firestoreUserRoles[user.uid]?.role === 'admin')
                         };
                         handleLoginSuccess(displayUser);
                     }
 
                 } else { // No Firebase user is currently authenticated
                     if (initialAuthToken) {
-                        // In Canvas environment, sign in with custom token provided
+                        // Canvas environment
                         console.log("Firebase: Canvas environment detected. Signing in with custom token.");
                         try {
                             await signInWithCustomToken(auth, initialAuthToken);
@@ -812,7 +876,7 @@
                             setupFirestoreListeners();
                         }
                     } else if (!isLoggingOut) {
-                        // For regular web deployment, show login buttons and don't auto-authenticate
+                        // Regular web deployment, not logged out manually
                         console.log("Firebase: Not authenticated. Displaying login options.");
                         firebaseAuthReady = true;
                         googleLoginButton.disabled = false;
@@ -835,9 +899,6 @@
             });
         });
 
-
-        // Removed event listener for loginForm.submit as it no longer exists
-
         // Event listener for Google Login Button (primary login method)
         googleLoginButton.addEventListener('click', async () => {
             console.log('Google Login button clicked.');
@@ -849,13 +910,10 @@
             }
             
             try {
-                // If an anonymous user exists from previous session (unlikely with new flow, but safe to handle)
-                // or if no user, signInWithPopup will handle it.
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
                 console.log("Google Sign-In successful:", user);
 
-                // Use Firebase user info directly for display and storage
                 let displayUser = {
                     username: user.email,
                     name: user.displayName,
@@ -892,9 +950,16 @@
 
         // --- Admin Panel Button Event Listeners ---
         manageUsersButton.addEventListener('click', () => {
-            showPanel(userManagementPanel);
-            renderUserRolesTable();
-            addLogEntry("User Management Panel Opened", { user: SECRET_ADMIN_USER.username });
+            // Only show if current user is admin
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (loggedInUser && loggedInUser.isAdmin) {
+                showPanel(userManagementPanel);
+                renderUserRolesTable();
+                addLogEntry("User Management Panel Opened", { user: loggedInUser.username });
+            } else {
+                showMessage("You do not have administrative access to manage users.", 'error');
+                addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User' });
+            }
         });
 
         hideUserManagementButton.addEventListener('click', () => {
@@ -906,10 +971,17 @@
 
         // Event listeners for log viewer buttons
         viewLogsButton.addEventListener('click', () => {
-            showPanel(logViewer);
-            populateLogFilterTypes();
-            renderLogs();
-            addLogEntry("View Logs Button Clicked", { user: localStorage.getItem('loggedInUser') ? JSON.parse(localStorage.getItem('loggedInUser')).username : 'Unknown' });
+            // Only show if current user is admin
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (loggedInUser && loggedInUser.isAdmin) {
+                showPanel(logViewer);
+                populateLogFilterTypes();
+                renderLogs();
+                addLogEntry("View Logs Button Clicked", { user: loggedInUser.username });
+            } else {
+                 showMessage("You do not have administrative access to view logs.", 'error');
+                 addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User' });
+            }
         });
 
         hideLogsButton.addEventListener('click', () => {
@@ -942,7 +1014,7 @@
             if (loggedInUser && loggedInUser.isAdmin) {
                 showPanel(adminPanel);
             } else {
-                showPanel(loginButtonsContainer); // Go back to login options
+                showPanel(loginButtonsContainer);
             }
         });
 
