@@ -111,13 +111,7 @@
                 </svg>
                 Sign In with Google
             </button>
-            <button
-                type="button"
-                id="emailPasswordLoginButton"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105"
-            >
-                Sign In with Email/Password (Placeholder)
-            </button>
+            <!-- Email/Password button removed -->
         </div>
 
 
@@ -318,7 +312,7 @@
         // --- DOM Elements ---
         const loginButtonsContainer = document.getElementById('loginButtonsContainer');
         const googleLoginButton = document.getElementById('googleLoginButton');
-        const emailPasswordLoginButton = document.getElementById('emailPasswordLoginButton');
+        // const emailPasswordLoginButton = document.getElementById('emailPasswordLoginButton'); // Removed
         const messageBox = document.getElementById('messageBox');
         const logoutButton = document.getElementById('logoutButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
@@ -1111,7 +1105,7 @@
                     // Reset data/listener flag when no user is authenticated
                     dataLoadedAndListenersSetup = false; 
                     googleLoginButton.disabled = false;
-                    emailPasswordLoginButton.disabled = false;
+                    // emailPasswordLoginButton.disabled = false; // Removed
                 }
             });
         });
@@ -1156,11 +1150,7 @@
             }
         });
 
-        // Placeholder for Email/Password Login
-        emailPasswordLoginButton.addEventListener('click', () => {
-            showMessage("Email/Password login is not yet implemented. Please use Google Sign-In.", 'info');
-            addLogEntry("Email/Password Login Button Clicked", { status: "Not Implemented" });
-        });
+        // Email/Password Login event listener removed.
 
 
         // Event listener for logout button
