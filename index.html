@@ -126,12 +126,12 @@
             Logout
         </button>
 
-        <!-- "View Logged-in Users" Button (Initially hidden) -->
+        <!-- "View User Directory" Button (Initially hidden) -->
         <button
-            id="viewLoggedInUsersButton"
+            id="viewUserDirectoryButton"
             class="hidden mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
         >
-            View Logged-in Users
+            View User Directory
         </button>
 
         <!-- Admin Panel (Initially hidden) -->
@@ -176,6 +176,7 @@
                             <th>Display Name</th>
                             <th>Chip Count</th>
                             <th>Role</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="userRolesTableBody">
@@ -274,8 +275,8 @@
             </div>
         </div>
 
-        <!-- All Users Panel (Initially hidden, repurposed from LoggedInUsersPanel) -->
-        <div id="loggedInUsersPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl lg:max-w-2xl">
+        <!-- User Directory Panel -->
+        <div id="userDirectoryPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl lg:max-w-2xl">
             <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">User Directory</h3>
             <div class="overflow-x-auto">
                 <table class="user-table text-sm md:text-base">
@@ -283,9 +284,10 @@
                         <tr>
                             <th>Display Name</th>
                             <th>Chip Count</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="loggedInUsersTableBody">
+                    <tbody id="userDirectoryTableBody">
                         <!-- User rows will be rendered here by JavaScript -->
                         <tr><td colspan="2" class="text-center text-gray-500 py-4">Loading...</td></tr>
                     </tbody>
@@ -371,10 +373,10 @@
         const linkGoogleAccountButton = document.getElementById('linkGoogleAccountButton');
         const hideAccountManagementButton = document.getElementById('hideAccountManagementButton');
 
-        const viewLoggedInUsersButton = document.getElementById('viewLoggedInUsersButton');
-        const loggedInUsersPanel = document.getElementById('loggedInUsersPanel'); // This is the div for the User Directory
-        const loggedInUsersTableBody = document.getElementById('loggedInUsersTableBody'); // This is the tbody for the User Directory
-        const hideUserDirectoryPanelButton = document.getElementById('hideUserDirectoryPanelButton'); // Updated ID
+        const viewUserDirectoryButton = document.getElementById('viewUserDirectoryButton'); // Changed ID
+        const userDirectoryPanel = document.getElementById('userDirectoryPanel');
+        const userDirectoryTableBody = document.getElementById('userDirectoryTableBody');
+        const hideUserDirectoryPanelButton = document.getElementById('hideUserDirectoryPanelButton');
 
 
         const logFilterType = document.getElementById('logFilterType');
@@ -419,7 +421,7 @@
 
         // --- Utility Functions ---
         function showPanel(panelToShow) {
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, logViewer, accountManagementPanel, loggedInUsersPanel, loadingIndicator];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, logViewer, accountManagementPanel, userDirectoryPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -685,11 +687,12 @@
             userRolesTableBody.innerHTML = '';
             
             if (allFirebaseUsersData.length === 0) {
-                userRolesTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users found. Users will appear here after they log in.</td></tr>';
+                userRolesTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">No users found. Users will appear here after they log in.</td></tr>'; // Colspan updated
                 return;
             }
 
             const currentUserId = auth.currentUser?.uid;
+            const activeSessionUIDs = firestoreActiveSessions.map(session => session.id); // Get active UIDs
             const currentUserIsAdminOrOwner = hasAdminAccess(currentUserId);
             const currentUserIsOwner = isOwner(currentUserId);
 
@@ -782,6 +785,40 @@
 
 
                 userRoleCell.appendChild(select);
+
+                // Actions cell
+                const actionsCell = row.insertCell();
+                const forceLogoutButton = document.createElement('button');
+                forceLogoutButton.textContent = 'Force Logout';
+                forceLogoutButton.className = 'bg-red-500 hover:bg-red-700 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed';
+
+                const targetUserRole = userCurrentRole; // Role of the user in the row
+                const targetUserIsOnline = activeSessionUIDs.includes(user.uid);
+
+                let disableLogoutButton = false;
+
+                if (user.uid === currentUserId) { // Cannot logout self
+                    disableLogoutButton = true;
+                } else if (!targetUserIsOnline) { // Cannot logout an offline user
+                    disableLogoutButton = true;
+                } else {
+                    if (currentUserIsOwner) {
+                        // Owners can log out anyone (except self, handled above)
+                        disableLogoutButton = false;
+                    } else if (currentUserIsAdminOrOwner) { // Current user is Admin (but not Owner)
+                        if (targetUserRole === 'owner' || targetUserRole === 'admin') {
+                            disableLogoutButton = true; // Admins cannot log out other Admins or Owners
+                        }
+                    } else { // Current user has no admin/owner access (should not happen if they see the panel, but defensive)
+                        disableLogoutButton = true;
+                    }
+                }
+
+                forceLogoutButton.disabled = disableLogoutButton;
+                if (!disableLogoutButton) {
+                    forceLogoutButton.onclick = () => forceLogoutUser(user.uid, formatDisplayName(user));
+                }
+                actionsCell.appendChild(forceLogoutButton);
             });
         }
 
@@ -816,6 +853,61 @@
         }
         // --- End User Management Functions ---
 
+        // --- Admin: Force Logout User ---
+        async function forceLogoutUser(targetUid, targetUserDisplayName) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to force logout users.", 'error');
+                addLogEntry("Force Logout Attempt Failed", { reason: "Permission denied", targetUser: targetUid, by: auth.currentUser?.uid });
+                return;
+            }
+
+            // Additional permission checks (partially redundant with button disabling logic, but good for direct calls)
+            const currentUserId = auth.currentUser.uid;
+            const currentUserIsOwner = isOwner(currentUserId);
+            const targetUserRole = getCurrentUserRole(targetUid);
+
+            if (targetUid === currentUserId) {
+                showMessage("You cannot force logout yourself.", 'error');
+                return;
+            }
+
+            // This check is primarily for direct calls; button logic should prevent this UI-wise for admins.
+            if (!currentUserIsOwner && (targetUserRole === 'owner' || targetUserRole === 'admin')) {
+                showMessage("Admins cannot force logout other Admins or Owners.", 'error');
+                addLogEntry("Force Logout Attempt Denied", { reason: "Admin tried to log out admin/owner", targetUser: targetUid, by: currentUserId });
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to force logout ${targetUserDisplayName || targetUid}? This will remove their active session marker.`)) {
+                return;
+            }
+
+            showMessage(`Forcing logout for ${targetUserDisplayName || targetUid}...`, 'info');
+            try {
+                const activeSessionRef = doc(activeSessionsCollectionRef, targetUid);
+                await deleteDoc(activeSessionRef);
+
+                addLogEntry("User Forced Logout", {
+                    targetUser: targetUid,
+                    targetUserName: targetUserDisplayName || 'N/A',
+                    byUser: auth.currentUser.email || currentUserId
+                });
+                showMessage(`${targetUserDisplayName || targetUid} has been marked as logged out. Their status will update shortly.`, 'success');
+
+                // Re-render the user management table to update button states (e.g., logout button for the user just logged out should become disabled)
+                if (!userManagementPanel.classList.contains('hidden')) {
+                    renderUserRolesTable();
+                }
+                // The User Directory table will auto-update if visible due to its own listener on activeSessionsCollectionRef.
+
+            } catch (error) {
+                console.error("Error forcing user logout:", error);
+                showMessage(`Failed to force logout for ${targetUserDisplayName || targetUid}.`, 'error');
+                addLogEntry("Force Logout Failed", { targetUser: targetUid, error: error.message, by: currentUserId });
+            }
+        }
+
+
         // --- "User Directory" Panel Functions (formerly Logged-in Users Panel) ---
         async function showUserDirectoryPanel() { // Renamed and made async
             showPanel(loggedInUsersPanel); // loggedInUsersPanel is the ID of the div
@@ -835,10 +927,13 @@
             }
         }
 
-        async function renderUserDirectoryTable() { // Renamed and made async
-            loggedInUsersTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">Loading users...</td></tr>'; // Update colspan
+        async function renderUserDirectoryTable() {
+            userDirectoryTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">Loading users...</td></tr>'; // Updated colspan for 3 columns
 
             try {
+                // Ensure firestoreActiveSessions is available for status check
+                const activeSessionUIDs = firestoreActiveSessions.map(session => session.id);
+
                 const querySnapshot = await getDocs(userProfilesCollectionRef);
                 const users = [];
                 querySnapshot.forEach(doc => {
@@ -848,14 +943,14 @@
                 loggedInUsersTableBody.innerHTML = ''; // Clear existing rows
 
                 if (users.length === 0) {
-                    loggedInUsersTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-gray-500 py-4">No users found in the directory.</td></tr>'; // Update colspan
+                    userDirectoryTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users found in the directory.</td></tr>'; // Updated colspan
                     return;
                 }
 
                 // Sort users by displayName, case-insensitive
                 users.sort((a, b) => {
-                    const nameA = a.displayName?.toLowerCase() || '';
-                    const nameB = b.displayName?.toLowerCase() || '';
+                    const nameA = (formatDisplayName(a) || '').toLowerCase();
+                    const nameB = (formatDisplayName(b) || '').toLowerCase();
                     if (nameA < nameB) return -1;
                     if (nameA > nameB) return 1;
                     return 0;
@@ -865,14 +960,24 @@
                     const row = loggedInUsersTableBody.insertRow();
                     const displayNameCell = row.insertCell();
                     const chipCountCell = row.insertCell();
+                    const statusCell = row.insertCell();
 
                     displayNameCell.textContent = formatDisplayName(user);
-                    chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0'; // Default to 0 if undefined
+                    chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0';
+
+                    // Determine status
+                    if (activeSessionUIDs.includes(user.uid)) {
+                        statusCell.textContent = 'Online';
+                        statusCell.className = 'text-green-600 font-semibold';
+                    } else {
+                        statusCell.textContent = 'Offline';
+                        statusCell.className = 'text-gray-500';
+                    }
                 });
 
             } catch (error) {
                 console.error("Error fetching user profiles for directory:", error);
-                loggedInUsersTableBody.innerHTML = '<tr><td colspan="2" class="text-center text-red-500 py-4">Error loading users.</td></tr>';
+                userDirectoryTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-red-500 py-4">Error loading users.</td></tr>'; // Updated colspan
                 showMessage("Could not load user directory.", "error");
             }
         }
@@ -1088,12 +1193,12 @@
                 addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole });
             }
             logoutButton.classList.remove('hidden');
-            // Show viewLoggedInUsersButton if user has appropriate role
+            // Show viewUserDirectoryButton if user has appropriate role
             const userRoleForButton = finalUserForLocalStorage.role;
             if (userRoleForButton === 'player' || userRoleForButton === 'admin' || userRoleForButton === 'owner') {
-                viewLoggedInUsersButton.classList.remove('hidden');
+                viewUserDirectoryButton.classList.remove('hidden');
             } else {
-                viewLoggedInUsersButton.classList.add('hidden');
+                viewUserDirectoryButton.classList.add('hidden');
             }
         }
 
@@ -1147,11 +1252,11 @@
             userManagementPanel.classList.add('hidden');
             logViewer.classList.add('hidden');
             accountManagementPanel.classList.add('hidden');
-            if (document.getElementById('loggedInUsersPanel')) { // Check if it exists yet
-                document.getElementById('loggedInUsersPanel').classList.add('hidden');
+            if (userDirectoryPanel) {
+                userDirectoryPanel.classList.add('hidden');
             }
-            if (document.getElementById('viewLoggedInUsersButton')) { // Check if it exists yet
-                document.getElementById('viewLoggedInUsersButton').classList.add('hidden');
+            if (viewUserDirectoryButton) {
+                viewUserDirectoryButton.classList.add('hidden');
             }
         }
 
@@ -1335,11 +1440,10 @@
                     firestoreActiveSessions = newSessions;
                     console.log("Firestore: Active Sessions snapshot processed. Sessions count:", firestoreActiveSessions.length);
 
-                    // If the logged-in users panel (now User Directory) is currently visible, re-render it
-                    // This specific panel is now populated on-demand when opened, not via this activeSessions listener.
-                    // if (!loggedInUsersPanel.classList.contains('hidden')) {
-                    // renderUserDirectoryTable(); // No longer call from here; it fetches all profiles.
-                    // }
+                    // If the User Directory panel is currently visible, re-render it to update statuses
+                    if (userDirectoryPanel && !userDirectoryPanel.classList.contains('hidden')) {
+                        renderUserDirectoryTable();
+                    }
 
                     if (!initialSessionsLoadDone) {
                         initialSessionsLoadDone = true;
@@ -1548,10 +1652,10 @@
         linkGoogleAccountButton.addEventListener('click', handleGoogleLink);
 
         // --- User Directory Panel Button Event Listeners ---
-        viewLoggedInUsersButton.addEventListener('click', () => { // ID of the button remains viewLoggedInUsersButton
+        viewUserDirectoryButton.addEventListener('click', () => {
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser && (loggedInUser.role === 'player' || loggedInUser.role === 'admin' || loggedInUser.role === 'owner')) {
-                showUserDirectoryPanel(); // Call updated function
+                showUserDirectoryPanel();
             } else {
                 showMessage("You do not have permission to view this.", 'error');
                  addLogEntry("View User Directory Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
