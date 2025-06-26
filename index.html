@@ -440,6 +440,29 @@
             messageBox.classList.add('hidden');
         }
 
+        // --- Helper function to format display names ---
+        function formatDisplayName(user) {
+            if (!user || typeof user.displayName !== 'string' || typeof user.email !== 'string') {
+                // Return a fallback if essential user properties are missing or not strings
+                return (user && typeof user.displayName === 'string') ? user.displayName : (user && typeof user.email === 'string' ? user.email : 'N/A');
+            }
+
+            let displayName = user.displayName;
+            // Ensure email is present and is a string before trying to operate on it
+            if (user.email && typeof user.email === 'string') {
+                const emailParts = user.email.split('@');
+                if (emailParts.length === 2) {
+                    const emailDomain = emailParts[1].toLowerCase();
+                    if (emailDomain === 'wrsdk12.net') {
+                        if (!displayName.endsWith(" (School)")) {
+                            displayName += " (School)";
+                        }
+                    }
+                }
+            }
+            return displayName;
+        }
+
 
         // --- Log System Functions (Firestore Integrated) ---
         async function addLogEntry(action, details = {}) {
@@ -679,7 +702,7 @@
                 const chipCountCell = row.insertCell(); // New cell for chip count
                 const userRoleCell = row.insertCell();
 
-                displayNameCell.textContent = user.displayName || user.email || 'N/A'; // Display name, fallback to email
+                displayNameCell.textContent = formatDisplayName(user); // Use helper to format display name
 
                 // Chip count input
                 const chipInput = document.createElement('input');
@@ -709,24 +732,32 @@
                 select.value = userCurrentRole;
 
                 // **Disable select element and chip input based on permissions**
-                let disableFields = false; // Combined flag for both role select and chip input
+                let disableRoleSelect = false;
+                let disableChipInput = false;
+
                 // 1. If current user doesn't have admin access at all, all fields are disabled.
                 if (!currentUserIsAdminOrOwner) {
-                    disableFields = true;
+                    disableRoleSelect = true;
+                    disableChipInput = true;
                 } else {
-                    // 2. SUPER_ADMIN_UID's role dropdown and chip input should be disabled.
+                    // 2. SUPER_ADMIN_UID's role dropdown should always be disabled.
+                    //    Chip input for SUPER_ADMIN_UID can be edited by an owner.
                     if (user.uid === SUPER_ADMIN_UID) {
-                        disableFields = true;
+                        disableRoleSelect = true;
                         select.value = 'owner'; // Visually reflect owner status
+                        if (!currentUserIsOwner) { // Non-owners cannot edit SUPER_ADMIN's chips
+                            disableChipInput = true;
+                        }
                     }
-                    // 3. If the target user is an 'owner' and the current user is not an 'owner', disable fields.
-                    //    (Admins cannot change Owners' roles or chip counts).
+                    // 3. If the target user is an 'owner' and the current user is not an 'owner' (and target is not SUPER_ADMIN, handled above)
+                    //    (Admins cannot change other Owners' roles or chip counts).
                     else if (userCurrentRole === 'owner' && !currentUserIsOwner) {
-                        disableFields = true;
+                        disableRoleSelect = true;
+                        disableChipInput = true;
                     }
                 }
-                select.disabled = disableFields;
-                chipInput.disabled = disableFields; // Disable chip input based on the same logic
+                select.disabled = disableRoleSelect;
+                chipInput.disabled = disableChipInput;
 
                 // Specific option disabling for roles (doesn't apply to chip_count input directly)
                 // Disable the 'owner' role option if the current user is not an owner.
@@ -835,7 +866,7 @@
                     const displayNameCell = row.insertCell();
                     const chipCountCell = row.insertCell();
 
-                    displayNameCell.textContent = user.displayName || 'N/A';
+                    displayNameCell.textContent = formatDisplayName(user);
                     chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0'; // Default to 0 if undefined
                 });
 
@@ -1020,7 +1051,7 @@
 
             const finalUserForLocalStorage = {
                 username: user.email || user.uid,
-                name: user.displayName || user.email || 'Anonymous User',
+                name: formatDisplayName(user), // Format display name here
                 profilePic: user.photoURL || 'https://placehold.co/50x50/cccccc/ffffff?text=U',
                 hasAdminAccess: userHasAdminAccess, // Updated field name
                 firebaseUid: user.uid,
