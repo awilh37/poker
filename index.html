@@ -168,9 +168,7 @@
                 <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Configure Games
                 </button>
-                <button id="viewLogsButton" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    View Activity Logs
-                </button>
+                <!-- "View Activity Logs" button removed -->
                 <button id="manageAccountButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Account Management
                 </button>
@@ -248,51 +246,7 @@
         </div>
 
 
-        <!-- Activity Log Viewer (Initially hidden) -->
-        <div id="logViewer" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg lg:max-w-xl">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">Activity Logs</h3>
-
-            <!-- Log Filters and Sort -->
-            <div class="flex flex-wrap items-center justify-between mb-4 space-y-2 md:space-y-0">
-                <div class="w-full md:w-1/2 pr-0 md:pr-2">
-                    <label for="logFilterType" class="block text-gray-700 text-sm font-semibold mb-1">Filter by Type:</label>
-                    <select id="logFilterType" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
-                        <option value="all">All Types</option>
-                        <!-- Options will be populated by JS -->
-                    </select>
-                </div>
-                <div class="w-full md:w-1/2 pl-0 md:pl-2">
-                    <label for="logSearchText" class="block text-gray-700 text-sm font-semibold mb-1">Search Text:</label>
-                    <input type="text" id="logSearchText" placeholder="Search logs..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base">
-                </div>
-                <div class="w-full mt-3">
-                    <label class="block text-gray-700 text-sm font-semibold mb-1">Sort Order:</label>
-                    <div class="flex items-center space-x-4 text-sm md:text-base">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="logSortOrder" value="newest" checked class="form-radio text-blue-600">
-                            <span class="ml-2 text-gray-700">Newest First</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="logSortOrder" value="oldest" class="form-radio text-blue-600">
-                            <span class="ml-2 text-gray-700">Oldest First</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div id="logEntries" class="max-h-60 md:max-h-80 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white mb-4 text-xs md:text-sm">
-                <!-- Log entries will be rendered here -->
-                <p class="text-gray-500 text-center">No logs yet.</p>
-            </div>
-            <div class="flex justify-between space-x-2">
-                <button id="clearLogsButton" class="w-1/2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Clear Logs
-                </button>
-                <button id="hideLogsButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Hide Logs
-                </button>
-            </div>
-        </div>
+        <!-- Activity Log Viewer (REMOVED) -->
 
         <!-- User Directory Panel -->
         <div id="userDirectoryPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl lg:max-w-2xl">
@@ -378,11 +332,11 @@
         const saveUserRolesButton = document.getElementById('saveUserRolesButton');
         const hideUserManagementButton = document.getElementById('hideUserManagementButton');
 
-        const viewLogsButton = document.getElementById('viewLogsButton');
-        const logViewer = document.getElementById('logViewer');
-        const logEntriesContainer = document.getElementById('logEntries');
-        const clearLogsButton = document.getElementById('clearLogsButton');
-        const hideLogsButton = document.getElementById('hideLogsButton');
+        // const viewLogsButton = document.getElementById('viewLogsButton'); // Removed
+        // const logViewer = document.getElementById('logViewer'); // Removed
+        // const logEntriesContainer = document.getElementById('logEntries'); // Removed
+        // const clearLogsButton = document.getElementById('clearLogsButton'); // Removed
+        // const hideLogsButton = document.getElementById('hideLogsButton'); // Removed
 
         const manageAccountButton = document.getElementById('manageAccountButton');
         const accountManagementPanel = document.getElementById('accountManagementPanel');
@@ -403,13 +357,13 @@
         const closeAdminPanelButton = document.getElementById('closeAdminPanelButton');
 
 
-        const logFilterType = document.getElementById('logFilterType');
-        const logSearchText = document.getElementById('logSearchText');
-        const logSortOrderRadios = document.querySelectorAll('input[name="logSortOrder"]');
+        // const logFilterType = document.getElementById('logFilterType'); // Removed
+        // const logSearchText = document.getElementById('logSearchText'); // Removed
+        // const logSortOrderRadios = document.querySelectorAll('input[name="logSortOrder"]'); // Removed
 
         let allFirebaseUsersData = []; // Stores user profiles fetched from Firestore
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
-        let firestoreActivityLogs = []; // Stores logs fetched from Firestore
+        // let firestoreActivityLogs = []; // Removed
         let firestoreActiveSessions = []; // Stores active sessions from Firestore
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
@@ -494,7 +448,8 @@
 
         // --- Utility Functions ---
         function showPanel(panelToShow) {
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, logViewer, accountManagementPanel, userDirectoryPanel, loadingIndicator];
+            // logViewer variable was removed, so it's no longer in this list.
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -540,111 +495,10 @@
 
 
         // --- Log System Functions (Firestore Integrated) ---
-        async function addLogEntry(action, details = {}) {
-            const timestamp = new Date().toISOString();
-            const log = {
-                timestamp: timestamp,
-                action: action,
-                ...details
-            };
-            try {
-                // Ensure auth.currentUser exists before attempting to log to Firestore
-                if (auth.currentUser && auth.currentUser.uid) {
-                    await addDoc(activityLogsCollectionRef, log);
-                    console.log("Log added to Firestore:", log);
-                } else {
-                    console.warn("Firebase Auth not ready or user not authenticated. Logged locally (backup):", log);
-                    // Fallback to local storage for logs if Firebase Auth isn't ready
-                    const logs = JSON.parse(localStorage.getItem('activityLogsBackup') || '[]');
-                    logs.push(log);
-                    localStorage.setItem('activityLogsBackup', JSON.stringify(logs));
-                }
-            } catch (e) {
-                console.error("Error saving log to Firestore:", e);
-                // No showMessage here to avoid message box clutter on every log failure
-            }
-        }
+        // addLogEntry function and its calls are being removed.
 
-        function populateLogFilterTypes() {
-            const uniqueTypes = new Set(firestoreActivityLogs.map(log => log.action));
-            logFilterType.innerHTML = '<option value="all">All Types</option>';
-            uniqueTypes.forEach(type => {
-                const option = document.createElement('option');
-                option.value = type;
-                option.textContent = type;
-                logFilterType.appendChild(option);
-            });
-        }
-
-        function renderLogs() {
-            logEntriesContainer.innerHTML = '';
-            let logsToDisplay = [...firestoreActivityLogs];
-
-            const selectedType = logFilterType.value;
-            const searchText = logSearchText.value.toLowerCase();
-            const sortOrder = document.querySelector('input[name="logSortOrder"]:checked').value;
-
-            let filteredLogs = logsToDisplay.filter(log => {
-                const matchesType = selectedType === 'all' || log.action === selectedType;
-                const logContent = JSON.stringify(log).toLowerCase();
-                const matchesText = logContent.includes(searchText);
-                return matchesType && matchesText;
-            });
-
-            filteredLogs.sort((a, b) => {
-                const dateA = new Date(a.timestamp);
-                const dateB = new Date(b.timestamp);
-                if (sortOrder === 'newest') {
-                    return dateB.getTime() - dateA.getTime();
-                } else {
-                    return dateA.getTime() - dateB.getTime();
-                }
-            });
-
-            if (filteredLogs.length === 0) {
-                logEntriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No matching logs found.</p>';
-                return;
-            }
-
-            filteredLogs.forEach(log => {
-                const logDiv = document.createElement('div');
-                logDiv.className = 'log-entry';
-                let detailsHtml = '';
-                for (const key in log) {
-                    if (key !== 'timestamp' && key !== 'action' && key !== 'id') {
-                        detailsHtml += ` <strong>${key}:</strong> ${log[key]};`;
-                    }
-                }
-                logDiv.innerHTML = `<strong>[${new Date(log.timestamp).toLocaleString()}] ${log.action}:</strong>${detailsHtml}`;
-                logEntriesContainer.appendChild(logDiv);
-            });
-        }
-
-        async function clearLogs() {
-             if (!confirm("Are you sure you want to clear ALL activity logs from Firestore? This cannot be undone.")) {
-                return;
-            }
-
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to clear logs.", 'error');
-                return;
-            }
-
-            showMessage("Clearing logs...", 'info');
-            try {
-                const querySnapshot = await getDocs(activityLogsCollectionRef);
-                const deletePromises = [];
-                querySnapshot.forEach((doc) => {
-                    deletePromises.push(deleteDoc(doc.ref));
-                });
-                await Promise.all(deletePromises);
-                addLogEntry("Logs Cleared", { by: auth.currentUser.uid });
-                showMessage('Activity logs cleared from Firestore.', 'success');
-            } catch (e) {
-                console.error("Error clearing logs from Firestore:", e);
-                showMessage("Failed to clear logs from Firestore.", 'error');
-            }
-        }
+        // Log-related functions populateLogFilterTypes, renderLogs, clearLogs REMOVED.
+        
         // --- End Log System Functions ---
 
 
@@ -652,7 +506,7 @@
         async function saveUserChangesToFirestore(changesMap) { // Renamed and updated parameter
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to save user changes.", 'error');
-                addLogEntry("Save User Changes Attempt Failed", { reason: "Permission denied", by: auth.currentUser?.uid });
+                // addLogEntry("Save User Changes Attempt Failed", { reason: "Permission denied", by: auth.currentUser?.uid }); // Removed
                 return;
             }
 
@@ -679,7 +533,7 @@
                     let chipCountChanged = typeof oldChipCount === 'undefined' || oldChipCount !== newChipCount;
                     if (typeof newChipCount !== 'number') { // Ensure newChipCount is a number before saving
                         showMessage(`Invalid chip count for user ${uid}. Must be a number.`, 'error');
-                        addLogEntry("Invalid Chip Count Input", {targetUser: uid, value: newChipCount});
+                        // addLogEntry("Invalid Chip Count Input", {targetUser: uid, value: newChipCount}); // Removed
                         continue; // Skip this user if chip count is not a number
                     }
 
@@ -692,7 +546,7 @@
                     if (uid === SUPER_ADMIN_UID) {
                         if (newRole !== 'owner') {
                             showMessage(`SUPER_ADMIN (${uid}) role cannot be changed from 'owner'.`, 'error');
-                            addLogEntry("SUPER_ADMIN Role Change Blocked", { attemptedRole: newRole, by: auth.currentUser.uid });
+                            // addLogEntry("SUPER_ADMIN Role Change Blocked", { attemptedRole: newRole, by: auth.currentUser.uid }); // Removed
                             roleChanged = false; // Do not proceed with role change
                         }
                         // For SUPER_ADMIN, only allow chip count change if current user is owner (which SUPER_ADMIN is).
@@ -702,26 +556,26 @@
                         // This server-side check ensures it.
                         if (!currentUserIsOwner && chipCountChanged) {
                              showMessage(`Chip count for SUPER_ADMIN (${uid}) cannot be changed by non-owners.`, 'error');
-                             addLogEntry("SUPER_ADMIN Chip Count Change Blocked", { by: auth.currentUser.uid });
+                             // addLogEntry("SUPER_ADMIN Chip Count Change Blocked", { by: auth.currentUser.uid }); // Removed
                              chipCountChanged = false; // Do not proceed
                         }
                     }
                     // 1. Only an owner can assign the 'owner' role.
                     else if (newRole === 'owner' && !currentUserIsOwner) {
                         showMessage(`You do not have permission to assign 'owner' role to ${uid}.`, 'error');
-                        addLogEntry("Assign Owner Role Failed", { targetUser: uid, by: auth.currentUser.uid });
+                        // addLogEntry("Assign Owner Role Failed", { targetUser: uid, by: auth.currentUser.uid }); // Removed
                         roleChanged = false;
                     }
                     // 2. An admin cannot change an owner's role or chip count. Only another owner can.
                     else if (oldRole === 'owner' && !currentUserIsOwner) {
                         if (roleChanged) {
                             showMessage(`You do not have permission to change role of owner ${uid}.`, 'error');
-                            addLogEntry("Modify Owner Role Failed", { targetUser: uid, by: auth.currentUser.uid });
+                            // addLogEntry("Modify Owner Role Failed", { targetUser: uid, by: auth.currentUser.uid }); // Removed
                             roleChanged = false;
                         }
                         if (chipCountChanged) {
                             showMessage(`You do not have permission to change chip count of owner ${uid}.`, 'error');
-                            addLogEntry("Modify Owner Chip Count Failed", { targetUser: uid, by: auth.currentUser.uid });
+                            // addLogEntry("Modify Owner Chip Count Failed", { targetUser: uid, by: auth.currentUser.uid }); // Removed
                             chipCountChanged = false;
                         }
                     }
@@ -731,7 +585,7 @@
                         // Check against currentFirestoreRoles which is fresh from DB
                         if (ownersInFirestore.length === 1 && ownersInFirestore[0] === uid && uid !== SUPER_ADMIN_UID) {
                            showMessage("Cannot demote the last owner. Assign 'owner' to another user first.", 'error');
-                           addLogEntry("Last Owner Demotion Blocked", { user: uid, newRole: newRole });
+                           // addLogEntry("Last Owner Demotion Blocked", { user: uid, newRole: newRole }); // Removed
                            roleChanged = false;
                         }
                     }
@@ -740,13 +594,13 @@
                     if (roleChanged) {
                         const roleDocRef = doc(userRolesCollectionRef, uid);
                         await setDoc(roleDocRef, { role: newRole }, { merge: true });
-                        addLogEntry("User Role Changed", { targetUser: uid, oldRole, newRole, by: auth.currentUser.email });
+                        // addLogEntry("User Role Changed", { targetUser: uid, oldRole, newRole, by: auth.currentUser.email }); // Removed
                     }
 
                     if (chipCountChanged && typeof newChipCount === 'number') { // Double check it's a number
                         const profileDocRef = doc(userProfilesCollectionRef, uid);
                         await setDoc(profileDocRef, { chip_count: newChipCount }, { merge: true });
-                        addLogEntry("User Chip Count Changed", { targetUser: uid, oldChipCount: oldChipCount === undefined ? "N/A" : oldChipCount, newChipCount, by: auth.currentUser.email });
+                        // addLogEntry("User Chip Count Changed", { targetUser: uid, oldChipCount: oldChipCount === undefined ? "N/A" : oldChipCount, newChipCount, by: auth.currentUser.email }); // Removed
                     }
                 }
                 showMessage("User changes processed and saved to Firestore.", 'success');
@@ -932,7 +786,7 @@
 
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to force logout users.", 'error');
-                addLogEntry("Force Logout Attempt Failed", { reason: "Permission denied", targetUser: targetUid, by: auth.currentUser?.uid });
+                // addLogEntry("Force Logout Attempt Failed", { reason: "Permission denied", targetUser: targetUid, by: auth.currentUser?.uid }); // Removed
                 console.error("Force logout permission denied for current user:", auth.currentUser?.uid); // Debug log
                 return;
             }
@@ -951,7 +805,7 @@
             // This check is primarily for direct calls; button logic should prevent this UI-wise for admins.
             if (!currentUserIsOwner && (targetUserRole === 'owner' || targetUserRole === 'admin')) {
                 showMessage("Admins cannot force logout other Admins or Owners.", 'error');
-                addLogEntry("Force Logout Attempt Denied", { reason: "Admin tried to log out admin/owner", targetUser: targetUid, by: currentUserId });
+                // addLogEntry("Force Logout Attempt Denied", { reason: "Admin tried to log out admin/owner", targetUser: targetUid, by: currentUserId }); // Removed
                 return;
             }
 
@@ -972,11 +826,11 @@
                 await deleteDoc(activeSessionRef);
                 console.log(`Successfully deleted active session doc for UID: ${targetUid}`); // Debug log
                 
-                addLogEntry("User Forced Logout", { 
-                    targetUser: targetUid, 
-                    targetUserName: targetUserDisplayName || 'N/A',
-                    byUser: auth.currentUser.email || currentUserId 
-                });
+                // addLogEntry("User Forced Logout", { 
+                //     targetUser: targetUid, 
+                //     targetUserName: targetUserDisplayName || 'N/A',
+                //     byUser: auth.currentUser.email || currentUserId 
+                // }); // Removed
                 showMessage(`${targetUserDisplayName || targetUid} has been marked as logged out. Their status will update shortly.`, 'success');
                 
                 // Re-render the user management table to update button states (e.g., logout button for the user just logged out should become disabled)
@@ -989,7 +843,7 @@
             } catch (error) {
                 console.error("Error during force logout Firestore operation:", error); // Debug log
                 showMessage(`Failed to force logout for ${targetUserDisplayName || targetUid}. Error: ${error.message}`, 'error');
-                addLogEntry("Force Logout Failed", { targetUser: targetUid, error: error.message, by: currentUserId });
+                // addLogEntry("Force Logout Failed", { targetUser: targetUid, error: error.message, by: currentUserId }); // Removed
             }
         }
 
@@ -1254,7 +1108,7 @@
             // ** 'Disabled' role check **
             if (userRole === 'disabled') {
                 showMessage("Your account has been disabled. Please contact an administrator.", 'error');
-                addLogEntry("Disabled Account Login Attempt", { user: finalUserForLocalStorage.username, firebaseUid: user.uid });
+                // addLogEntry("Disabled Account Login Attempt", { user: finalUserForLocalStorage.username, firebaseUid: user.uid }); // Removed
                 // Ensure logout happens and no further UI is shown for a disabled user
                 // We need to make sure handleLogout doesn't try to re-trigger onAuthStateChanged logic that might re-run this.
                 // The isLoggingOut flag in handleLogout should prevent immediate re-login attempts.
@@ -1269,6 +1123,7 @@
 
             // Show welcome message
             showMessage(`Welcome, ${finalUserForLocalStorage.name}! Role: ${userRole}`, 'success');
+            // addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole }); // Removed general login, covered by specific Google success/fail
             
             // Show neutral view with main action buttons, hide all content panels initially
             showPanel(null); // This will hide adminPanel, accountManagementPanel, userDirectoryPanel etc.
@@ -1308,13 +1163,13 @@
             if (loggedInUserString) {
                 const user = JSON.parse(loggedInUserString);
                 firebaseUidToClear = user.firebaseUid; // Get UID before clearing localStorage
-                addLogEntry("Logout", { user: user.username, isAdmin: user.hasAdminAccess, firebaseUid: user.firebaseUid });
+                // addLogEntry("Logout", { user: user.username, isAdmin: user.hasAdminAccess, firebaseUid: user.firebaseUid }); // Removed
             } else if (auth.currentUser) {
                 // Fallback if localStorage was cleared but auth session still exists
                 firebaseUidToClear = auth.currentUser.uid;
-                addLogEntry("Logout", { user: auth.currentUser.email || "Unknown (from auth)", firebaseUid: auth.currentUser.uid });
+                // addLogEntry("Logout", { user: auth.currentUser.email || "Unknown (from auth)", firebaseUid: auth.currentUser.uid }); // Removed
             } else {
-                 addLogEntry("Logout", { user: "Unknown" });
+                 // addLogEntry("Logout", { user: "Unknown" }); // Removed
             }
 
             isLoggingOut = true;
@@ -1352,7 +1207,7 @@
             // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
             userManagementPanel.classList.add('hidden');
-            logViewer.classList.add('hidden');
+            // logViewer.classList.add('hidden'); // logViewer removed
             accountManagementPanel.classList.add('hidden');
             if (userDirectoryPanel) { 
                 userDirectoryPanel.classList.add('hidden');
@@ -1402,7 +1257,7 @@
             } catch (error) {
                 console.error("Failed to fetch user profiles:", error);
                 showMessage(`Failed to load user data: ${error.message}.`, 'error');
-                addLogEntry("Initial data load failed", { error: error.message });
+                // addLogEntry("Initial data load failed", { error: error.message }); // Removed
             }
         }
 
@@ -1447,7 +1302,7 @@
                                  // Handle 'disabled' role immediately if applied mid-session
                                  if (newRoleDeterminedByListener === 'disabled') {
                                     showMessage("Your account has been disabled. Please contact an administrator.", 'error');
-                                    addLogEntry("Account Disabled Mid-Session", { user: currentUser.email || currentUser.uid });
+                                    // addLogEntry("Account Disabled Mid-Session", { user: currentUser.email || currentUser.uid }); // Removed
                                     handleLogout(); // Force logout
                                     // Resolve promise here as further UI updates for this user are irrelevant
                                     if (!initialRolesLoadDone) {
@@ -1505,29 +1360,7 @@
                 });
             });
 
-            // Promise for Activity Logs
-            const logsPromise = new Promise((resolve, reject) => {
-                let initialLogsLoadDone = false;
-                const unsubscribeLogs = onSnapshot(activityLogsCollectionRef, (snapshot) => {
-                    const newLogs = [];
-                    snapshot.forEach(doc => {
-                        newLogs.push({ id: doc.id, ...doc.data() });
-                    });
-                    firestoreActivityLogs = newLogs;
-                    console.log("Firestore: Activity Logs snapshot processed. Logs count:", firestoreActivityLogs.length);
-                    populateLogFilterTypes();
-                    renderLogs(); // This renders if log viewer is open
-                    if (!initialLogsLoadDone) {
-                        initialLogsLoadDone = true;
-                        console.log("Firestore: Initial Activity Logs loaded.");
-                        resolve();
-                    }
-                }, (error) => {
-                    console.error("Firestore: Error listening to activity logs:", error);
-                    showMessage("Error: Could not sync activity logs from cloud.", 'error');
-                    reject(error);
-                });
-            });
+            // Promise for Activity Logs (REMOVED)
 
             // Promise for Active Sessions
             const activeSessionsPromise = new Promise((resolve, reject) => {
@@ -1558,7 +1391,7 @@
                 // Consider storing unsubscribeSessions if needed
             });
 
-            return Promise.all([rolesPromise, profilesPromise, logsPromise, activeSessionsPromise]);
+            return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise]); // Removed logsPromise
         }
 
 
@@ -1637,7 +1470,7 @@
         // Event listener for Google Login Button (primary login method)
         googleLoginButton.addEventListener('click', async () => {
             console.log('Google Login button clicked.');
-            addLogEntry("Google Login Attempt");
+            // addLogEntry("Google Login Attempt"); // Removed
 
             if (!firebaseAuthReady) {
                 showMessage("Firebase authentication is not ready yet. Please wait a moment and try again.", 'info');
@@ -1652,7 +1485,7 @@
                 console.log("Google Sign-In successful:", user);
 
                 await handleLoginSuccess(user); // Pass the Firebase User object directly
-                addLogEntry("Google Login Success", { user: user.email || user.uid });
+                // addLogEntry("Google Login Success", { user: user.email || user.uid }); // Removed
 
             } catch (error) {
                 console.error("Google Sign-In failed:", error);
@@ -1668,7 +1501,7 @@
                     errorMessage = "Google Sign-In is not enabled in Firebase Authentication settings.";
                 }
                 showMessage(errorMessage, 'error');
-                addLogEntry("Google Login Failed", { error: error.message });
+                // addLogEntry("Google Login Failed", { error: error.message }); // Removed
             } finally {
                 googleLoginButton.disabled = false; // Re-enable button after attempt
             }
@@ -1690,7 +1523,7 @@
                 // addLogEntry("User Management Panel Opened", { user: loggedInUser.username, role: loggedInUser.role }); // Removed for log simplification
             } else {
                 showMessage("You do not have administrative access to manage users.", 'error');
-                addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "Open User Management Panel" }); // Kept as it's a permission denial
+                // addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "Open User Management Panel" }); // Removed
             }
         });
 
@@ -1711,7 +1544,7 @@
                 // addLogEntry("View Logs Button Clicked", { user: loggedInUser.username, role: loggedInUser.role }); // Removed for log simplification
             } else {
                  showMessage("You do not have administrative access to view logs.", 'error');
-                 addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "View Activity Logs" }); // Kept as it's a permission denial
+                 // addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "View Activity Logs" }); // Removed
             }
         });
 
@@ -1755,7 +1588,7 @@
                 showUserDirectoryPanel();
             } else {
                 showMessage("You do not have permission to view this.", 'error');
-                 // addLogEntry("View User Directory Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role }); // Removed for log simplification
+                 // addLogEntry("View User Directory Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role }); // Removed
             }
         });
 
@@ -1768,7 +1601,7 @@
             // but good to have a check here too in case of direct calls or unforeseen UI states.
             if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
                 showPanel(adminPanel);
-                // addLogEntry("Admin Panel Opened", { trigger: "OpenAdminPanelButton", by: auth.currentUser.email }); // Removed for log simplification
+                // addLogEntry("Admin Panel Opened", { trigger: "OpenAdminPanelButton", by: auth.currentUser.email }); // Removed
             } else {
                 showMessage("You do not have permission to access the Admin Panel.", "error");
                 // Optionally hide the button if it was erroneously shown
@@ -1784,7 +1617,7 @@
                 // renderAccountManagementPanel expects an object with {name, username, profilePic}
                 // and also uses auth.currentUser for provider info.
                 renderAccountManagementPanel(loggedInUser); 
-                // addLogEntry("Account Management Panel Opened", { trigger: "OpenAccountManagementButton", by: loggedInUser.username }); // Removed for log simplification
+                // addLogEntry("Account Management Panel Opened", { trigger: "OpenAccountManagementButton", by: loggedInUser.username }); // Removed
             } else {
                 // This case should ideally not be reached if button visibility is managed correctly.
                 showMessage("You need to be logged in to manage your account.", "info");
