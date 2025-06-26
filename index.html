@@ -162,8 +162,11 @@
                 <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Manage Users
                 </button>
+                <button id="manageGameRoomsButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
+                    Manage Game Rooms
+                </button>
                 <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Manage Game Data
+                    Manage Game Data (Placeholder)
                 </button>
                 <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Configure Games
@@ -211,6 +214,41 @@
                 </button>
             </div>
         </div>
+
+        <!-- Game Room Management Panel (Initially hidden) -->
+        <div id="gameRoomManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-6 text-center">Manage Game Rooms</h3>
+
+            <!-- Create New Game Room Section -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 class="text-lg font-semibold text-gray-700 mb-3">Create New Game Room</h4>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div class="flex-grow">
+                        <label for="newRoomNameInput" class="block text-sm font-medium text-gray-700 mb-1">Room Name:</label>
+                        <input type="text" id="newRoomNameInput" placeholder="e.g., Main Event Table 1" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button id="createGameRoomButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                        Create Room
+                    </button>
+                </div>
+            </div>
+
+            <!-- Existing Game Rooms List Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-gray-700 mb-3">Existing Rooms</h4>
+                <div id="gameRoomsListContainer" class="max-h-80 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white">
+                    <p class="text-gray-500 text-center py-4">Loading rooms...</p>
+                    <!-- Game rooms will be listed here by JavaScript -->
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="closeGameRoomManagementPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Close & Return to Admin Panel
+                </button>
+            </div>
+        </div>
+
 
         <!-- Account Management Panel (Initially hidden) -->
         <div id="accountManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg text-center">
@@ -280,7 +318,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -356,6 +394,13 @@
         const openAccountManagementButton = document.getElementById('openAccountManagementButton');
         const closeAdminPanelButton = document.getElementById('closeAdminPanelButton');
 
+        const manageGameRoomsButton = document.getElementById('manageGameRoomsButton');
+        const gameRoomManagementPanel = document.getElementById('gameRoomManagementPanel');
+        const newRoomNameInput = document.getElementById('newRoomNameInput');
+        const createGameRoomButton = document.getElementById('createGameRoomButton');
+        const gameRoomsListContainer = document.getElementById('gameRoomsListContainer');
+        const closeGameRoomManagementPanelButton = document.getElementById('closeGameRoomManagementPanelButton');
+
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
         // const logSearchText = document.getElementById('logSearchText'); // Removed
@@ -365,6 +410,7 @@
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
         // let firestoreActivityLogs = []; // Removed
         let firestoreActiveSessions = []; // Stores active sessions from Firestore
+        let firestoreGameRooms = []; // Stores game rooms fetched from Firestore
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
 
@@ -444,12 +490,13 @@
         const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
         const userProfilesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_profiles`);
         const activeSessionsCollectionRef = collection(db, `artifacts/${appId}/public/data/active_sessions`);
+        const gameRoomsCollectionRef = collection(db, `artifacts/${appId}/public/data/game_rooms`);
 
 
         // --- Utility Functions ---
         function showPanel(panelToShow) {
             // logViewer variable was removed, so it's no longer in this list.
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, loadingIndicator];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -905,14 +952,30 @@
                     displayNameCell.textContent = formatDisplayName(user);
                     chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0';
 
-                    // Determine status
-                    if (activeSessionUIDs.includes(user.uid)) {
-                        statusCell.textContent = 'Online';
-                        statusCell.className = 'text-green-600 font-semibold';
-                    } else {
-                        statusCell.textContent = 'Offline';
-                        statusCell.className = 'text-gray-500';
+                    // Determine status: In-Game > Online > Offline
+                    let userStatus = "Offline";
+                    let statusClass = "text-gray-500";
+
+                    // Check if user is in any game room's players list
+                    let isInGame = false;
+                    for (const room of firestoreGameRooms) {
+                        if (room.players && room.players.includes(user.uid)) {
+                            isInGame = true;
+                            break;
+                        }
                     }
+
+                    if (isInGame) {
+                        userStatus = "In-Game";
+                        statusClass = "text-blue-600 font-semibold"; // Blue for In-Game
+                    } else if (activeSessionUIDs.includes(user.uid)) {
+                        userStatus = 'Online';
+                        statusClass = 'text-green-600 font-semibold'; // Green for Online
+                    }
+                    // Default is Offline (grey), already set
+
+                    statusCell.textContent = userStatus;
+                    statusCell.className = statusClass;
                 });
 
             } catch (error) {
@@ -1391,7 +1454,40 @@
                 // Consider storing unsubscribeSessions if needed
             });
 
-            return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise]); // Removed logsPromise
+            // Promise for Game Rooms
+            const gameRoomsPromise = new Promise((resolve, reject) => {
+                let initialGameRoomsLoadDone = false;
+                const q = query(gameRoomsCollectionRef, orderBy("createdAt", "desc")); // Order by creation time, newest first
+                const unsubscribeGameRooms = onSnapshot(q, (snapshot) => {
+                    const newRooms = [];
+                    snapshot.forEach(doc => {
+                        newRooms.push({ id: doc.id, ...doc.data() });
+                    });
+                    firestoreGameRooms = newRooms;
+                    console.log("Firestore: Game Rooms snapshot processed. Rooms count:", firestoreGameRooms.length);
+                    
+                    if (gameRoomManagementPanel && !gameRoomManagementPanel.classList.contains('hidden')) {
+                        renderGameRoomsList();
+                    }
+                    // Also re-render user directory if it's visible, as player status might depend on game rooms
+                    if (userDirectoryPanel && !userDirectoryPanel.classList.contains('hidden')) {
+                        renderUserDirectoryTable();
+                    }
+
+                    if (!initialGameRoomsLoadDone) {
+                        initialGameRoomsLoadDone = true;
+                        console.log("Firestore: Initial Game Rooms loaded.");
+                        resolve();
+                    }
+                }, (error) => {
+                    console.error("Firestore: Error listening to game rooms:", error);
+                    showMessage("Error: Could not sync game rooms from cloud.", 'error');
+                    reject(error);
+                });
+                // Consider storing unsubscribeGameRooms if needed
+            });
+
+            return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise, gameRoomsPromise]);
         }
 
 
@@ -1605,6 +1701,97 @@
             // Ensure main action buttons are visible if they were part of a container managed by showPanel
             // However, current logic in handleLoginSuccess makes them visible and they are not hidden by showPanel(specificPanel).
         });
+
+        // --- Game Room Management Panel Event Listeners ---
+        manageGameRoomsButton.addEventListener('click', () => {
+            if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                showPanel(gameRoomManagementPanel);
+                renderGameRoomsList(); // Render the list when panel is opened
+            } else {
+                showMessage("You do not have permission to manage game rooms.", "error");
+            }
+        });
+
+        closeGameRoomManagementPanelButton.addEventListener('click', () => {
+            showPanel(adminPanel); // Return to main admin panel
+        });
+
+        async function createGameRoom() {
+            const roomName = newRoomNameInput.value.trim();
+            if (!roomName) {
+                showMessage("Room name cannot be empty.", "error");
+                return;
+            }
+
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to create game rooms.", "error");
+                return;
+            }
+
+            showMessage("Creating game room...", "info");
+            try {
+                await addDoc(gameRoomsCollectionRef, {
+                    roomName: roomName,
+                    createdBy: auth.currentUser.uid,
+                    createdAt: serverTimestamp(),
+                    status: "open", // Initial status
+                    players: []      // Initially no players
+                });
+                showMessage(`Game room "${roomName}" created successfully!`, "success");
+                newRoomNameInput.value = ''; // Clear input
+                // The list of rooms will update via the Firestore listener in renderGameRoomsList
+            } catch (error) {
+                console.error("Error creating game room:", error);
+                showMessage(`Failed to create game room: ${error.message}`, "error");
+            }
+        }
+
+        createGameRoomButton.addEventListener('click', createGameRoom);
+
+        // --- Game Room Listing ---
+        function renderGameRoomsList() {
+            if (!gameRoomsListContainer) return; // Should not happen if panel is visible
+
+            gameRoomsListContainer.innerHTML = ''; // Clear previous list
+
+            if (firestoreGameRooms.length === 0) {
+                gameRoomsListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No game rooms created yet.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-2';
+
+            // Sort rooms, e.g., by creation time (newest first) if createdAt is a valid Timestamp
+            // For now, just iterating as is, or sort by name.
+            const sortedRooms = [...firestoreGameRooms].sort((a, b) => {
+                if (a.createdAt && b.createdAt) { // Assuming createdAt is a Firestore Timestamp
+                    return b.createdAt.seconds - a.createdAt.seconds; 
+                }
+                return (a.roomName || '').localeCompare(b.roomName || '');
+            });
+
+            sortedRooms.forEach(room => {
+                const li = document.createElement('li');
+                li.className = 'p-3 bg-gray-100 rounded-md shadow-sm flex justify-between items-center';
+                
+                const roomNameSpan = document.createElement('span');
+                roomNameSpan.textContent = room.roomName || 'Unnamed Room';
+                roomNameSpan.className = 'font-semibold text-gray-800';
+                
+                const roomStatusSpan = document.createElement('span');
+                roomStatusSpan.textContent = `Status: ${room.status || 'N/A'}`;
+                roomStatusSpan.className = `text-sm px-2 py-1 rounded-full ${room.status === 'open' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}`;
+
+                // TODO: Add player count: room.players?.length || 0
+                // TODO: Add action buttons per room (e.g., Close, Delete, View Players)
+
+                li.appendChild(roomNameSpan);
+                li.appendChild(roomStatusSpan);
+                ul.appendChild(li);
+            });
+            gameRoomsListContainer.appendChild(ul);
+        }
 
     </script>
 </body>
