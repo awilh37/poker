@@ -374,8 +374,8 @@
         const hideAccountManagementButton = document.getElementById('hideAccountManagementButton');
 
         const viewUserDirectoryButton = document.getElementById('viewUserDirectoryButton'); // Changed ID
-        const userDirectoryPanel = document.getElementById('userDirectoryPanel');
-        const userDirectoryTableBody = document.getElementById('userDirectoryTableBody');
+        const userDirectoryPanel = document.getElementById('userDirectoryPanel'); 
+        const userDirectoryTableBody = document.getElementById('userDirectoryTableBody'); 
         const hideUserDirectoryPanelButton = document.getElementById('hideUserDirectoryPanelButton');
 
 
@@ -791,7 +791,7 @@
                 const forceLogoutButton = document.createElement('button');
                 forceLogoutButton.textContent = 'Force Logout';
                 forceLogoutButton.className = 'bg-red-500 hover:bg-red-700 text-white text-xs py-1 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed';
-
+                
                 const targetUserRole = userCurrentRole; // Role of the user in the row
                 const targetUserIsOnline = activeSessionUIDs.includes(user.uid);
 
@@ -855,16 +855,20 @@
 
         // --- Admin: Force Logout User ---
         async function forceLogoutUser(targetUid, targetUserDisplayName) {
+            console.log(`Attempting to force logout for UID: ${targetUid}, Name: ${targetUserDisplayName}`); // Debug log
+
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to force logout users.", 'error');
                 addLogEntry("Force Logout Attempt Failed", { reason: "Permission denied", targetUser: targetUid, by: auth.currentUser?.uid });
+                console.error("Force logout permission denied for current user:", auth.currentUser?.uid); // Debug log
                 return;
             }
 
             // Additional permission checks (partially redundant with button disabling logic, but good for direct calls)
             const currentUserId = auth.currentUser.uid;
+            console.log(`Current admin UID: ${currentUserId}`); // Debug log
             const currentUserIsOwner = isOwner(currentUserId);
-            const targetUserRole = getCurrentUserRole(targetUid);
+            const targetUserRole = getCurrentUserRole(targetUid); 
 
             if (targetUid === currentUserId) {
                 showMessage("You cannot force logout yourself.", 'error');
@@ -881,28 +885,37 @@
             if (!confirm(`Are you sure you want to force logout ${targetUserDisplayName || targetUid}? This will remove their active session marker.`)) {
                 return;
             }
+            console.log("Proceeding with force logout confirmation."); // Debug log
+
+            if (!confirm(`Are you sure you want to force logout ${targetUserDisplayName || targetUid}? This will remove their active session marker.`)) {
+                console.log("Force logout cancelled by admin."); // Debug log
+                return;
+            }
 
             showMessage(`Forcing logout for ${targetUserDisplayName || targetUid}...`, 'info');
             try {
                 const activeSessionRef = doc(activeSessionsCollectionRef, targetUid);
+                console.log(`Attempting to delete active session doc: active_sessions/${targetUid}`); // Debug log
                 await deleteDoc(activeSessionRef);
-
-                addLogEntry("User Forced Logout", {
-                    targetUser: targetUid,
+                console.log(`Successfully deleted active session doc for UID: ${targetUid}`); // Debug log
+                
+                addLogEntry("User Forced Logout", { 
+                    targetUser: targetUid, 
                     targetUserName: targetUserDisplayName || 'N/A',
-                    byUser: auth.currentUser.email || currentUserId
+                    byUser: auth.currentUser.email || currentUserId 
                 });
                 showMessage(`${targetUserDisplayName || targetUid} has been marked as logged out. Their status will update shortly.`, 'success');
-
+                
                 // Re-render the user management table to update button states (e.g., logout button for the user just logged out should become disabled)
+                console.log("Force logout successful, re-rendering user roles table if visible."); // Debug log
                 if (!userManagementPanel.classList.contains('hidden')) {
                     renderUserRolesTable();
                 }
                 // The User Directory table will auto-update if visible due to its own listener on activeSessionsCollectionRef.
 
             } catch (error) {
-                console.error("Error forcing user logout:", error);
-                showMessage(`Failed to force logout for ${targetUserDisplayName || targetUid}.`, 'error');
+                console.error("Error during force logout Firestore operation:", error); // Debug log
+                showMessage(`Failed to force logout for ${targetUserDisplayName || targetUid}. Error: ${error.message}`, 'error');
                 addLogEntry("Force Logout Failed", { targetUser: targetUid, error: error.message, by: currentUserId });
             }
         }
@@ -927,7 +940,7 @@
             }
         }
 
-        async function renderUserDirectoryTable() {
+        async function renderUserDirectoryTable() { 
             userDirectoryTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">Loading users...</td></tr>'; // Updated colspan for 3 columns
 
             try {
@@ -1252,10 +1265,10 @@
             userManagementPanel.classList.add('hidden');
             logViewer.classList.add('hidden');
             accountManagementPanel.classList.add('hidden');
-            if (userDirectoryPanel) {
+            if (userDirectoryPanel) { 
                 userDirectoryPanel.classList.add('hidden');
             }
-            if (viewUserDirectoryButton) {
+            if (viewUserDirectoryButton) { 
                 viewUserDirectoryButton.classList.add('hidden');
             }
         }
@@ -1442,7 +1455,7 @@
 
                     // If the User Directory panel is currently visible, re-render it to update statuses
                     if (userDirectoryPanel && !userDirectoryPanel.classList.contains('hidden')) {
-                        renderUserDirectoryTable();
+                        renderUserDirectoryTable(); 
                     }
 
                     if (!initialSessionsLoadDone) {
@@ -1652,8 +1665,10 @@
         linkGoogleAccountButton.addEventListener('click', handleGoogleLink);
 
         // --- User Directory Panel Button Event Listeners ---
-        viewUserDirectoryButton.addEventListener('click', () => {
+        viewUserDirectoryButton.addEventListener('click', () => { 
+            console.log("View User Directory button clicked."); // Debug log
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            console.log("Logged in user for directory view:", loggedInUser); // Debug log
             if (loggedInUser && (loggedInUser.role === 'player' || loggedInUser.role === 'admin' || loggedInUser.role === 'owner')) {
                 showUserDirectoryPanel();
             } else {
