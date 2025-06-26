@@ -150,6 +150,14 @@
             Admin Panel
         </button>
 
+        <!-- "Join a Game" Button (Initially hidden, for all logged-in users) -->
+        <button
+            id="joinGameButton"
+            class="hidden mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
+        >
+            Join a Game
+        </button>
+
         <!-- Admin Panel (Initially hidden) -->
         <div id="adminPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full text-center">
             <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Admin Panel</h3>
@@ -249,6 +257,22 @@
             </div>
         </div>
 
+        <!-- Player Join Room Panel (Initially hidden) -->
+        <div id="playerJoinRoomPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-6 text-center">Available Game Rooms</h3>
+            
+            <div id="availableRoomsListContainer" class="max-h-96 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white">
+                <p class="text-gray-500 text-center py-4">Loading available rooms...</p>
+                <!-- Available game rooms will be listed here by JavaScript -->
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="closePlayerJoinRoomPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Close
+                </button>
+            </div>
+        </div>
+
 
         <!-- Account Management Panel (Initially hidden) -->
         <div id="accountManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg text-center">
@@ -318,7 +342,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -400,6 +424,11 @@
         const createGameRoomButton = document.getElementById('createGameRoomButton');
         const gameRoomsListContainer = document.getElementById('gameRoomsListContainer');
         const closeGameRoomManagementPanelButton = document.getElementById('closeGameRoomManagementPanelButton');
+
+        const joinGameButton = document.getElementById('joinGameButton');
+        const playerJoinRoomPanel = document.getElementById('playerJoinRoomPanel');
+        const availableRoomsListContainer = document.getElementById('availableRoomsListContainer');
+        const closePlayerJoinRoomPanelButton = document.getElementById('closePlayerJoinRoomPanelButton');
 
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
@@ -496,7 +525,7 @@
         // --- Utility Functions ---
         function showPanel(panelToShow) {
             // logViewer variable was removed, so it's no longer in this list.
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, loadingIndicator];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, playerJoinRoomPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -1194,6 +1223,7 @@
 
             logoutButton.classList.remove('hidden');
             openAccountManagementButton.classList.remove('hidden');
+            joinGameButton.classList.remove('hidden'); // Show for all logged-in users
 
             if (userHasAdminAccess) {
                 openAdminPanelButton.classList.remove('hidden');
@@ -1266,6 +1296,7 @@
             viewUserDirectoryButton.classList.add('hidden');
             openAccountManagementButton.classList.add('hidden');
             openAdminPanelButton.classList.add('hidden');
+            joinGameButton.classList.add('hidden'); // Hide on logout
 
             // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
@@ -1472,6 +1503,10 @@
                     // Also re-render user directory if it's visible, as player status might depend on game rooms
                     if (userDirectoryPanel && !userDirectoryPanel.classList.contains('hidden')) {
                         renderUserDirectoryTable();
+                    }
+                    // Also re-render available rooms list for players if it's visible
+                    if (playerJoinRoomPanel && !playerJoinRoomPanel.classList.contains('hidden')) {
+                        renderAvailableRoomsList();
                     }
 
                     if (!initialGameRoomsLoadDone) {
@@ -1748,6 +1783,21 @@
 
         createGameRoomButton.addEventListener('click', createGameRoom);
 
+        // --- Player Join Game Panel Listeners ---
+        joinGameButton.addEventListener('click', () => {
+            if (auth.currentUser) {
+                showPanel(playerJoinRoomPanel);
+                renderAvailableRoomsList(); // To be implemented next
+            } else {
+                showMessage("Please log in to join a game.", "info");
+                showPanel(loginButtonsContainer);
+            }
+        });
+
+        closePlayerJoinRoomPanelButton.addEventListener('click', () => {
+            showPanel(null); // Return to neutral view
+        });
+
         // --- Game Room Listing ---
         function renderGameRoomsList() {
             if (!gameRoomsListContainer) return; // Should not happen if panel is visible
@@ -1791,6 +1841,151 @@
                 ul.appendChild(li);
             });
             gameRoomsListContainer.appendChild(ul);
+        }
+
+        // --- Player: Render Available Game Rooms List ---
+        function renderAvailableRoomsList() {
+            if (!availableRoomsListContainer) return;
+
+            availableRoomsListContainer.innerHTML = ''; // Clear previous list
+
+            const openRooms = firestoreGameRooms.filter(room => room.status === 'open');
+
+            if (openRooms.length === 0) {
+                availableRoomsListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No game rooms currently available to join.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-3';
+
+            openRooms.forEach(room => {
+                const li = document.createElement('li');
+                li.className = 'p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0';
+
+                const roomInfoDiv = document.createElement('div');
+                
+                const roomNameSpan = document.createElement('span');
+                roomNameSpan.textContent = room.roomName || 'Unnamed Room';
+                roomNameSpan.className = 'font-semibold text-lg text-indigo-700 block';
+                roomInfoDiv.appendChild(roomNameSpan);
+
+                const playerCountSpan = document.createElement('span');
+                const currentPlayers = room.players?.length || 0;
+                // const maxPlayers = room.maxPlayers || 'N/A'; // Assuming maxPlayers might be added later
+                playerCountSpan.textContent = `Players: ${currentPlayers}`; // / ${maxPlayers}
+                playerCountSpan.className = 'text-sm text-gray-600 block mt-1';
+                roomInfoDiv.appendChild(playerCountSpan);
+                
+                li.appendChild(roomInfoDiv);
+
+                const joinButton = document.createElement('button');
+                joinButton.textContent = 'Join';
+                joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
+                joinButton.setAttribute('data-room-id', room.id);
+                joinButton.onclick = () => handleJoinRoom(room.id); 
+
+                // Disable join button if player is already in THIS room or ANY room (if one-room-at-a-time rule)
+                let alreadyInARoom = false;
+                if(auth.currentUser) {
+                    for (const r of firestoreGameRooms) {
+                        if (r.players && r.players.includes(auth.currentUser.uid)) {
+                            alreadyInARoom = true;
+                            if (r.id === room.id) { // Already in this specific room
+                                joinButton.textContent = 'Joined';
+                                joinButton.disabled = true;
+                                joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
+                                joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
+                            } else { // In a different room
+                                joinButton.disabled = true; // Prevent joining another if already in one
+                            }
+                            break; 
+                        }
+                    }
+                }
+                // Further disabling if room is full (requires maxPlayers) would go here
+                if (room.status !== 'open') { // Also disable if room is not open
+                    joinButton.disabled = true;
+                }
+
+
+                li.appendChild(joinButton);
+                ul.appendChild(li);
+            });
+            availableRoomsListContainer.appendChild(ul);
+        }
+
+        async function handleJoinRoom(roomId) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to join a room.", "error");
+                return;
+            }
+            const userId = auth.currentUser.uid;
+
+            // Check if player is already in any room (client-side check for quick UI feedback)
+            for (const r of firestoreGameRooms) {
+                if (r.players && r.players.includes(userId)) {
+                    if (r.id === roomId) {
+                        showMessage("You are already in this room.", "info");
+                    } else {
+                        showMessage("You are already in another game room. Please leave it before joining a new one.", "error");
+                    }
+                    return;
+                }
+            }
+
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            showMessage("Joining room...", "info");
+
+            try {
+                const roomSnap = await getDoc(roomDocRef);
+                if (!roomSnap.exists()) {
+                    showMessage("Error: Room not found.", "error");
+                    renderAvailableRoomsList(); // Refresh list as room might have been deleted
+                    return;
+                }
+
+                const roomData = roomSnap.data();
+                if (roomData.status !== 'open') {
+                    showMessage("This room is no longer open to join.", "error");
+                    renderAvailableRoomsList(); // Refresh list
+                    return;
+                }
+
+                // Optional: Check for maxPlayers if implemented
+                // if (roomData.players.length >= roomData.maxPlayers) {
+                //     showMessage("This room is full.", "error");
+                //     renderAvailableRoomsList(); // Refresh list
+                //     return;
+                // }
+                
+                // Add player to the room
+                await updateDoc(roomDocRef, {
+                    players: arrayUnion(userId)
+                });
+                showMessage("Successfully joined the room!", "success");
+                // UI will update automatically via Firestore listeners (renderAvailableRoomsList and renderUserDirectoryTable)
+            } catch (error) {
+                console.error("Error joining room:", error);
+                showMessage(`Failed to join room: ${error.message}`, "error");
+            }
+        }
+
+    </script>
+</body>
+</html>
+                if (auth.currentUser && room.players && room.players.includes(auth.currentUser.uid)) {
+                    joinButton.textContent = 'Joined';
+                    joinButton.disabled = true;
+                    joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
+                    joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
+                }
+
+
+                li.appendChild(joinButton);
+                ul.appendChild(li);
+            });
+            availableRoomsListContainer.appendChild(ul);
         }
 
     </script>
