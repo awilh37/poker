@@ -1003,7 +1003,7 @@
                     users.push(doc.data());
                 });
 
-                loggedInUsersTableBody.innerHTML = ''; // Clear existing rows
+                userDirectoryTableBody.innerHTML = ''; // Corrected variable name
 
                 if (users.length === 0) {
                     userDirectoryTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users found in the directory.</td></tr>'; // Updated colspan
