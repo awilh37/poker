@@ -335,6 +335,7 @@
         let firebaseAuthReady = false;
         let isLoggingOut = false;
         let dataLoadedAndListenersSetup = false;
+        let unsubscribeOwnActiveSessionListener = null; // For self-logout listener
 
 
         // --- Super Admin UID (DO NOT TOUCH THIS!) ---
@@ -409,6 +410,55 @@
             const role = getCurrentUserRole(uid);
             // SUPER_ADMIN_UID, 'owner', or 'admin' roles grant admin panel access.
             return uid === SUPER_ADMIN_UID || role === 'owner' || role === 'admin';
+        }
+
+        // --- Listener for Own Active Session (for remote/forced logout detection) ---
+        function setupOwnActiveSessionListener(uid) {
+            if (unsubscribeOwnActiveSessionListener) {
+                console.log("Unsubscribing from previous own active session listener.");
+                unsubscribeOwnActiveSessionListener();
+                unsubscribeOwnActiveSessionListener = null;
+            }
+
+            if (!uid) {
+                console.error("Cannot setup own active session listener without UID.");
+                return;
+            }
+
+            const sessionDocRef = doc(activeSessionsCollectionRef, uid);
+            console.log(`Setting up listener for own active session: active_sessions/${uid}`);
+
+            unsubscribeOwnActiveSessionListener = onSnapshot(sessionDocRef, (docSnap) => {
+                console.log(`Own active session listener event: exists=${docSnap.exists()}`);
+                if (!docSnap.exists()) {
+                    // Document was deleted
+                    console.log("Own active session document deleted, potentially by force logout or other means.");
+                    if (auth.currentUser && auth.currentUser.uid === uid && !isLoggingOut) {
+                        // Check if still the same user and not already in the process of logging out
+                        console.log("Current user matches and not already logging out. Initiating self-logout.");
+                        isLoggingOut = true; // Set flag early to prevent race conditions/re-entry
+                        showMessage("Your session has been ended remotely. You are now being logged out.", "info");
+
+                        if (unsubscribeOwnActiveSessionListener) {
+                            console.log("Unsubscribing from own active session listener before forced logout.");
+                            unsubscribeOwnActiveSessionListener();
+                            unsubscribeOwnActiveSessionListener = null;
+                        }
+
+                        // Delay slightly to allow message to be seen, then logout
+                        setTimeout(() => {
+                            handleLogout();
+                        }, 3000);
+                    } else {
+                        console.log("Self-logout condition not met:",
+                                    {currentUser: auth.currentUser?.uid, targetUid: uid, isLoggingOutFlag: isLoggingOut});
+                    }
+                }
+            }, (error) => {
+                console.error(`Error listening to own active session (active_sessions/${uid}):`, error);
+                // Optionally, inform the user if this critical listener fails
+                // showMessage("Error: Could not monitor session status. Please refresh.", "error");
+            });
         }
 
 
@@ -855,14 +905,18 @@
 
         // --- Admin: Force Logout User ---
         async function forceLogoutUser(targetUid, targetUserDisplayName) {
+            console.log(`Attempting to force logout for UID: ${targetUid}, Name: ${targetUserDisplayName}`); // Debug log
+
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to force logout users.", 'error');
                 addLogEntry("Force Logout Attempt Failed", { reason: "Permission denied", targetUser: targetUid, by: auth.currentUser?.uid });
+                console.error("Force logout permission denied for current user:", auth.currentUser?.uid); // Debug log
                 return;
             }
 
             // Additional permission checks (partially redundant with button disabling logic, but good for direct calls)
             const currentUserId = auth.currentUser.uid;
+            console.log(`Current admin UID: ${currentUserId}`); // Debug log
             const currentUserIsOwner = isOwner(currentUserId);
             const targetUserRole = getCurrentUserRole(targetUid);
 
@@ -881,11 +935,19 @@
             if (!confirm(`Are you sure you want to force logout ${targetUserDisplayName || targetUid}? This will remove their active session marker.`)) {
                 return;
             }
+            console.log("Proceeding with force logout confirmation."); // Debug log
+
+            if (!confirm(`Are you sure you want to force logout ${targetUserDisplayName || targetUid}? This will remove their active session marker.`)) {
+                console.log("Force logout cancelled by admin."); // Debug log
+                return;
+            }
 
             showMessage(`Forcing logout for ${targetUserDisplayName || targetUid}...`, 'info');
             try {
                 const activeSessionRef = doc(activeSessionsCollectionRef, targetUid);
+                console.log(`Attempting to delete active session doc: active_sessions/${targetUid}`); // Debug log
                 await deleteDoc(activeSessionRef);
+                console.log(`Successfully deleted active session doc for UID: ${targetUid}`); // Debug log
 
                 addLogEntry("User Forced Logout", {
                     targetUser: targetUid,
@@ -895,28 +957,29 @@
                 showMessage(`${targetUserDisplayName || targetUid} has been marked as logged out. Their status will update shortly.`, 'success');
 
                 // Re-render the user management table to update button states (e.g., logout button for the user just logged out should become disabled)
+                console.log("Force logout successful, re-rendering user roles table if visible."); // Debug log
                 if (!userManagementPanel.classList.contains('hidden')) {
                     renderUserRolesTable();
                 }
                 // The User Directory table will auto-update if visible due to its own listener on activeSessionsCollectionRef.
 
             } catch (error) {
-                console.error("Error forcing user logout:", error);
-                showMessage(`Failed to force logout for ${targetUserDisplayName || targetUid}.`, 'error');
+                console.error("Error during force logout Firestore operation:", error); // Debug log
+                showMessage(`Failed to force logout for ${targetUserDisplayName || targetUid}. Error: ${error.message}`, 'error');
                 addLogEntry("Force Logout Failed", { targetUser: targetUid, error: error.message, by: currentUserId });
             }
         }
 
 
         // --- "User Directory" Panel Functions (formerly Logged-in Users Panel) ---
-        async function showUserDirectoryPanel() { // Renamed and made async
-            showPanel(loggedInUsersPanel); // loggedInUsersPanel is the ID of the div
-            await renderUserDirectoryTable(); // Renamed and made async
+        async function showUserDirectoryPanel() {
+            showPanel(userDirectoryPanel); // Corrected variable name
+            await renderUserDirectoryTable();
             addLogEntry("User Directory Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid });
         }
 
-        function hideUserDirectoryPanel() { // Renamed
-            loggedInUsersPanel.classList.add('hidden');
+        function hideUserDirectoryPanel() {
+            userDirectoryPanel.classList.add('hidden'); // Corrected variable name
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser && loggedInUser.hasAdminAccess) {
                 showPanel(adminPanel);
@@ -940,7 +1003,7 @@
                     users.push(doc.data());
                 });
 
-                loggedInUsersTableBody.innerHTML = ''; // Clear existing rows
+                userDirectoryTableBody.innerHTML = ''; // Corrected variable name
 
                 if (users.length === 0) {
                     userDirectoryTableBody.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-4">No users found in the directory.</td></tr>'; // Updated colspan
@@ -957,7 +1020,7 @@
                 });
 
                 users.forEach(user => {
-                    const row = loggedInUsersTableBody.insertRow();
+                    const row = userDirectoryTableBody.insertRow(); // Corrected variable name
                     const displayNameCell = row.insertCell();
                     const chipCountCell = row.insertCell();
                     const statusCell = row.insertCell();
@@ -1143,6 +1206,7 @@
                         loginTime: new Date().toISOString()
                     }, { merge: true }); // merge:true to update if session doc already exists
                     console.log("User session added/updated in active_sessions:", user.uid);
+                    setupOwnActiveSessionListener(user.uid); // Setup listener for self-logout
                 } catch (e) {
                     console.error("Error adding/updating user session to active_sessions:", e);
                     // Non-critical, so don't block login, but log it.
@@ -1204,6 +1268,12 @@
 
         // Function to handle logout
         async function handleLogout() {
+            if (unsubscribeOwnActiveSessionListener) {
+                console.log("Unsubscribing from own active session listener during logout.");
+                unsubscribeOwnActiveSessionListener();
+                unsubscribeOwnActiveSessionListener = null;
+            }
+
             const loggedInUserString = localStorage.getItem('loggedInUser');
             let firebaseUidToClear = null;
 
@@ -1653,7 +1723,9 @@
 
         // --- User Directory Panel Button Event Listeners ---
         viewUserDirectoryButton.addEventListener('click', () => {
+            console.log("View User Directory button clicked."); // Debug log
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            console.log("Logged in user for directory view:", loggedInUser); // Debug log
             if (loggedInUser && (loggedInUser.role === 'player' || loggedInUser.role === 'admin' || loggedInUser.role === 'owner')) {
                 showUserDirectoryPanel();
             } else {
