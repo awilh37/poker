@@ -998,7 +998,7 @@
         async function showUserDirectoryPanel() { 
             showPanel(userDirectoryPanel); // Corrected variable name
             await renderUserDirectoryTable(); 
-            addLogEntry("User Directory Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid });
+            // addLogEntry("User Directory Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid }); // Removed for log simplification
         }
 
         function hideUserDirectoryPanel() { 
@@ -1121,7 +1121,7 @@
                 localStorage.setItem('loggedInUser', JSON.stringify(updatedLoggedInUser));
                 
                 showMessage("Account successfully linked with Google!", 'success');
-                addLogEntry("Account Linked", { user: linkedUser.email || linkedUser.uid, provider: "Google" });
+                // addLogEntry("Account Linked", { user: linkedUser.email || linkedUser.uid, provider: "Google" }); // Removed for log simplification
                 renderAccountManagementPanel(updatedLoggedInUser);
             } catch (error) {
                 console.error("Error linking Google account:", error);
@@ -1136,7 +1136,7 @@
                     errorMessage = "The email associated with this Google account is already in use by another login method. Please sign in with that method and then link.";
                 }
                 showMessage(errorMessage, 'error');
-                addLogEntry("Account Link Failed", { user: auth.currentUser?.uid || 'Unknown', provider: "Google", error: error.message });
+                // addLogEntry("Account Link Failed", { user: auth.currentUser?.uid || 'Unknown', provider: "Google", error: error.message }); // Removed for log simplification
             }
         }
 
@@ -1169,7 +1169,7 @@
                         await setDoc(superAdminRoleRef, { role: 'owner' }, { merge: true });
                         firestoreUserRoles[user.uid] = { role: 'owner' }; // Update local cache
                         userRole = 'owner'; // Update userRole for the current execution context
-                        addLogEntry("SUPER_ADMIN Role Initialized/Verified", { uid: user.uid });
+                        // addLogEntry("SUPER_ADMIN Role Initialized/Verified", { uid: user.uid }); // Removed for log simplification (too internal)
                         console.log(`SUPER_ADMIN_UID (${user.uid}) role set to 'owner' in Firestore.`);
                     } catch (e) {
                         console.error("CRITICAL: Failed to set SUPER_ADMIN_UID role to 'owner' in Firestore:", e);
@@ -1279,6 +1279,7 @@
 
             if (userHasAdminAccess) {
                 openAdminPanelButton.classList.remove('hidden');
+                // addLogEntry("Admin Panel Access", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole }); // Removed: Redundant with "User Login" and panel is no longer auto-opened
             } else {
                 openAdminPanelButton.classList.add('hidden');
             }
@@ -1686,10 +1687,10 @@
             if (loggedInUser && loggedInUser.hasAdminAccess) {
                 showPanel(userManagementPanel);
                 renderUserRolesTable(); // This will apply new role-based disabling of options
-                addLogEntry("User Management Panel Opened", { user: loggedInUser.username, role: loggedInUser.role });
+                // addLogEntry("User Management Panel Opened", { user: loggedInUser.username, role: loggedInUser.role }); // Removed for log simplification
             } else {
                 showMessage("You do not have administrative access to manage users.", 'error');
-                addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
+                addLogEntry("User Management Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "Open User Management Panel" }); // Kept as it's a permission denial
             }
         });
 
@@ -1707,10 +1708,10 @@
                 showPanel(logViewer);
                 populateLogFilterTypes();
                 renderLogs();
-                addLogEntry("View Logs Button Clicked", { user: loggedInUser.username, role: loggedInUser.role });
+                // addLogEntry("View Logs Button Clicked", { user: loggedInUser.username, role: loggedInUser.role }); // Removed for log simplification
             } else {
                  showMessage("You do not have administrative access to view logs.", 'error');
-                 addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
+                 addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "View Activity Logs" }); // Kept as it's a permission denial
             }
         });
 
@@ -1733,7 +1734,7 @@
             if (loggedInUser) {
                 showPanel(accountManagementPanel);
                 renderAccountManagementPanel(loggedInUser);
-                addLogEntry("Account Management Panel Opened", { user: loggedInUser.username });
+                // addLogEntry("Account Management Panel Opened", { user: loggedInUser.username }); // Removed for log simplification
             } else {
                 showMessage("Please log in to manage your account.", 'info');
             }
@@ -1754,7 +1755,7 @@
                 showUserDirectoryPanel();
             } else {
                 showMessage("You do not have permission to view this.", 'error');
-                 addLogEntry("View User Directory Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role });
+                 // addLogEntry("View User Directory Access Denied", { user: loggedInUser?.username || 'Unknown User', role: loggedInUser?.role }); // Removed for log simplification
             }
         });
 
@@ -1767,7 +1768,7 @@
             // but good to have a check here too in case of direct calls or unforeseen UI states.
             if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
                 showPanel(adminPanel);
-                addLogEntry("Admin Panel Opened", { trigger: "OpenAdminPanelButton", by: auth.currentUser.email });
+                // addLogEntry("Admin Panel Opened", { trigger: "OpenAdminPanelButton", by: auth.currentUser.email }); // Removed for log simplification
             } else {
                 showMessage("You do not have permission to access the Admin Panel.", "error");
                 // Optionally hide the button if it was erroneously shown
@@ -1783,7 +1784,7 @@
                 // renderAccountManagementPanel expects an object with {name, username, profilePic}
                 // and also uses auth.currentUser for provider info.
                 renderAccountManagementPanel(loggedInUser); 
-                addLogEntry("Account Management Panel Opened", { trigger: "OpenAccountManagementButton", by: loggedInUser.username });
+                // addLogEntry("Account Management Panel Opened", { trigger: "OpenAccountManagementButton", by: loggedInUser.username }); // Removed for log simplification
             } else {
                 // This case should ideally not be reached if button visibility is managed correctly.
                 showMessage("You need to be logged in to manage your account.", "info");
