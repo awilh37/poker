@@ -134,6 +134,22 @@
             View User Directory
         </button>
 
+        <!-- "Open Account Management" Button (Initially hidden) -->
+        <button
+            id="openAccountManagementButton"
+            class="hidden mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
+        >
+            Manage Account
+        </button>
+
+        <!-- "Open Admin Panel" Button (Initially hidden, for admins) -->
+        <button
+            id="openAdminPanelButton"
+            class="hidden mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
+        >
+            Admin Panel
+        </button>
+
         <!-- Admin Panel (Initially hidden) -->
         <div id="adminPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full text-center">
             <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Admin Panel</h3>
@@ -157,6 +173,9 @@
                 </button>
                 <button id="manageAccountButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Account Management
+                </button>
+                <button id="closeAdminPanelButton" class="mt-6 w-1/2 mx-auto bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
+                    Close Admin Panel
                 </button>
             </div>
         </div>
@@ -378,6 +397,10 @@
         const userDirectoryPanel = document.getElementById('userDirectoryPanel');
         const userDirectoryTableBody = document.getElementById('userDirectoryTableBody');
         const hideUserDirectoryPanelButton = document.getElementById('hideUserDirectoryPanelButton');
+
+        const openAdminPanelButton = document.getElementById('openAdminPanelButton');
+        const openAccountManagementButton = document.getElementById('openAccountManagementButton');
+        const closeAdminPanelButton = document.getElementById('closeAdminPanelButton');
 
 
         const logFilterType = document.getElementById('logFilterType');
@@ -1244,26 +1267,30 @@
                 return; // Stop further execution for disabled users
             }
 
-            // Show welcome message (or disabled message later)
+            // Show welcome message
             showMessage(`Welcome, ${finalUserForLocalStorage.name}! Role: ${userRole}`, 'success');
             
-            if (userHasAdminAccess) {
-                showPanel(adminPanel);
-                addLogEntry("Admin Panel Access", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole });
-            } else {
-                // Non-admins (e.g., 'player') see account management or a different default panel
-                showPanel(accountManagementPanel); // Assuming this is the default for 'player'
-                renderAccountManagementPanel(finalUserForLocalStorage);
-                addLogEntry("User Login", { user: finalUserForLocalStorage.username, firebaseUid: user.uid, role: userRole });
-            }
+            // Show neutral view with main action buttons, hide all content panels initially
+            showPanel(null); // This will hide adminPanel, accountManagementPanel, userDirectoryPanel etc.
+            loginButtonsContainer.classList.add('hidden'); // Ensure login buttons are hidden
+
             logoutButton.classList.remove('hidden');
-            // Show viewUserDirectoryButton if user has appropriate role
-            const userRoleForButton = finalUserForLocalStorage.role;
+            openAccountManagementButton.classList.remove('hidden');
+
+            if (userHasAdminAccess) {
+                openAdminPanelButton.classList.remove('hidden');
+            } else {
+                openAdminPanelButton.classList.add('hidden');
+            }
+
+            const userRoleForButton = finalUserForLocalStorage.role; // Re-check or use userRole directly
             if (userRoleForButton === 'player' || userRoleForButton === 'admin' || userRoleForButton === 'owner') {
                 viewUserDirectoryButton.classList.remove('hidden');
             } else {
                 viewUserDirectoryButton.classList.add('hidden');
             }
+            // Note: renderAccountManagementPanel() will be called when its button is clicked.
+            // Admin panel content is static for now, no specific render function on open needed beyond showPanel.
         }
 
         // Function to handle logout
@@ -1317,7 +1344,11 @@
             showMessage('You have been logged out.', 'info');
             showPanel(loginButtonsContainer);
             logoutButton.classList.add('hidden');
-            // Hide other panels that might have been open
+            viewUserDirectoryButton.classList.add('hidden');
+            openAccountManagementButton.classList.add('hidden');
+            openAdminPanelButton.classList.add('hidden');
+
+            // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
             userManagementPanel.classList.add('hidden');
             logViewer.classList.add('hidden');
@@ -1325,9 +1356,7 @@
             if (userDirectoryPanel) {
                 userDirectoryPanel.classList.add('hidden');
             }
-            if (viewUserDirectoryButton) {
-                viewUserDirectoryButton.classList.add('hidden');
-            }
+            // viewUserDirectoryButton is already handled above
         }
 
         // Best-effort cleanup on tab close / navigation
@@ -1711,12 +1740,7 @@
         });
 
         hideAccountManagementButton.addEventListener('click', () => {
-            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (loggedInUser && loggedInUser.isAdmin) {
-                showPanel(adminPanel);
-            } else {
-                showPanel(loginButtonsContainer);
-            }
+            showPanel(null); // Hide account management, return to the neutral view with main action buttons
         });
 
         linkGoogleAccountButton.addEventListener('click', handleGoogleLink);
@@ -1734,7 +1758,44 @@
             }
         });
 
-        hideUserDirectoryPanelButton.addEventListener('click', hideUserDirectoryPanel); // Use updated ID and function
+        hideUserDirectoryPanelButton.addEventListener('click', hideUserDirectoryPanel);
+
+
+        // --- Event Listeners for New "Open Panel" Buttons ---
+        openAdminPanelButton.addEventListener('click', () => {
+            // Permission check also happens in handleLoginSuccess for button visibility,
+            // but good to have a check here too in case of direct calls or unforeseen UI states.
+            if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                showPanel(adminPanel);
+                addLogEntry("Admin Panel Opened", { trigger: "OpenAdminPanelButton", by: auth.currentUser.email });
+            } else {
+                showMessage("You do not have permission to access the Admin Panel.", "error");
+                // Optionally hide the button if it was erroneously shown
+                openAdminPanelButton.classList.add('hidden');
+            }
+        });
+
+        openAccountManagementButton.addEventListener('click', () => {
+            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (loggedInUser && auth.currentUser) { // Ensure there's an active Firebase auth session too
+                showPanel(accountManagementPanel);
+                // The loggedInUser object from localStorage should have the formatted name.
+                // renderAccountManagementPanel expects an object with {name, username, profilePic}
+                // and also uses auth.currentUser for provider info.
+                renderAccountManagementPanel(loggedInUser);
+                addLogEntry("Account Management Panel Opened", { trigger: "OpenAccountManagementButton", by: loggedInUser.username });
+            } else {
+                // This case should ideally not be reached if button visibility is managed correctly.
+                showMessage("You need to be logged in to manage your account.", "info");
+                showPanel(loginButtonsContainer); // Show login as a fallback
+            }
+        });
+
+        closeAdminPanelButton.addEventListener('click', () => {
+            showPanel(null); // Hide admin panel, return to the neutral view with main action buttons
+            // Ensure main action buttons are visible if they were part of a container managed by showPanel
+            // However, current logic in handleLoginSuccess makes them visible and they are not hidden by showPanel(specificPanel).
+        });
 
     </script>
 </body>
