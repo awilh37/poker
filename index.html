@@ -981,12 +981,17 @@
                     userData.chip_count = 0; // Initialize chip_count for new users
                     console.log("New user profile created with initial chip_count: 0 for user:", user.uid);
                 } else {
-                    // If user exists, chip_count is managed elsewhere (e.g., admin panel)
-                    // We can ensure it exists if it somehow got deleted, but default to not overwriting it.
                     const existingData = userProfileSnap.data();
-                    if (typeof existingData.chip_count === 'undefined') {
-                        userData.chip_count = 0; // Add if missing, though ideally it shouldn't be.
-                         console.log("Existing user profile was missing chip_count. Initialized to 0 for user:", user.uid);
+                    // Ensure chip_count is a number, defaulting to 0 if it's missing or not a number.
+                    if (typeof existingData.chip_count === 'number') {
+                        userData.chip_count = existingData.chip_count;
+                    } else {
+                        userData.chip_count = 0; // Default to 0 if not a number or undefined
+                        if (typeof existingData.chip_count !== 'undefined') {
+                            console.log(`Existing user profile had a non-numeric chip_count ('${existingData.chip_count}'). Corrected to 0 for user:`, user.uid);
+                        } else {
+                            console.log("Existing user profile was missing chip_count. Initialized to 0 for user:", user.uid);
+                        }
                     }
                 }
 
