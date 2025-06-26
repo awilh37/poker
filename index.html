@@ -1534,32 +1534,7 @@
         saveUserRolesButton.addEventListener('click', collectAndSaveChanges); // Updated function name
 
 
-        // Event listeners for log viewer buttons
-        viewLogsButton.addEventListener('click', () => {
-            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (loggedInUser && loggedInUser.hasAdminAccess) {
-                showPanel(logViewer);
-                populateLogFilterTypes();
-                renderLogs();
-                // addLogEntry("View Logs Button Clicked", { user: loggedInUser.username, role: loggedInUser.role }); // Removed for log simplification
-            } else {
-                 showMessage("You do not have administrative access to view logs.", 'error');
-                 // addLogEntry("View Logs Access Denied", { user: loggedInUser?.username || 'Unknown User', attemptedAction: "View Activity Logs" }); // Removed
-            }
-        });
-
-        hideLogsButton.addEventListener('click', () => {
-            showPanel(adminPanel);
-        });
-
-        clearLogsButton.addEventListener('click', clearLogs);
-
-        // Event listeners for log filtering and sorting
-        logFilterType.addEventListener('change', renderLogs);
-        logSearchText.addEventListener('input', renderLogs);
-        logSortOrderRadios.forEach(radio => {
-            radio.addEventListener('change', renderLogs);
-        });
+        // Event listeners for log viewer buttons (REMOVED as feature is removed)
 
         // --- Account Management Button Event Listeners ---
         manageAccountButton.addEventListener('click', () => {
