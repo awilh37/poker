@@ -335,6 +335,7 @@
         let firebaseAuthReady = false;
         let isLoggingOut = false;
         let dataLoadedAndListenersSetup = false;
+        let unsubscribeOwnActiveSessionListener = null; // For self-logout listener
 
 
         // --- Super Admin UID (DO NOT TOUCH THIS!) ---
@@ -409,6 +410,55 @@
             const role = getCurrentUserRole(uid);
             // SUPER_ADMIN_UID, 'owner', or 'admin' roles grant admin panel access.
             return uid === SUPER_ADMIN_UID || role === 'owner' || role === 'admin';
+        }
+
+        // --- Listener for Own Active Session (for remote/forced logout detection) ---
+        function setupOwnActiveSessionListener(uid) {
+            if (unsubscribeOwnActiveSessionListener) {
+                console.log("Unsubscribing from previous own active session listener.");
+                unsubscribeOwnActiveSessionListener(); 
+                unsubscribeOwnActiveSessionListener = null;
+            }
+
+            if (!uid) {
+                console.error("Cannot setup own active session listener without UID.");
+                return; 
+            }
+
+            const sessionDocRef = doc(activeSessionsCollectionRef, uid);
+            console.log(`Setting up listener for own active session: active_sessions/${uid}`);
+
+            unsubscribeOwnActiveSessionListener = onSnapshot(sessionDocRef, (docSnap) => {
+                console.log(`Own active session listener event: exists=${docSnap.exists()}`);
+                if (!docSnap.exists()) {
+                    // Document was deleted
+                    console.log("Own active session document deleted, potentially by force logout or other means.");
+                    if (auth.currentUser && auth.currentUser.uid === uid && !isLoggingOut) { 
+                        // Check if still the same user and not already in the process of logging out
+                        console.log("Current user matches and not already logging out. Initiating self-logout.");
+                        isLoggingOut = true; // Set flag early to prevent race conditions/re-entry
+                        showMessage("Your session has been ended remotely. You are now being logged out.", "info");
+                        
+                        if (unsubscribeOwnActiveSessionListener) {
+                            console.log("Unsubscribing from own active session listener before forced logout.");
+                            unsubscribeOwnActiveSessionListener();
+                            unsubscribeOwnActiveSessionListener = null;
+                        }
+
+                        // Delay slightly to allow message to be seen, then logout
+                        setTimeout(() => {
+                            handleLogout(); 
+                        }, 3000); 
+                    } else {
+                        console.log("Self-logout condition not met:", 
+                                    {currentUser: auth.currentUser?.uid, targetUid: uid, isLoggingOutFlag: isLoggingOut});
+                    }
+                }
+            }, (error) => {
+                console.error(`Error listening to own active session (active_sessions/${uid}):`, error);
+                // Optionally, inform the user if this critical listener fails
+                // showMessage("Error: Could not monitor session status. Please refresh.", "error");
+            });
         }
 
 
@@ -922,14 +972,14 @@
 
 
         // --- "User Directory" Panel Functions (formerly Logged-in Users Panel) ---
-        async function showUserDirectoryPanel() { // Renamed and made async
-            showPanel(loggedInUsersPanel); // loggedInUsersPanel is the ID of the div
-            await renderUserDirectoryTable(); // Renamed and made async
+        async function showUserDirectoryPanel() { 
+            showPanel(userDirectoryPanel); // Corrected variable name
+            await renderUserDirectoryTable(); 
             addLogEntry("User Directory Panel Opened", { user: auth.currentUser?.email || auth.currentUser?.uid });
         }
 
-        function hideUserDirectoryPanel() { // Renamed
-            loggedInUsersPanel.classList.add('hidden');
+        function hideUserDirectoryPanel() { 
+            userDirectoryPanel.classList.add('hidden'); // Corrected variable name
             const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
             if (loggedInUser && loggedInUser.hasAdminAccess) {
                 showPanel(adminPanel);
@@ -1156,6 +1206,7 @@
                         loginTime: new Date().toISOString()
                     }, { merge: true }); // merge:true to update if session doc already exists
                     console.log("User session added/updated in active_sessions:", user.uid);
+                    setupOwnActiveSessionListener(user.uid); // Setup listener for self-logout
                 } catch (e) {
                     console.error("Error adding/updating user session to active_sessions:", e);
                     // Non-critical, so don't block login, but log it.
@@ -1217,6 +1268,12 @@
 
         // Function to handle logout
         async function handleLogout() {
+            if (unsubscribeOwnActiveSessionListener) {
+                console.log("Unsubscribing from own active session listener during logout.");
+                unsubscribeOwnActiveSessionListener();
+                unsubscribeOwnActiveSessionListener = null;
+            }
+
             const loggedInUserString = localStorage.getItem('loggedInUser');
             let firebaseUidToClear = null;
 
