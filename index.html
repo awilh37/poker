@@ -1344,7 +1344,11 @@
             showMessage('You have been logged out.', 'info');
             showPanel(loginButtonsContainer);
             logoutButton.classList.add('hidden');
-            // Hide other panels that might have been open
+            viewUserDirectoryButton.classList.add('hidden');
+            openAccountManagementButton.classList.add('hidden');
+            openAdminPanelButton.classList.add('hidden');
+
+            // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
             userManagementPanel.classList.add('hidden');
             logViewer.classList.add('hidden');
@@ -1352,9 +1356,7 @@
             if (userDirectoryPanel) { 
                 userDirectoryPanel.classList.add('hidden');
             }
-            if (viewUserDirectoryButton) { 
-                viewUserDirectoryButton.classList.add('hidden');
-            }
+            // viewUserDirectoryButton is already handled above
         }
 
         // Best-effort cleanup on tab close / navigation
