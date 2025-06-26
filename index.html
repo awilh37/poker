@@ -1020,7 +1020,7 @@
                 });
 
                 users.forEach(user => {
-                    const row = loggedInUsersTableBody.insertRow();
+                    const row = userDirectoryTableBody.insertRow(); // Corrected variable name
                     const displayNameCell = row.insertCell();
                     const chipCountCell = row.insertCell();
                     const statusCell = row.insertCell();
