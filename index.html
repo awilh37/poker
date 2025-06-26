@@ -150,6 +150,14 @@
             Admin Panel
         </button>
 
+        <!-- "Join a Game" Button (Initially hidden, for all logged-in users) -->
+        <button
+            id="joinGameButton"
+            class="hidden mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
+        >
+            Join a Game
+        </button>
+
         <!-- Admin Panel (Initially hidden) -->
         <div id="adminPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full text-center">
             <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Admin Panel</h3>
@@ -162,8 +170,11 @@
                 <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Manage Users
                 </button>
+                <button id="manageGameRoomsButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
+                    Manage Game Rooms
+                </button>
                 <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Manage Game Data
+                    Manage Game Data (Placeholder)
                 </button>
                 <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Configure Games
@@ -211,6 +222,57 @@
                 </button>
             </div>
         </div>
+
+        <!-- Game Room Management Panel (Initially hidden) -->
+        <div id="gameRoomManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-6 text-center">Manage Game Rooms</h3>
+
+            <!-- Create New Game Room Section -->
+            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 class="text-lg font-semibold text-gray-700 mb-3">Create New Game Room</h4>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
+                    <div class="flex-grow">
+                        <label for="newRoomNameInput" class="block text-sm font-medium text-gray-700 mb-1">Room Name:</label>
+                        <input type="text" id="newRoomNameInput" placeholder="e.g., Main Event Table 1" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button id="createGameRoomButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                        Create Room
+                    </button>
+                </div>
+            </div>
+
+            <!-- Existing Game Rooms List Section -->
+            <div>
+                <h4 class="text-lg font-semibold text-gray-700 mb-3">Existing Rooms</h4>
+                <div id="gameRoomsListContainer" class="max-h-80 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white">
+                    <p class="text-gray-500 text-center py-4">Loading rooms...</p>
+                    <!-- Game rooms will be listed here by JavaScript -->
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="closeGameRoomManagementPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Close & Return to Admin Panel
+                </button>
+            </div>
+        </div>
+
+        <!-- Player Join Room Panel (Initially hidden) -->
+        <div id="playerJoinRoomPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-lg md:max-w-xl">
+            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-6 text-center">Available Game Rooms</h3>
+
+            <div id="availableRoomsListContainer" class="max-h-96 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white">
+                <p class="text-gray-500 text-center py-4">Loading available rooms...</p>
+                <!-- Available game rooms will be listed here by JavaScript -->
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="closePlayerJoinRoomPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Close
+                </button>
+            </div>
+        </div>
+
 
         <!-- Account Management Panel (Initially hidden) -->
         <div id="accountManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg text-center">
@@ -280,7 +342,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -356,6 +418,18 @@
         const openAccountManagementButton = document.getElementById('openAccountManagementButton');
         const closeAdminPanelButton = document.getElementById('closeAdminPanelButton');
 
+        const manageGameRoomsButton = document.getElementById('manageGameRoomsButton');
+        const gameRoomManagementPanel = document.getElementById('gameRoomManagementPanel');
+        const newRoomNameInput = document.getElementById('newRoomNameInput');
+        const createGameRoomButton = document.getElementById('createGameRoomButton');
+        const gameRoomsListContainer = document.getElementById('gameRoomsListContainer');
+        const closeGameRoomManagementPanelButton = document.getElementById('closeGameRoomManagementPanelButton');
+
+        const joinGameButton = document.getElementById('joinGameButton');
+        const playerJoinRoomPanel = document.getElementById('playerJoinRoomPanel');
+        const availableRoomsListContainer = document.getElementById('availableRoomsListContainer');
+        const closePlayerJoinRoomPanelButton = document.getElementById('closePlayerJoinRoomPanelButton');
+
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
         // const logSearchText = document.getElementById('logSearchText'); // Removed
@@ -365,6 +439,7 @@
         let firestoreUserRoles = {}; // Stores roles fetched from Firestore
         // let firestoreActivityLogs = []; // Removed
         let firestoreActiveSessions = []; // Stores active sessions from Firestore
+        let firestoreGameRooms = []; // Stores game rooms fetched from Firestore
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
 
@@ -444,12 +519,13 @@
         const activityLogsCollectionRef = collection(db, `artifacts/${appId}/public/data/activity_logs`);
         const userProfilesCollectionRef = collection(db, `artifacts/${appId}/public/data/user_profiles`);
         const activeSessionsCollectionRef = collection(db, `artifacts/${appId}/public/data/active_sessions`);
+        const gameRoomsCollectionRef = collection(db, `artifacts/${appId}/public/data/game_rooms`);
 
 
         // --- Utility Functions ---
         function showPanel(panelToShow) {
             // logViewer variable was removed, so it's no longer in this list.
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, loadingIndicator];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, playerJoinRoomPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -905,14 +981,30 @@
                     displayNameCell.textContent = formatDisplayName(user);
                     chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0';
 
-                    // Determine status
-                    if (activeSessionUIDs.includes(user.uid)) {
-                        statusCell.textContent = 'Online';
-                        statusCell.className = 'text-green-600 font-semibold';
-                    } else {
-                        statusCell.textContent = 'Offline';
-                        statusCell.className = 'text-gray-500';
+                    // Determine status: In-Game > Online > Offline
+                    let userStatus = "Offline";
+                    let statusClass = "text-gray-500";
+
+                    // Check if user is in any game room's players list
+                    let isInGame = false;
+                    for (const room of firestoreGameRooms) {
+                        if (room.players && room.players.includes(user.uid)) {
+                            isInGame = true;
+                            break;
+                        }
                     }
+
+                    if (isInGame) {
+                        userStatus = "In-Game";
+                        statusClass = "text-blue-600 font-semibold"; // Blue for In-Game
+                    } else if (activeSessionUIDs.includes(user.uid)) {
+                        userStatus = 'Online';
+                        statusClass = 'text-green-600 font-semibold'; // Green for Online
+                    }
+                    // Default is Offline (grey), already set
+
+                    statusCell.textContent = userStatus;
+                    statusCell.className = statusClass;
                 });
 
             } catch (error) {
@@ -1131,6 +1223,7 @@
 
             logoutButton.classList.remove('hidden');
             openAccountManagementButton.classList.remove('hidden');
+            joinGameButton.classList.remove('hidden'); // Show for all logged-in users
 
             if (userHasAdminAccess) {
                 openAdminPanelButton.classList.remove('hidden');
@@ -1203,6 +1296,7 @@
             viewUserDirectoryButton.classList.add('hidden');
             openAccountManagementButton.classList.add('hidden');
             openAdminPanelButton.classList.add('hidden');
+            joinGameButton.classList.add('hidden'); // Hide on logout
 
             // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
@@ -1391,7 +1485,44 @@
                 // Consider storing unsubscribeSessions if needed
             });
 
-            return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise]); // Removed logsPromise
+            // Promise for Game Rooms
+            const gameRoomsPromise = new Promise((resolve, reject) => {
+                let initialGameRoomsLoadDone = false;
+                const q = query(gameRoomsCollectionRef, orderBy("createdAt", "desc")); // Order by creation time, newest first
+                const unsubscribeGameRooms = onSnapshot(q, (snapshot) => {
+                    const newRooms = [];
+                    snapshot.forEach(doc => {
+                        newRooms.push({ id: doc.id, ...doc.data() });
+                    });
+                    firestoreGameRooms = newRooms;
+                    console.log("Firestore: Game Rooms snapshot processed. Rooms count:", firestoreGameRooms.length);
+
+                    if (gameRoomManagementPanel && !gameRoomManagementPanel.classList.contains('hidden')) {
+                        renderGameRoomsList();
+                    }
+                    // Also re-render user directory if it's visible, as player status might depend on game rooms
+                    if (userDirectoryPanel && !userDirectoryPanel.classList.contains('hidden')) {
+                        renderUserDirectoryTable();
+                    }
+                    // Also re-render available rooms list for players if it's visible
+                    if (playerJoinRoomPanel && !playerJoinRoomPanel.classList.contains('hidden')) {
+                        renderAvailableRoomsList();
+                    }
+
+                    if (!initialGameRoomsLoadDone) {
+                        initialGameRoomsLoadDone = true;
+                        console.log("Firestore: Initial Game Rooms loaded.");
+                        resolve();
+                    }
+                }, (error) => {
+                    console.error("Firestore: Error listening to game rooms:", error);
+                    showMessage("Error: Could not sync game rooms from cloud.", 'error');
+                    reject(error);
+                });
+                // Consider storing unsubscribeGameRooms if needed
+            });
+
+            return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise, gameRoomsPromise]);
         }
 
 
@@ -1605,6 +1736,257 @@
             // Ensure main action buttons are visible if they were part of a container managed by showPanel
             // However, current logic in handleLoginSuccess makes them visible and they are not hidden by showPanel(specificPanel).
         });
+
+        // --- Game Room Management Panel Event Listeners ---
+        manageGameRoomsButton.addEventListener('click', () => {
+            if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                showPanel(gameRoomManagementPanel);
+                renderGameRoomsList(); // Render the list when panel is opened
+            } else {
+                showMessage("You do not have permission to manage game rooms.", "error");
+            }
+        });
+
+        closeGameRoomManagementPanelButton.addEventListener('click', () => {
+            showPanel(adminPanel); // Return to main admin panel
+        });
+
+        async function createGameRoom() {
+            const roomName = newRoomNameInput.value.trim();
+            if (!roomName) {
+                showMessage("Room name cannot be empty.", "error");
+                return;
+            }
+
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to create game rooms.", "error");
+                return;
+            }
+
+            showMessage("Creating game room...", "info");
+            try {
+                await addDoc(gameRoomsCollectionRef, {
+                    roomName: roomName,
+                    createdBy: auth.currentUser.uid,
+                    createdAt: serverTimestamp(),
+                    status: "open", // Initial status
+                    players: []      // Initially no players
+                });
+                showMessage(`Game room "${roomName}" created successfully!`, "success");
+                newRoomNameInput.value = ''; // Clear input
+                // The list of rooms will update via the Firestore listener in renderGameRoomsList
+            } catch (error) {
+                console.error("Error creating game room:", error);
+                showMessage(`Failed to create game room: ${error.message}`, "error");
+            }
+        }
+
+        createGameRoomButton.addEventListener('click', createGameRoom);
+
+        // --- Player Join Game Panel Listeners ---
+        joinGameButton.addEventListener('click', () => {
+            if (auth.currentUser) {
+                showPanel(playerJoinRoomPanel);
+                renderAvailableRoomsList(); // To be implemented next
+            } else {
+                showMessage("Please log in to join a game.", "info");
+                showPanel(loginButtonsContainer);
+            }
+        });
+
+        closePlayerJoinRoomPanelButton.addEventListener('click', () => {
+            showPanel(null); // Return to neutral view
+        });
+
+        // --- Game Room Listing ---
+        function renderGameRoomsList() {
+            if (!gameRoomsListContainer) return; // Should not happen if panel is visible
+
+            gameRoomsListContainer.innerHTML = ''; // Clear previous list
+
+            if (firestoreGameRooms.length === 0) {
+                gameRoomsListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No game rooms created yet.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-2';
+
+            // Sort rooms, e.g., by creation time (newest first) if createdAt is a valid Timestamp
+            // For now, just iterating as is, or sort by name.
+            const sortedRooms = [...firestoreGameRooms].sort((a, b) => {
+                if (a.createdAt && b.createdAt) { // Assuming createdAt is a Firestore Timestamp
+                    return b.createdAt.seconds - a.createdAt.seconds;
+                }
+                return (a.roomName || '').localeCompare(b.roomName || '');
+            });
+
+            sortedRooms.forEach(room => {
+                const li = document.createElement('li');
+                li.className = 'p-3 bg-gray-100 rounded-md shadow-sm flex justify-between items-center';
+
+                const roomNameSpan = document.createElement('span');
+                roomNameSpan.textContent = room.roomName || 'Unnamed Room';
+                roomNameSpan.className = 'font-semibold text-gray-800';
+
+                const roomStatusSpan = document.createElement('span');
+                roomStatusSpan.textContent = `Status: ${room.status || 'N/A'}`;
+                roomStatusSpan.className = `text-sm px-2 py-1 rounded-full ${room.status === 'open' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}`;
+
+                // TODO: Add player count: room.players?.length || 0
+                // TODO: Add action buttons per room (e.g., Close, Delete, View Players)
+
+                li.appendChild(roomNameSpan);
+                li.appendChild(roomStatusSpan);
+                ul.appendChild(li);
+            });
+            gameRoomsListContainer.appendChild(ul);
+        }
+
+        // --- Player: Render Available Game Rooms List ---
+        function renderAvailableRoomsList() {
+            if (!availableRoomsListContainer) return;
+
+            availableRoomsListContainer.innerHTML = ''; // Clear previous list
+
+            const openRooms = firestoreGameRooms.filter(room => room.status === 'open');
+
+            if (openRooms.length === 0) {
+                availableRoomsListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No game rooms currently available to join.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = 'space-y-3';
+
+            openRooms.forEach(room => {
+                const li = document.createElement('li');
+                li.className = 'p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0';
+
+                const roomInfoDiv = document.createElement('div');
+
+                const roomNameSpan = document.createElement('span');
+                roomNameSpan.textContent = room.roomName || 'Unnamed Room';
+                roomNameSpan.className = 'font-semibold text-lg text-indigo-700 block';
+                roomInfoDiv.appendChild(roomNameSpan);
+
+                const playerCountSpan = document.createElement('span');
+                const currentPlayers = room.players?.length || 0;
+                // const maxPlayers = room.maxPlayers || 'N/A'; // Assuming maxPlayers might be added later
+                playerCountSpan.textContent = `Players: ${currentPlayers}`; // / ${maxPlayers}
+                playerCountSpan.className = 'text-sm text-gray-600 block mt-1';
+                roomInfoDiv.appendChild(playerCountSpan);
+
+                li.appendChild(roomInfoDiv);
+
+                const joinButton = document.createElement('button');
+                joinButton.textContent = 'Join';
+                joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
+                joinButton.setAttribute('data-room-id', room.id);
+                joinButton.onclick = () => handleJoinRoom(room.id);
+
+                // Disable join button if player is already in THIS room or ANY room (if one-room-at-a-time rule)
+                let alreadyInARoom = false;
+                if(auth.currentUser) {
+                    for (const r of firestoreGameRooms) {
+                        if (r.players && r.players.includes(auth.currentUser.uid)) {
+                            alreadyInARoom = true;
+                            if (r.id === room.id) { // Already in this specific room
+                                joinButton.textContent = 'Joined';
+                                joinButton.disabled = true;
+                                joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
+                                joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
+                            } else { // In a different room
+                                joinButton.disabled = true; // Prevent joining another if already in one
+                            }
+                            break;
+                        }
+                    }
+                }
+                // Further disabling if room is full (requires maxPlayers) would go here
+                if (room.status !== 'open') { // Also disable if room is not open
+                    joinButton.disabled = true;
+                }
+
+
+                li.appendChild(joinButton);
+                ul.appendChild(li);
+            });
+            availableRoomsListContainer.appendChild(ul);
+        }
+
+        async function handleJoinRoom(roomId) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to join a room.", "error");
+                return;
+            }
+            const userId = auth.currentUser.uid;
+
+            // Check if player is already in any room (client-side check for quick UI feedback)
+            for (const r of firestoreGameRooms) {
+                if (r.players && r.players.includes(userId)) {
+                    if (r.id === roomId) {
+                        showMessage("You are already in this room.", "info");
+                    } else {
+                        showMessage("You are already in another game room. Please leave it before joining a new one.", "error");
+                    }
+                    return;
+                }
+            }
+
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            showMessage("Joining room...", "info");
+
+            try {
+                const roomSnap = await getDoc(roomDocRef);
+                if (!roomSnap.exists()) {
+                    showMessage("Error: Room not found.", "error");
+                    renderAvailableRoomsList(); // Refresh list as room might have been deleted
+                    return;
+                }
+
+                const roomData = roomSnap.data();
+                if (roomData.status !== 'open') {
+                    showMessage("This room is no longer open to join.", "error");
+                    renderAvailableRoomsList(); // Refresh list
+                    return;
+                }
+
+                // Optional: Check for maxPlayers if implemented
+                // if (roomData.players.length >= roomData.maxPlayers) {
+                //     showMessage("This room is full.", "error");
+                //     renderAvailableRoomsList(); // Refresh list
+                //     return;
+                // }
+
+                // Add player to the room
+                await updateDoc(roomDocRef, {
+                    players: arrayUnion(userId)
+                });
+                showMessage("Successfully joined the room!", "success");
+                // UI will update automatically via Firestore listeners (renderAvailableRoomsList and renderUserDirectoryTable)
+            } catch (error) {
+                console.error("Error joining room:", error);
+                showMessage(`Failed to join room: ${error.message}`, "error");
+            }
+        }
+
+    </script>
+</body>
+</html>
+                if (auth.currentUser && room.players && room.players.includes(auth.currentUser.uid)) {
+                    joinButton.textContent = 'Joined';
+                    joinButton.disabled = true;
+                    joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
+                    joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
+                }
+
+
+                li.appendChild(joinButton);
+                ul.appendChild(li);
+            });
+            availableRoomsListContainer.appendChild(ul);
+        }
 
     </script>
 </body>
