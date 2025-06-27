@@ -686,6 +686,27 @@
             }
         }
 
+        async function handleLeaveRoom(roomId) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to leave a room.", "error");
+                return;
+            }
+            const userId = auth.currentUser.uid;
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+
+            showMessage("Leaving room...", "info");
+            try {
+                await updateDoc(roomDocRef, {
+                    players: arrayRemove(userId)
+                });
+                showMessage("You have left the room.", "success");
+                // UI will update automatically via Firestore listeners (renderAvailableRoomsList and renderUserDirectoryTable)
+            } catch (error) {
+                console.error("Error leaving room:", error);
+                showMessage(`Failed to leave room: ${error.message}`, "error");
+            }
+        }
+
         function renderUserRolesTable() {
             userRolesTableBody.innerHTML = '';
             
@@ -1267,8 +1288,27 @@
 
             isLoggingOut = true;
 
-            // Attempt to remove from active_sessions, regardless of signOut success
             if (firebaseUidToClear) {
+                // Attempt to remove user from any game room they are in
+                for (const room of firestoreGameRooms) {
+                    if (room.players && room.players.includes(firebaseUidToClear)) {
+                        console.log(`User ${firebaseUidToClear} is in room ${room.id}. Attempting to remove.`);
+                        const roomDocRef = doc(gameRoomsCollectionRef, room.id);
+                        try {
+                            await updateDoc(roomDocRef, {
+                                players: arrayRemove(firebaseUidToClear)
+                            });
+                            console.log(`User ${firebaseUidToClear} removed from room ${room.id} during logout.`);
+                        } catch (e) {
+                            console.error(`Error removing user ${firebaseUidToClear} from room ${room.id} during logout:`, e);
+                            // Non-critical, continue logout process
+                        }
+                        // Assuming a user can only be in one room at a time
+                        break; 
+                    }
+                }
+
+                // Attempt to remove from active_sessions, regardless of signOut success
                 try {
                     const activeSessionRef = doc(activeSessionsCollectionRef, firebaseUidToClear);
                     await deleteDoc(activeSessionRef);
@@ -1280,7 +1320,7 @@
             }
 
             try {
-                if (auth.currentUser) {
+                if (auth.currentUser) { // Check again as state might have changed due to async operations above
                     await signOut(auth); // Use Firebase signOut function
                     console.log("Firebase: Signed out.");
                 }
@@ -1312,23 +1352,32 @@
         // Best-effort cleanup on tab close / navigation
         window.addEventListener('beforeunload', async (event) => {
             // Check if there's a logged-in user according to Firebase Auth directly
-            if (auth.currentUser && !isLoggingOut) { // !isLoggingOut to prevent double execution during normal logout
-                console.log('beforeunload: Attempting to clear active session for user:', auth.currentUser.uid);
+            if (auth.currentUser && !isLoggingOut) { 
+                const userId = auth.currentUser.uid;
+                console.log('beforeunload: Attempting cleanup for user:', userId);
+
+                // Best-effort: Attempt to remove user from any game room
+                for (const room of firestoreGameRooms) {
+                    if (room.players && room.players.includes(userId)) {
+                        console.log(`beforeunload: User ${userId} is in room ${room.id}. Attempting fire-and-forget removal.`);
+                        const roomDocRef = doc(gameRoomsCollectionRef, room.id);
+                        updateDoc(roomDocRef, { // Not awaiting, fire-and-forget
+                            players: arrayRemove(userId)
+                        }).catch(e => console.warn(`beforeunload: Error removing user from room ${room.id}:`, e));
+                        break; // Assuming user can only be in one room
+                    }
+                }
+                
+                // Best-effort: Attempt to clear active session
                 try {
-                    const activeSessionRef = doc(activeSessionsCollectionRef, auth.currentUser.uid);
-                    // Note: This is a best-effort. Complex async operations in beforeunload are not guaranteed.
-                    // For very critical session cleanup, server-side heartbeats or timeouts are more robust.
-                    // Here, we make a fire-and-forget attempt.
+                    const activeSessionRef = doc(activeSessionsCollectionRef, userId);
                     deleteDoc(activeSessionRef).then(() => {
-                        console.log('beforeunload: Session cleanup call for', auth.currentUser.uid, 'completed.');
+                        console.log('beforeunload: Active session cleanup call for', userId, 'completed.');
                     }).catch(e => {
-                        console.warn('beforeunload: Error in session cleanup call for', auth.currentUser.uid, e);
+                        console.warn('beforeunload: Error in active session cleanup call for', userId, e);
                     });
-                    // Some browsers might require a returnValue to be set to show a confirmation dialog
-                    // event.preventDefault(); // If you want to try and show a confirmation
-                    // event.returnValue = ''; // Necessary for some browsers
                 } catch (e) {
-                    console.warn("Error during beforeunload session cleanup for user:", auth.currentUser.uid, e);
+                    console.warn("Error during beforeunload active session cleanup setup for user:", userId, e);
                 }
             }
         });
@@ -1883,28 +1932,43 @@
                 joinButton.textContent = 'Join';
                 joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
                 joinButton.setAttribute('data-room-id', room.id);
+                // Default action
                 joinButton.onclick = () => handleJoinRoom(room.id); 
 
-                // Disable join button if player is already in THIS room or ANY room (if one-room-at-a-time rule)
-                let alreadyInARoom = false;
                 if(auth.currentUser) {
-                    for (const r of firestoreGameRooms) {
-                        if (r.players && r.players.includes(auth.currentUser.uid)) {
-                            alreadyInARoom = true;
-                            if (r.id === room.id) { // Already in this specific room
-                                joinButton.textContent = 'Joined';
-                                joinButton.disabled = true;
-                                joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
-                                joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
-                            } else { // In a different room
-                                joinButton.disabled = true; // Prevent joining another if already in one
+                    let playerUID = auth.currentUser.uid;
+                    let inThisRoom = room.players && room.players.includes(playerUID);
+                    let inAnotherRoom = false;
+
+                    if (!inThisRoom) { // Only check for other rooms if not in this one already
+                        for (const r of firestoreGameRooms) {
+                            if (r.id !== room.id && r.players && r.players.includes(playerUID)) {
+                                inAnotherRoom = true;
+                                break;
                             }
-                            break; 
                         }
                     }
+
+                    if (inThisRoom) {
+                        joinButton.textContent = 'Leave Room';
+                        joinButton.classList.replace('bg-blue-500', 'bg-red-500');
+                        joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-red-700');
+                        joinButton.onclick = () => handleLeaveRoom(room.id);
+                        joinButton.disabled = false; // Explicitly enable, as it might have been disabled by other conditions
+                    } else if (inAnotherRoom) {
+                        joinButton.textContent = 'Join'; // Keep as join, but disable
+                        joinButton.disabled = true;
+                    } else {
+                        // Not in this room, not in another room - default "Join" state, button is enabled unless room not open
+                        joinButton.disabled = (room.status !== 'open');
+                    }
+                } else {
+                    // No user logged in, disable join
+                    joinButton.disabled = true;
                 }
-                // Further disabling if room is full (requires maxPlayers) would go here
-                if (room.status !== 'open') { // Also disable if room is not open
+                
+                if (room.status !== 'open' && !(auth.currentUser && room.players && room.players.includes(auth.currentUser.uid))) { 
+                    // If room is not open, and user is not in it (so "Leave Room" isn't an option), disable join.
                     joinButton.disabled = true;
                 }
 
@@ -1969,6 +2033,23 @@
                 console.error("Error joining room:", error);
                 showMessage(`Failed to join room: ${error.message}`, "error");
             }
+        }
+
+    </script>
+</body>
+</html>
+                if (auth.currentUser && room.players && room.players.includes(auth.currentUser.uid)) {
+                    joinButton.textContent = 'Joined';
+                    joinButton.disabled = true;
+                    joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
+                    joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
+                }
+
+
+                li.appendChild(joinButton);
+                ul.appendChild(li);
+            });
+            availableRoomsListContainer.appendChild(ul);
         }
 
     </script>
