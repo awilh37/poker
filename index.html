@@ -2038,20 +2038,3 @@
     </script>
 </body>
 </html>
-                if (auth.currentUser && room.players && room.players.includes(auth.currentUser.uid)) {
-                    joinButton.textContent = 'Joined';
-                    joinButton.disabled = true;
-                    joinButton.classList.replace('bg-blue-500', 'bg-gray-400');
-                    joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-gray-400');
-                }
-
-
-                li.appendChild(joinButton);
-                ul.appendChild(li);
-            });
-            availableRoomsListContainer.appendChild(ul);
-        }
-
-    </script>
-</body>
-</html>
