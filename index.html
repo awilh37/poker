@@ -1883,10 +1883,28 @@
                 roomStatusSpan.className = `text-sm px-2 py-1 rounded-full ${room.status === 'open' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}`;
 
                 // TODO: Add player count: room.players?.length || 0
-                // TODO: Add action buttons per room (e.g., Close, Delete, View Players)
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'flex items-center space-x-2 mt-2 sm:mt-0 sm:ml-4';
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'bg-red-500 hover:bg-red-700 text-white text-xs py-1 px-2 rounded';
+                deleteButton.setAttribute('data-room-id', room.id);
+                deleteButton.setAttribute('data-room-name', room.roomName || 'Unnamed Room');
+                // deleteButton.onclick will be set later to call handleDeleteRoom
+
+                actionsDiv.appendChild(deleteButton);
+                // TODO: Add other admin action buttons here (e.g., View Players, Close/Open Room)
+
 
                 li.appendChild(roomNameSpan);
-                li.appendChild(roomStatusSpan);
+                const detailsDiv = document.createElement('div'); // To group status and actions
+                detailsDiv.className = "flex flex-col sm:flex-row sm:items-center";
+                detailsDiv.appendChild(roomStatusSpan);
+                detailsDiv.appendChild(actionsDiv);
+                li.appendChild(detailsDiv);
+
                 ul.appendChild(li);
             });
             gameRoomsListContainer.appendChild(ul);
