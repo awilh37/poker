@@ -1788,10 +1788,13 @@
 
         // --- Game Room Management Panel Event Listeners ---
         manageGameRoomsButton.addEventListener('click', () => {
+            console.log("Manage Game Rooms button clicked."); // Debug log
             if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                console.log("User has admin access, showing gameRoomManagementPanel and calling renderGameRoomsList."); // Debug log
                 showPanel(gameRoomManagementPanel);
                 renderGameRoomsList(); // Render the list when panel is opened
             } else {
+                console.log("User does NOT have admin access for game rooms or not logged in."); // Debug log
                 showMessage("You do not have permission to manage game rooms.", "error");
             }
         });
@@ -1832,6 +1835,29 @@
 
         createGameRoomButton.addEventListener('click', createGameRoom);
 
+        async function handleDeleteRoom(roomId, roomName) {
+            console.log(`handleDeleteRoom CALLED for roomId: ${roomId}, roomName: ${roomName}`); // Debug
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to delete game rooms.", "error");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to permanently delete room: "${roomName}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            showMessage(`Deleting room "${roomName}"...`, "info");
+            try {
+                const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+                await deleteDoc(roomDocRef);
+                showMessage(`Room "${roomName}" deleted successfully.`, "success");
+                // The list will automatically update via the Firestore listener.
+            } catch (error) {
+                console.error("Error deleting game room:", error);
+                showMessage(`Failed to delete room "${roomName}": ${error.message}`, "error");
+            }
+        }
+
         // --- Player Join Game Panel Listeners ---
         joinGameButton.addEventListener('click', () => {
             if (auth.currentUser) {
@@ -1849,7 +1875,11 @@
 
         // --- Game Room Listing ---
         function renderGameRoomsList() {
-            if (!gameRoomsListContainer) return; // Should not happen if panel is visible
+            console.log("renderGameRoomsList CALLED"); // Debug log
+            if (!gameRoomsListContainer) {
+                console.error("renderGameRoomsList: gameRoomsListContainer is null!"); // Debug log
+                return; 
+            }
 
             gameRoomsListContainer.innerHTML = ''; // Clear previous list
 
@@ -1892,7 +1922,8 @@
                 deleteButton.className = 'bg-red-500 hover:bg-red-700 text-white text-xs py-1 px-2 rounded';
                 deleteButton.setAttribute('data-room-id', room.id);
                 deleteButton.setAttribute('data-room-name', room.roomName || 'Unnamed Room');
-                // deleteButton.onclick will be set later to call handleDeleteRoom
+                console.log(`Setting delete click for room: ${room.id}, name: ${room.roomName || 'Unnamed Room'}`); // Debug
+                deleteButton.onclick = () => handleDeleteRoom(room.id, room.roomName || 'Unnamed Room');
 
                 actionsDiv.appendChild(deleteButton);
                 // TODO: Add other admin action buttons here (e.g., View Players, Close/Open Room)
