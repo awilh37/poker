@@ -2061,47 +2061,54 @@
                 joinButton.textContent = 'Join';
                 joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
                 joinButton.setAttribute('data-room-id', room.id);
-                // Default action
-                joinButton.onclick = () => handleJoinRoom(room.id); 
+                joinButton.disabled = false; // Default to enabled, specific conditions will disable it.
 
                 if(auth.currentUser) {
                     let playerUID = auth.currentUser.uid;
-                    let inThisRoom = room.players && room.players.includes(playerUID);
-                    let inAnotherRoom = false;
+                    let playerIsCurrentlyInThisRoom = room.players && room.players.includes(playerUID);
+                    let playerIsCurrentlyInAnyOtherRoom = false;
 
-                    if (!inThisRoom) { // Only check for other rooms if not in this one already
+                    if (!playerIsCurrentlyInThisRoom) {
                         for (const r of firestoreGameRooms) {
                             if (r.id !== room.id && r.players && r.players.includes(playerUID)) {
-                                inAnotherRoom = true;
+                                playerIsCurrentlyInAnyOtherRoom = true;
                                 break;
                             }
                         }
                     }
 
-                    if (inThisRoom) {
-                        joinButton.textContent = 'Leave Room';
-                        joinButton.classList.replace('bg-blue-500', 'bg-red-500');
-                        joinButton.classList.replace('hover:bg-blue-600', 'hover:bg-red-700');
-                        joinButton.onclick = () => handleLeaveRoom(room.id);
-                        joinButton.disabled = false; // Explicitly enable, as it might have been disabled by other conditions
-                    } else if (inAnotherRoom) {
-                        joinButton.textContent = 'Join'; // Keep as join, but disable
-                        joinButton.disabled = true;
-                    } else {
-                        // Not in this room, not in another room - default "Join" state, button is enabled unless room not open
-                        joinButton.disabled = (room.status !== 'open');
+                    if (playerIsCurrentlyInThisRoom) {
+                        joinButton.textContent = 'View Current Game';
+                        joinButton.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0';
+                        joinButton.onclick = () => {
+                            currentJoinedRoomId = room.id;
+                            showPanel(gameRoomViewPanel);
+                            renderGameRoomView(room.id);
+                        };
+                    } else if (playerIsCurrentlyInAnyOtherRoom) {
+                        joinButton.textContent = 'Join';
+                        joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
+                        joinButton.disabled = true; // Player is in another room
+                        joinButton.onclick = () => handleJoinRoom(room.id); // Keep original join action, though disabled
+                    } else { // Player is in no room
+                        joinButton.textContent = 'Join';
+                        joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
+                        joinButton.onclick = () => handleJoinRoom(room.id);
+                        if (room.status !== 'open') {
+                            joinButton.disabled = true; // Room is not open to join
+                        }
                     }
                 } else {
                     // No user logged in, disable join
+                    joinButton.textContent = 'Join';
+                    joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
                     joinButton.disabled = true;
                 }
                 
-                if (room.status !== 'open' && !(auth.currentUser && room.players && room.players.includes(auth.currentUser.uid))) { 
-                    // If room is not open, and user is not in it (so "Leave Room" isn't an option), disable join.
+                // Final check, if room is not open and it's not the "View Current Game" button
+                if (room.status !== 'open' && joinButton.textContent === 'Join') { 
                     joinButton.disabled = true;
                 }
-
-
                 li.appendChild(joinButton);
                 ul.appendChild(li);
             });
@@ -2193,8 +2200,10 @@
             // Placeholder for placeBetButton functionality
             placeBetButton.onclick = () => {
                 const betAmount = playerBetInput.value;
-                console.log(`Attempting to place bet: ${betAmount} in room ${roomId}`);
-                showMessage(`Placeholder: Bet of ${betAmount} placed. (Functionality TBD)`, "info");
+                // Validate betAmount against playerChipCountForBet.textContent or playerBetInput.max if needed here for UI feedback
+                // For now, just logging and showing placeholder message.
+                console.log(`PLACEHOLDER: Bet button clicked. User attempted to bet: ${betAmount} in room ${roomId}. No data saved yet.`);
+                showMessage(`Placeholder: Your bet of ${betAmount} is noted. Full betting functionality is coming soon!`, "info");
             };
         }
 
