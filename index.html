@@ -742,6 +742,50 @@
             }
         }
 
+        async function handlePlaceBet(roomId) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to place a bet.", "error");
+                return;
+            }
+            const userId = auth.currentUser.uid;
+            const betAmountString = playerBetInput.value.trim();
+            const betAmount = parseInt(betAmountString, 10);
+
+            const currentUserProfile = allFirebaseUsersData.find(p => p.uid === userId);
+            const currentPlayerChips = currentUserProfile ? (currentUserProfile.chip_count ?? 0) : 0;
+
+            // Validation
+            if (isNaN(betAmount) || betAmount <= 0) {
+                showMessage("Please enter a valid positive bet amount.", "error");
+                return;
+            }
+            if (betAmount > currentPlayerChips) {
+                showMessage("You cannot bet more chips than you have.", "error");
+                return;
+            }
+
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            showMessage("Placing your bet...", "info");
+
+            try {
+                // Update the currentBets map for this user in this room.
+                // Using dot notation to update a specific field in a map.
+                // Firestore creates the map if it doesn't exist.
+                await updateDoc(roomDocRef, {
+                    [`currentBets.${userId}`]: betAmount 
+                });
+                
+                showMessage(`Bet of ${betAmount} placed successfully!`, "success");
+                playerBetInput.value = ''; // Clear input
+
+                // Note: Actual chip deduction from player's profile and adding to a pot is NOT handled here yet.
+                // The gameRoomView will re-render due to the Firestore listener on game_rooms, showing the updated bet.
+            } catch (error) {
+                console.error("Error placing bet:", error);
+                showMessage(`Failed to place bet: ${error.message}`, "error");
+            }
+        }
+
         async function handleLeaveRoom(roomId) {
             if (!auth.currentUser) {
                 showMessage("You must be logged in to leave a room.", "error");
@@ -2168,7 +2212,8 @@
                     
                     const betEl = document.createElement('p');
                     betEl.className = 'text-xs text-gray-400';
-                    betEl.textContent = 'Bet: -'; // Placeholder
+                    const playerBet = (room.currentBets && typeof room.currentBets[playerId] !== 'undefined') ? room.currentBets[playerId] : '-';
+                    betEl.textContent = `Bet: ${playerBet}`; 
                     playerCard.appendChild(betEl);
 
                     roomPlayersListContainer.appendChild(playerCard);
