@@ -273,6 +273,52 @@
             </div>
         </div>
 
+        <!-- Game Room View Panel (Initially hidden) -->
+        <div id="gameRoomViewPanel" class="hidden mt-8 p-4 sm:p-6 bg-gray-800 text-white rounded-xl shadow-xl w-full max-w-2xl lg:max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl md:text-3xl font-bold" id="gameRoomViewName">Room Name Placeholder</h3>
+                <button id="closeGameRoomViewButton" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
+                    Return to Lobby
+                </button>
+            </div>
+
+            <!-- Player List Area -->
+            <div class="mb-6">
+                <h4 class="text-xl font-semibold mb-3 text-gray-300">Players in Room</h4>
+                <div id="roomPlayersListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto p-2 bg-gray-700 rounded">
+                    <!-- Player cards will be rendered here by JavaScript -->
+                    <p class="text-gray-400 col-span-full text-center py-4">Waiting for players...</p>
+                </div>
+            </div>
+            
+            <!-- Game Action Area - Placeholder for now -->
+            <div class="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-700">
+                <h4 class="text-lg font-semibold text-gray-300 mb-3">Game Actions</h4>
+                <p class="text-gray-400">Game interface and actions will appear here.</p>
+            </div>
+
+            <!-- Player Bet Input Section -->
+            <div class="p-4 border border-gray-600 rounded-lg bg-gray-700">
+                <h4 class="text-lg font-semibold text-gray-300 mb-3">Your Bet</h4>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-end space-y-3 sm:space-y-0 sm:space-x-3">
+                    <div class="flex-grow">
+                        <label for="playerBetInput" class="block text-sm font-medium text-gray-300 mb-1">Enter Amount:</label>
+                        <input type="number" id="playerBetInput" placeholder="0" class="w-full border-gray-500 bg-gray-600 text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" min="0">
+                        <p class="text-xs text-gray-400 mt-1">Your chips: <span id="playerChipCountForBet">N/A</span></p>
+                    </div>
+                    <button id="placeBetButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                        Place Bet
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-6">
+                 <button id="leaveCurrentGameRoomButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
+                    Leave Room
+                </button>
+            </div>
+        </div>
+
 
         <!-- Account Management Panel (Initially hidden) -->
         <div id="accountManagementPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-md md:max-w-lg text-center">
@@ -430,6 +476,15 @@
         const availableRoomsListContainer = document.getElementById('availableRoomsListContainer');
         const closePlayerJoinRoomPanelButton = document.getElementById('closePlayerJoinRoomPanelButton');
 
+        const gameRoomViewPanel = document.getElementById('gameRoomViewPanel');
+        const gameRoomViewName = document.getElementById('gameRoomViewName');
+        const roomPlayersListContainer = document.getElementById('roomPlayersListContainer');
+        const leaveCurrentGameRoomButton = document.getElementById('leaveCurrentGameRoomButton');
+        const closeGameRoomViewButton = document.getElementById('closeGameRoomViewButton');
+        const playerBetInput = document.getElementById('playerBetInput');
+        const playerChipCountForBet = document.getElementById('playerChipCountForBet');
+        const placeBetButton = document.getElementById('placeBetButton');
+
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
         // const logSearchText = document.getElementById('logSearchText'); // Removed
@@ -440,6 +495,7 @@
         // let firestoreActivityLogs = []; // Removed
         let firestoreActiveSessions = []; // Stores active sessions from Firestore
         let firestoreGameRooms = []; // Stores game rooms fetched from Firestore
+        let currentJoinedRoomId = null; // Stores the ID of the room the current player has joined
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
 
@@ -525,7 +581,7 @@
         // --- Utility Functions ---
         function showPanel(panelToShow) {
             // logViewer variable was removed, so it's no longer in this list.
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, playerJoinRoomPanel, loadingIndicator];
+            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, playerJoinRoomPanel, gameRoomViewPanel, loadingIndicator];
             panels.forEach(panel => {
                 if (panel === panelToShow) {
                     panel.classList.remove('hidden');
@@ -692,18 +748,29 @@
                 return;
             }
             const userId = auth.currentUser.uid;
-            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
 
+            if (roomId === currentJoinedRoomId) {
+                currentJoinedRoomId = null; // Clear the joined room state
+            }
+
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
             showMessage("Leaving room...", "info");
             try {
                 await updateDoc(roomDocRef, {
                     players: arrayRemove(userId)
                 });
                 showMessage("You have left the room.", "success");
-                // UI will update automatically via Firestore listeners (renderAvailableRoomsList and renderUserDirectoryTable)
+                showPanel(playerJoinRoomPanel); // Navigate back to the lobby/room list
+                // Other UI (like User Directory status) will update via Firestore listeners.
             } catch (error) {
                 console.error("Error leaving room:", error);
                 showMessage(`Failed to leave room: ${error.message}`, "error");
+                // If failed, re-render current view in case it was from gameRoomViewPanel
+                if(gameRoomViewPanel && !gameRoomViewPanel.classList.contains('hidden') && currentJoinedRoomId === roomId) {
+                    renderGameRoomView(roomId);
+                } else {
+                     renderAvailableRoomsList(); // Or refresh available rooms list if called from there
+                }
             }
         }
 
@@ -1558,6 +1625,19 @@
                         renderAvailableRoomsList();
                     }
 
+                    // If player is currently viewing a specific game room, update that view
+                    if (currentJoinedRoomId && gameRoomViewPanel && !gameRoomViewPanel.classList.contains('hidden')) {
+                        const updatedRoomData = newRooms.find(room => room.id === currentJoinedRoomId);
+                        if (updatedRoomData) {
+                            renderGameRoomView(currentJoinedRoomId); // Re-render with potentially updated player list, status, etc.
+                        } else {
+                            // The room the player was in has been deleted or is no longer available
+                            showMessage("The room you were in is no longer available.", "info");
+                            currentJoinedRoomId = null;
+                            showPanel(playerJoinRoomPanel); // Go back to lobby
+                        }
+                    }
+
                     if (!initialGameRoomsLoadDone) {
                         initialGameRoomsLoadDone = true;
                         console.log("Firestore: Initial Game Rooms loaded.");
@@ -2028,6 +2108,96 @@
             availableRoomsListContainer.appendChild(ul);
         }
 
+        function renderGameRoomView(roomId) {
+            if (!gameRoomViewPanel || !auth.currentUser) {
+                console.error("renderGameRoomView: Panel or user not available.");
+                showPanel(playerJoinRoomPanel); // Fallback to lobby
+                return;
+            }
+
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+            if (!room) {
+                console.error(`renderGameRoomView: Room with ID ${roomId} not found in firestoreGameRooms.`);
+                showMessage("Error: The room you were in could not be found.", "error");
+                currentJoinedRoomId = null;
+                showPanel(playerJoinRoomPanel); // Fallback to lobby
+                return;
+            }
+
+            gameRoomViewName.textContent = room.roomName || 'Unnamed Room';
+
+            // Populate player list
+            if (!roomPlayersListContainer) {
+                console.error("renderGameRoomView: roomPlayersListContainer is null!");
+                return;
+            }
+            roomPlayersListContainer.innerHTML = ''; // Clear previous player list
+
+            if (!room.players || room.players.length === 0) {
+                roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
+            } else {
+                room.players.forEach(playerId => {
+                    const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
+                    const playerName = playerProfile ? formatDisplayName(playerProfile) : `Player UID: ${playerId}`;
+                    const playerChips = playerProfile ? (playerProfile.chip_count ?? 0) : 'N/A';
+
+                    const playerCard = document.createElement('div');
+                    playerCard.className = 'p-3 bg-gray-700 rounded shadow text-gray-200'; // Slightly lighter than panel bg if needed, or same
+                    
+                    const nameEl = document.createElement('p');
+                    nameEl.className = 'font-semibold text-indigo-400';
+                    nameEl.textContent = playerName;
+                    playerCard.appendChild(nameEl);
+
+                    const chipsEl = document.createElement('p');
+                    chipsEl.className = 'text-sm';
+                    chipsEl.textContent = `Chips: ${playerChips}`;
+                    playerCard.appendChild(chipsEl);
+
+                    const statusEl = document.createElement('p');
+                    statusEl.className = 'text-xs text-gray-400';
+                    statusEl.textContent = 'Status: Waiting'; // Placeholder
+                    playerCard.appendChild(statusEl);
+                    
+                    const betEl = document.createElement('p');
+                    betEl.className = 'text-xs text-gray-400';
+                    betEl.textContent = 'Bet: -'; // Placeholder
+                    playerCard.appendChild(betEl);
+
+                    roomPlayersListContainer.appendChild(playerCard);
+                });
+            }
+
+            // Update player's chip count for betting UI
+            const currentUserProfile = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
+            if (currentUserProfile && playerChipCountForBet) {
+                playerChipCountForBet.textContent = currentUserProfile.chip_count ?? 0;
+                if (playerBetInput) {
+                    playerBetInput.max = currentUserProfile.chip_count ?? 0;
+                }
+            } else if (playerChipCountForBet) {
+                playerChipCountForBet.textContent = 'N/A';
+                 if (playerBetInput) {
+                    playerBetInput.removeAttribute('max');
+                }
+            }
+
+
+            // Wire up buttons in this panel
+            leaveCurrentGameRoomButton.onclick = () => handleLeaveRoom(roomId);
+            closeGameRoomViewButton.onclick = () => {
+                currentJoinedRoomId = null; // Clear joined room state
+                showPanel(playerJoinRoomPanel); // Show the lobby/list of rooms
+            };
+
+            // Placeholder for placeBetButton functionality
+            placeBetButton.onclick = () => {
+                const betAmount = playerBetInput.value;
+                console.log(`Attempting to place bet: ${betAmount} in room ${roomId}`);
+                showMessage(`Placeholder: Bet of ${betAmount} placed. (Functionality TBD)`, "info");
+            };
+        }
+
         async function handleJoinRoom(roomId) {
             if (!auth.currentUser) {
                 showMessage("You must be logged in to join a room.", "error");
@@ -2077,7 +2247,9 @@
                     players: arrayUnion(userId)
                 });
                 showMessage("Successfully joined the room!", "success");
-                // UI will update automatically via Firestore listeners (renderAvailableRoomsList and renderUserDirectoryTable)
+                currentJoinedRoomId = roomId; // Set the current joined room ID
+                showPanel(gameRoomViewPanel);   // Show the dedicated game room view
+                renderGameRoomView(roomId);     // Populate the view
             } catch (error) {
                 console.error("Error joining room:", error);
                 showMessage(`Failed to join room: ${error.message}`, "error");
