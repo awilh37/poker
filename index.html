@@ -2244,11 +2244,10 @@
 
             // Placeholder for placeBetButton functionality
             placeBetButton.onclick = () => {
-                const betAmount = playerBetInput.value;
+                placeBetButton.onclick = () => handlePlaceBet(roomId);
                 // Validate betAmount against playerChipCountForBet.textContent or playerBetInput.max if needed here for UI feedback
                 // For now, just logging and showing placeholder message.
-                console.log(`PLACEHOLDER: Bet button clicked. User attempted to bet: ${betAmount} in room ${roomId}. No data saved yet.`);
-                showMessage(`Placeholder: Your bet of ${betAmount} is noted. Full betting functionality is coming soon!`, "info");
+                console.log(`Bet button clicked. User  bet: ${betAmount} in room ${roomId}. Hopefully saving data.`);
             };
         }
 
