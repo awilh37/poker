@@ -2242,13 +2242,8 @@
                 showPanel(playerJoinRoomPanel); // Show the lobby/list of rooms
             };
 
-            // Placeholder for placeBetButton functionality
-            placeBetButton.onclick = () => {
-                placeBetButton.onclick = () => handlePlaceBet(roomId);
-                // Validate betAmount against playerChipCountForBet.textContent or playerBetInput.max if needed here for UI feedback
-                // For now, just logging and showing placeholder message.
-                console.log(`Bet button clicked. User  bet: ${betAmount} in room ${roomId}. Hopefully saving data.`);
-            };
+            // Assign handlePlaceBet directly to the onclick event
+            placeBetButton.onclick = () => handlePlaceBet(roomId);
         }
 
         async function handleJoinRoom(roomId) {
