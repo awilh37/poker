@@ -396,7 +396,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy, updateDoc, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -749,6 +749,166 @@
             } catch (e) {
                 console.error("Error saving user changes to Firestore:", e);
                 showMessage("Failed to save user changes.", 'error');
+            }
+        }
+
+        async function adminPlaceBetForPlayer(roomId, targetPlayerId, targetPlayerName, currentChips) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to place bets for players.", "error");
+                return;
+            }
+
+            const targetPlayerCurrentStatus = firestoreGameRooms.find(r => r.id === roomId)?.playerStatuses?.[targetPlayerId];
+            if (targetPlayerCurrentStatus === 'folded' || targetPlayerCurrentStatus === 'all-in') {
+                showMessage(`Cannot place bet for ${targetPlayerName}; player is ${targetPlayerCurrentStatus}.`, "info");
+                return;
+            }
+            
+            const betAmountString = prompt(`Enter bet amount for ${targetPlayerName} (current chips: ${currentChips}):`);
+            if (betAmountString === null) { // User cancelled prompt
+                return;
+            }
+
+            const betAmount = parseInt(betAmountString, 10);
+
+            if (isNaN(betAmount) || betAmount <= 0) {
+                showMessage("Invalid bet amount. Please enter a positive number.", "error");
+                return;
+            }
+
+            // Validate against player's actual chip count from their profile
+            const targetUserProfile = allFirebaseUsersData.find(p => p.uid === targetPlayerId);
+            const targetPlayerTotalChips = targetUserProfile ? (targetUserProfile.chip_count ?? 0) : 0;
+
+            if (betAmount > targetPlayerTotalChips) {
+                showMessage(`${targetPlayerName} does not have enough chips (has ${targetPlayerTotalChips}). Bet cannot exceed this amount.`, "error");
+                return;
+            }
+
+            showMessage(`Placing bet of ${betAmount} for ${targetPlayerName}...`, "info");
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+
+            try {
+                const roomSnap = await getDoc(roomDocRef);
+                if (!roomSnap.exists()) {
+                    showMessage("Error: Room data not found.", "error");
+                    return;
+                }
+                const roomData = roomSnap.data();
+                const currentHighestBetInRoom = Object.values(roomData.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+
+                let action = 'admin_bet'; // Default action
+                if (betAmount > currentHighestBetInRoom && currentHighestBetInRoom > 0) {
+                    action = 'admin_raise';
+                } else if (betAmount === currentHighestBetInRoom && currentHighestBetInRoom > 0) {
+                    action = 'admin_call';
+                }
+
+                let newStatus = 'ready';
+                if (betAmount < currentHighestBetInRoom && currentHighestBetInRoom > 0) {
+                    // This case should ideally be handled by admin consciously or UI should guide better.
+                    // For now, if admin sets a bet lower than current highest, it's like an incomplete call.
+                    // The player would still be 'pending' based on player card rendering logic.
+                    // So, we can set 'pending' here, or let the rendering logic derive it.
+                    // Let's assume admin action makes them 'ready' up to their bet, rendering logic will show 'pending' if needed.
+                }
+                 if (betAmount === targetPlayerTotalChips) { // If admin bets all player's chips
+                    newStatus = 'all-in';
+                    action = 'admin_all_in';
+                }
+
+
+                const updates = {
+                    [`currentBets.${targetPlayerId}`]: betAmount,
+                    [`playerStatuses.${targetPlayerId}`]: newStatus,
+                    [`playerLastActions.${targetPlayerId}`]: action
+                };
+                await updateDoc(roomDocRef, updates);
+                showMessage(`Bet of ${betAmount} placed for ${targetPlayerName}.`, "success");
+                // UI will update via Firestore listener.
+            } catch (error) {
+                console.error(`Error placing bet for player ${targetPlayerId}:`, error);
+                showMessage(`Failed to place bet for player: ${error.message}`, "error");
+            }
+        }
+
+        async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to force fold players.", "error");
+                return;
+            }
+            if (targetPlayerId === auth.currentUser.uid) {
+                showMessage("You cannot force fold yourself.", "info");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to force fold ${targetPlayerName || 'this player'}?`)) {
+                return;
+            }
+
+            showMessage(`Forcing ${targetPlayerName || 'player'} to fold...`, "info");
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            try {
+                const updates = {
+                    [`playerStatuses.${targetPlayerId}`]: 'folded',
+                    [`playerLastActions.${targetPlayerId}`]: 'admin_folded'
+                    // Player's currentBet remains as it was, as is typical for a fold.
+                };
+                await updateDoc(roomDocRef, updates);
+                showMessage(`${targetPlayerName || 'Player'} has been folded.`, "success");
+                // UI will update via Firestore listener.
+            } catch (error) {
+                console.error(`Error force folding player ${targetPlayerId}:`, error);
+                showMessage(`Failed to force fold player: ${error.message}`, "error");
+            }
+        }
+
+        async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to remove players.", "error");
+                return;
+            }
+
+            if (targetPlayerId === auth.currentUser.uid) {
+                showMessage("You cannot remove yourself using this admin action. Please use the 'Leave Room' button.", "info");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to remove ${targetPlayerName || 'this player'} from the room?`)) {
+                return;
+            }
+
+            showMessage(`Removing ${targetPlayerName || 'player'}...`, "info");
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            try {
+                // To remove fields from maps, we need FieldValue.delete()
+                // It's imported with: import { ..., FieldValue } from "firebase/firestore";
+                // However, FieldValue is not directly available in the global firebase object when using compat version.
+                // For modular SDK, it needs to be imported. Since we are using modular SDK,
+                // we need to ensure `deleteField` (the v9 equivalent) is available.
+                // It's `import { ..., deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";`
+                // Let's assume `deleteField` is available globally or correctly imported.
+                // If not, this will cause an error and we'll need to add `deleteField` to the import list.
+
+                // For now, let's try with direct update and arrayRemove.
+                // Removing map entries is trickier without FieldValue.delete() or equivalent.
+                // A common workaround if FieldValue.delete() isn't readily usable is to set the field to null or a special marker,
+                // or fetch the document, modify the map in JS, and overwrite the map.
+                // Given our current structure, arrayRemove is for arrays. For maps, we update the specific keys.
+
+                const updates = {
+                    players: arrayRemove(targetPlayerId), // Remove from players array
+                    [`currentBets.${targetPlayerId}`]: deleteField(),
+                    [`playerStatuses.${targetPlayerId}`]: deleteField(),
+                    [`playerLastActions.${targetPlayerId}`]: deleteField()
+                };
+
+                await updateDoc(roomDocRef, updates);
+                showMessage(`${targetPlayerName || 'Player'} has been removed from the room.`, "success");
+                // The room view will update via Firestore listener.
+            } catch (error) {
+                console.error(`Error removing player ${targetPlayerId}:`, error);
+                showMessage(`Failed to remove player: ${error.message}`, "error");
             }
         }
 
@@ -2217,13 +2377,12 @@
             }
             roomPlayersListContainer.innerHTML = ''; // Clear previous player list
 
-            // Calculate the highest bet in the current round
+            // Calculate the highest bet in the current round - MOVED HERE
             const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
 
             if (!room.players || room.players.length === 0) {
                 roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
             } else {
-
                 room.players.forEach(playerId => {
                     const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
                     const playerName = playerProfile ? formatDisplayName(playerProfile) : `Player UID: ${playerId}`;
@@ -2273,6 +2432,122 @@
                     betEl.textContent = `Bet: ${playerBetAmount}`; 
                     playerCard.appendChild(betEl);
 
+                    // Admin Menu for Player Card
+                    if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                        const adminMenuButton = document.createElement('button');
+                        adminMenuButton.innerHTML = '&#8942;'; // Vertical ellipsis
+                        adminMenuButton.className = 'absolute top-2 right-2 text-gray-400 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500';
+                        
+                        const adminMenuDropdown = document.createElement('div');
+                        adminMenuDropdown.className = 'hidden absolute top-8 right-2 bg-gray-600 text-white rounded-md shadow-lg py-1 z-10 min-w-max';
+                        adminMenuDropdown.id = `admin-menu-${playerId}`;
+                        adminMenuDropdown.innerHTML = ''; // Clear placeholder
+
+                        // "Remove Player" option
+                        const removePlayerButton = document.createElement('button');
+                        removePlayerButton.textContent = 'Remove Player';
+                        removePlayerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none';
+                        if (playerId === auth.currentUser.uid) { // Prevent admin from removing self this way
+                            removePlayerButton.disabled = true;
+                            removePlayerButton.title = "Cannot remove yourself";
+                            removePlayerButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            removePlayerButton.onclick = (event) => {
+                                event.stopPropagation();
+                                adminRemovePlayer(roomId, playerId, playerName);
+                                adminMenuDropdown.classList.add('hidden'); // Close menu after action
+                            };
+                        }
+                        adminMenuDropdown.appendChild(removePlayerButton);
+
+                        // "Force Fold Player" option
+                        const forceFoldButton = document.createElement('button');
+                        forceFoldButton.textContent = 'Force Fold';
+                        forceFoldButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none';
+                        
+                        const targetPlayerCurrentStatus = room.playerStatuses ? room.playerStatuses[playerId] : 'pending';
+                        if (playerId === auth.currentUser.uid || targetPlayerCurrentStatus === 'folded' || targetPlayerCurrentStatus === 'all-in') {
+                            forceFoldButton.disabled = true;
+                            forceFoldButton.title = (playerId === auth.currentUser.uid) ? "Cannot force fold yourself" : "Player already folded or all-in";
+                            forceFoldButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            forceFoldButton.onclick = (event) => {
+                                event.stopPropagation();
+                                adminForceFoldPlayer(roomId, playerId, playerName);
+                                adminMenuDropdown.classList.add('hidden'); // Close menu
+                            };
+                        }
+                        adminMenuDropdown.appendChild(forceFoldButton);
+
+                        // "Place Bet for Player" option
+                        const placeBetForPlayerButton = document.createElement('button');
+                        placeBetForPlayerButton.textContent = 'Place Bet for Player';
+                        placeBetForPlayerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none';
+
+                        if (targetPlayerCurrentStatus === 'folded' || targetPlayerCurrentStatus === 'all-in') {
+                            placeBetForPlayerButton.disabled = true;
+                            placeBetForPlayerButton.title = "Player is folded or all-in";
+                            placeBetForPlayerButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            placeBetForPlayerButton.onclick = (event) => {
+                                event.stopPropagation();
+                                adminPlaceBetForPlayer(roomId, playerId, playerName, playerChips); // Pass playerChips for validation
+                                adminMenuDropdown.classList.add('hidden'); // Close menu
+                            };
+                        }
+                        adminMenuDropdown.appendChild(placeBetForPlayerButton);
+
+                        // "Declare Winner" option (Placeholder)
+                        const declareWinnerButton = document.createElement('button');
+                        declareWinnerButton.textContent = 'Declare Winner (Placeholder)';
+                        declareWinnerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none';
+                        // Enable for any active player, admin can decide if it makes sense.
+                        // Could be disabled if player is folded.
+                        if (targetPlayerCurrentStatus === 'folded') {
+                             declareWinnerButton.disabled = true;
+                             declareWinnerButton.title = "Cannot declare a folded player as winner";
+                             declareWinnerButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            declareWinnerButton.onclick = (event) => {
+                                event.stopPropagation();
+                                adminDeclareWinner(roomId, playerId, playerName);
+                                adminMenuDropdown.classList.add('hidden'); // Close menu
+                            };
+                        }
+                        adminMenuDropdown.appendChild(declareWinnerButton);
+                        
+                        // Placeholder for more actions (if any more are added after this)
+                        // const comingSoon = document.createElement('p'); 
+                        // comingSoon.className = 'px-3 py-1 text-xs text-gray-400 border-t border-gray-500 mt-1 pt-1';
+                        // comingSoon.textContent = 'More actions soon...';
+                        // adminMenuDropdown.appendChild(comingSoon);
+
+
+                        playerCard.appendChild(adminMenuButton);
+                        playerCard.appendChild(adminMenuDropdown); // Append to card to be relative to it
+
+                        adminMenuButton.onclick = (event) => {
+                            event.stopPropagation(); // Prevent card click or other underlying events
+                            // Hide any other open admin menus
+                            document.querySelectorAll('[id^="admin-menu-"]').forEach(menu => {
+                                if (menu.id !== adminMenuDropdown.id) {
+                                    menu.classList.add('hidden');
+                                }
+                            });
+                            adminMenuDropdown.classList.toggle('hidden');
+                        };
+                        
+                        // Clicking outside the dropdown should close it
+                        // This listener is added once per renderGameRoomView, ideally should be managed more globally or cleaned up
+                        // For now, this is a simple approach.
+                        document.body.addEventListener('click', (event) => {
+                            if (!adminMenuDropdown.contains(event.target) && !adminMenuButton.contains(event.target)) {
+                                adminMenuDropdown.classList.add('hidden');
+                            }
+                        }, { once: true }); // Use once to auto-remove after first trigger, or manage removal carefully
+                    }
+                    playerCard.style.position = 'relative'; // Needed for absolute positioning of dropdown/button
+
                     roomPlayersListContainer.appendChild(playerCard);
                 });
             }
@@ -2297,15 +2572,14 @@
                 gameStatsContent.innerHTML = ''; // Clear previous stats
 
                 const totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + bet, 0);
-                // highestBet was already calculated for player card rendering
-                // const highestBetInRound = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0); // Redundant if already available
-
+                // highestBet is now defined in the outer scope of this function.
+                
                 const totalPotEl = document.createElement('p');
                 totalPotEl.innerHTML = `<strong>Total Pot:</strong> ${totalPot} chips`;
                 gameStatsContent.appendChild(totalPotEl);
 
                 const highestBetEl = document.createElement('p');
-                highestBetEl.innerHTML = `<strong>Highest Bet This Round:</strong> ${highestBet} chips`; // Using 'highestBet' from player card logic
+                highestBetEl.innerHTML = `<strong>Highest Bet This Round:</strong> ${highestBet} chips`; 
                 gameStatsContent.appendChild(highestBetEl);
 
                 const activePlayersBetsTitle = document.createElement('h5');
@@ -2431,6 +2705,34 @@
                 console.error("Error going all-in:", error);
                 showMessage(`Failed to go all-in: ${error.message}`, "error");
             }
+        }
+
+        async function adminDeclareWinner(roomId, targetPlayerId, targetPlayerName) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to declare winners.", "error");
+                return;
+            }
+
+            const targetPlayerCurrentStatus = firestoreGameRooms.find(r => r.id === roomId)?.playerStatuses?.[targetPlayerId];
+            if (targetPlayerCurrentStatus === 'folded') {
+                showMessage(`${targetPlayerName} is folded and cannot be declared a winner.`, "info");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to declare ${targetPlayerName || 'this player'} as the winner of the current pot? This is a placeholder action.`)) {
+                return;
+            }
+
+            console.log(`ADMIN ACTION: Declare Winner triggered for player ${targetPlayerName} (UID: ${targetPlayerId}) in room ${roomId}. Pot distribution logic is pending.`);
+            alert(`Admin action: Declared ${targetPlayerName} as winner of the current pot. (Note: Pot distribution is not yet implemented.)`);
+            
+            // In a full implementation, this would trigger:
+            // 1. Calculation of main pot and any side pots.
+            // 2. Distribution of chips to the winner(s) - updating their chip_count in user_profiles.
+            // 3. Resetting currentBets for all players in the room.
+            // 4. Potentially advancing the game state (e.g., new round, new dealer).
+            // For now, it's just a notification.
+            showMessage(`Placeholder: ${targetPlayerName} declared winner. No chips moved yet.`, "info");
         }
 
         async function handleFold(roomId) {
