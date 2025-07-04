@@ -2435,19 +2435,14 @@
                     playerCard.appendChild(betEl);
 
                     // Admin Menu for Player Card - Debugging
-                    console.log('Admin Check before if:', auth.currentUser?.uid, typeof auth.currentUser?.uid !== 'undefined' ? hasAdminAccess(auth.currentUser.uid) : 'N/A (no user)');
+                    // console.log('Admin Check before if:', auth.currentUser?.uid, typeof auth.currentUser?.uid !== 'undefined' ? hasAdminAccess(auth.currentUser.uid) : 'N/A (no user)'); // Temporarily remove this console log
                     if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
-                        console.log('Admin menu WILL be created for player:', playerName); // Debug log
+                        // console.log('Admin menu WILL be created for player:', playerName); // Temporarily remove this console log
                         const adminMenuButton = document.createElement('button');
-                        adminMenuButton.innerHTML = '&#8942;'; // Vertical ellipsis
-                        adminMenuButton.className = 'absolute top-2 right-2 text-gray-400 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500';
+                        adminMenuButton.innerHTML = 'ADMIN'; // Use obvious text
+                        // Override all classes with very direct, prominent styling
+                        adminMenuButton.style.cssText = 'position: absolute; top: 2px; right: 2px; background-color: yellow; color: black; border: 2px solid red; padding: 5px; font-size: 10px; z-index: 1000;'; 
                         
-                        // Temporary prominent styling for debugging
-                        adminMenuButton.style.background = 'lime';
-                        adminMenuButton.style.width = '20px';
-                        adminMenuButton.style.height = '20px';
-                        adminMenuButton.style.zIndex = '200'; // Ensure it's on top
-
                         const adminMenuDropdown = document.createElement('div');
                         adminMenuDropdown.className = 'hidden absolute top-8 right-2 bg-gray-600 text-white rounded-md shadow-lg py-1 z-10 min-w-max';
                         adminMenuDropdown.id = `admin-menu-${playerId}`;
