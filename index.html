@@ -2217,11 +2217,12 @@
             }
             roomPlayersListContainer.innerHTML = ''; // Clear previous player list
 
+            // Calculate the highest bet in the current round
+            const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+
             if (!room.players || room.players.length === 0) {
                 roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
             } else {
-                // Calculate the highest bet in the current round
-                const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
 
                 room.players.forEach(playerId => {
                     const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
