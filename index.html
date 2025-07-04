@@ -291,10 +291,12 @@
                 </div>
             </div>
             
-            <!-- Game Action Area - Placeholder for now -->
-            <div class="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-700">
-                <h4 class="text-lg font-semibold text-gray-300 mb-3">Game Actions</h4>
-                <p class="text-gray-400">Game interface and actions will appear here.</p>
+            <!-- Game Stats Area -->
+            <div id="gameStatsContainer" class="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-700">
+                <h4 class="text-lg font-semibold text-gray-300 mb-3">Game Stats</h4>
+                <div id="gameStatsContent" class="text-gray-300">
+                    <p>Loading game stats...</p>
+                </div>
             </div>
 
             <!-- Player Bet Input Section -->
@@ -2218,16 +2220,40 @@
             if (!room.players || room.players.length === 0) {
                 roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
             } else {
+                // Calculate the highest bet in the current round
+                const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+
                 room.players.forEach(playerId => {
                     const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
                     const playerName = playerProfile ? formatDisplayName(playerProfile) : `Player UID: ${playerId}`;
                     const playerChips = playerProfile ? (playerProfile.chip_count ?? 0) : 'N/A';
+                    
+                    const rawStatus = room.playerStatuses ? room.playerStatuses[playerId] : 'pending';
+                    const playerBetAmount = room.currentBets ? (room.currentBets[playerId] ?? 0) : 0;
+
+                    let displayStatus = rawStatus;
+                    let cardBgColor = 'bg-gray-700'; // Default
+
+                    if (rawStatus === 'folded') {
+                        displayStatus = 'Folded';
+                        cardBgColor = 'bg-red-600 hover:bg-red-700'; // Darker red
+                    } else if (rawStatus === 'all-in') {
+                        displayStatus = 'All-In';
+                        cardBgColor = 'bg-purple-600 hover:bg-purple-700'; // Darker purple
+                    } else if (highestBet > 0 && playerBetAmount < highestBet) {
+                        displayStatus = 'Pending';
+                        cardBgColor = 'bg-yellow-500 hover:bg-yellow-600'; // Darker yellow
+                    } else { // Includes playerBetAmount === highestBet, or highestBet is 0
+                        displayStatus = 'Ready';
+                        cardBgColor = 'bg-green-600 hover:bg-green-700'; // Darker green
+                    }
 
                     const playerCard = document.createElement('div');
-                    playerCard.className = 'p-3 bg-gray-700 rounded shadow text-gray-200'; // Slightly lighter than panel bg if needed, or same
+                    // Base classes with transition for color change
+                    playerCard.className = `p-3 rounded shadow text-white transition-colors duration-300 ease-in-out ${cardBgColor}`;
                     
                     const nameEl = document.createElement('p');
-                    nameEl.className = 'font-semibold text-indigo-400';
+                    nameEl.className = 'font-semibold text-lg'; // Adjusted text color for better contrast on varied backgrounds
                     nameEl.textContent = playerName;
                     playerCard.appendChild(nameEl);
 
@@ -2236,15 +2262,14 @@
                     chipsEl.textContent = `Chips: ${playerChips}`;
                     playerCard.appendChild(chipsEl);
 
-                    const statusEl = document.createElement('p');
-                    statusEl.className = 'text-xs text-gray-400';
-                    statusEl.textContent = 'Status: Waiting'; // Placeholder
-                    playerCard.appendChild(statusEl);
+                    const statusTextEl = document.createElement('p');
+                    statusTextEl.className = 'text-sm font-medium mt-1';
+                    statusTextEl.textContent = `Status: ${displayStatus}`;
+                    playerCard.appendChild(statusTextEl);
                     
                     const betEl = document.createElement('p');
-                    betEl.className = 'text-xs text-gray-400';
-                    const playerBet = (room.currentBets && typeof room.currentBets[playerId] !== 'undefined') ? room.currentBets[playerId] : '-';
-                    betEl.textContent = `Bet: ${playerBet}`; 
+                    betEl.className = 'text-xs';
+                    betEl.textContent = `Bet: ${playerBetAmount}`; 
                     playerCard.appendChild(betEl);
 
                     roomPlayersListContainer.appendChild(playerCard);
@@ -2252,17 +2277,76 @@
             }
 
             // Update player's chip count for betting UI
-            const currentUserProfile = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
-            if (currentUserProfile && playerChipCountForBet) {
-                playerChipCountForBet.textContent = currentUserProfile.chip_count ?? 0;
+            const currentUserProfileForBetUI = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
+            if (currentUserProfileForBetUI && playerChipCountForBet) {
+                playerChipCountForBet.textContent = currentUserProfileForBetUI.chip_count ?? 0;
                 if (playerBetInput) {
-                    playerBetInput.max = currentUserProfile.chip_count ?? 0;
+                    playerBetInput.max = currentUserProfileForBetUI.chip_count ?? 0;
                 }
             } else if (playerChipCountForBet) {
                 playerChipCountForBet.textContent = 'N/A';
                  if (playerBetInput) {
                     playerBetInput.removeAttribute('max');
                 }
+            }
+
+            // Calculate and Display Game Stats
+            const gameStatsContent = document.getElementById('gameStatsContent');
+            if (gameStatsContent) {
+                gameStatsContent.innerHTML = ''; // Clear previous stats
+
+                const totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + bet, 0);
+                // highestBet was already calculated for player card rendering
+                // const highestBetInRound = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0); // Redundant if already available
+
+                const totalPotEl = document.createElement('p');
+                totalPotEl.innerHTML = `<strong>Total Pot:</strong> ${totalPot} chips`;
+                gameStatsContent.appendChild(totalPotEl);
+
+                const highestBetEl = document.createElement('p');
+                highestBetEl.innerHTML = `<strong>Highest Bet This Round:</strong> ${highestBet} chips`; // Using 'highestBet' from player card logic
+                gameStatsContent.appendChild(highestBetEl);
+
+                const activePlayersBetsTitle = document.createElement('h5');
+                activePlayersBetsTitle.className = 'text-md font-semibold mt-3 mb-1 text-gray-200';
+                activePlayersBetsTitle.textContent = 'Active Player Bets:';
+                gameStatsContent.appendChild(activePlayersBetsTitle);
+
+                const activePlayersUl = document.createElement('ul');
+                activePlayersUl.className = 'list-disc list-inside text-sm space-y-1';
+
+                let activePlayerFound = false;
+                if (room.players && room.playerStatuses && room.currentBets) {
+                    room.players.forEach(playerId => {
+                        const status = room.playerStatuses[playerId];
+                        const bet = room.currentBets[playerId] ?? 0;
+                        if (status !== 'folded') {
+                            const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
+                            const playerName = playerProfile ? formatDisplayName(playerProfile) : `UID: ${playerId.substring(0,6)}`;
+                            const li = document.createElement('li');
+                            li.textContent = `${playerName}: ${bet} chips`;
+                            activePlayersUl.appendChild(li);
+                            activePlayerFound = true;
+                        }
+                    });
+                }
+
+                if (!activePlayerFound) {
+                    const noActiveEl = document.createElement('p');
+                    noActiveEl.className = 'text-sm text-gray-400';
+                    noActiveEl.textContent = 'No players currently active in the pot.';
+                    activePlayersUl.appendChild(noActiveEl);
+                }
+                gameStatsContent.appendChild(activePlayersUl);
+
+                // Placeholder for future side pot display refinement
+                const sidePotInfo = document.createElement('p');
+                sidePotInfo.className = 'text-xs text-gray-500 mt-2';
+                sidePotInfo.textContent = '(Detailed side pot calculations will be shown here in a future update.)';
+                gameStatsContent.appendChild(sidePotInfo);
+
+            } else {
+                console.warn("gameStatsContent element not found for rendering stats.");
             }
 
 
