@@ -2380,6 +2380,8 @@
             // Calculate the highest bet in the current round - MOVED HERE
             const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
 
+            console.log('--- ADMIN ACCESS CHECK (Overall):', auth.currentUser?.uid, hasAdminAccess(auth.currentUser?.uid)); // Step 1 Debug Log
+
             if (!room.players || room.players.length === 0) {
                 roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
             } else {
@@ -2432,12 +2434,20 @@
                     betEl.textContent = `Bet: ${playerBetAmount}`; 
                     playerCard.appendChild(betEl);
 
-                    // Admin Menu for Player Card
+                    // Admin Menu for Player Card - Debugging
+                    console.log('Admin Check before if:', auth.currentUser?.uid, typeof auth.currentUser?.uid !== 'undefined' ? hasAdminAccess(auth.currentUser.uid) : 'N/A (no user)');
                     if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                        console.log('Admin menu WILL be created for player:', playerName); // Debug log
                         const adminMenuButton = document.createElement('button');
                         adminMenuButton.innerHTML = '&#8942;'; // Vertical ellipsis
                         adminMenuButton.className = 'absolute top-2 right-2 text-gray-400 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500';
                         
+                        // Temporary prominent styling for debugging
+                        adminMenuButton.style.background = 'lime';
+                        adminMenuButton.style.width = '20px';
+                        adminMenuButton.style.height = '20px';
+                        adminMenuButton.style.zIndex = '200'; // Ensure it's on top
+
                         const adminMenuDropdown = document.createElement('div');
                         adminMenuDropdown.className = 'hidden absolute top-8 right-2 bg-gray-600 text-white rounded-md shadow-lg py-1 z-10 min-w-max';
                         adminMenuDropdown.id = `admin-menu-${playerId}`;
