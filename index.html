@@ -831,6 +831,49 @@
                 showMessage(`Failed to place bet for player: ${error.message}`, "error");
             }
         }
+        async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to remove players.", "error");
+                return;
+            }
+
+            if (targetPlayerId === auth.currentUser.uid) {
+                showMessage("You cannot remove yourself using this admin action. Please use the 'Leave Room' button.", "info");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to remove ${targetPlayerName || 'this player'} from the room?`)) {
+                return;
+            }
+
+            showMessage(`Removing ${targetPlayerName || 'player'}...`, "info");
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            try {
+                const updates = {
+                    players: arrayRemove(targetPlayerId), // Remove from players array
+                    [`currentBets.${targetPlayerId}`]: deleteField(),
+                    [`playerStatuses.${targetPlayerId}`]: deleteField(),
+                    [`playerLastActions.${targetPlayerId}`]: deleteField()
+                };
+                await updateDoc(roomDocRef, updates);
+
+                // Also delete their active session to force a UI update/kick for them
+                try {
+                    const activeSessionRef = doc(activeSessionsCollectionRef, targetPlayerId);
+                    await deleteDoc(activeSessionRef);
+                    console.log(`Active session for player ${targetPlayerId} deleted by admin removal.`);
+                } catch (sessionError) {
+                    console.error(`Error deleting active session for removed player ${targetPlayerId}:`, sessionError);
+                    // Non-critical for the removal itself, but log it.
+                }
+
+                showMessage(`${targetPlayerName || 'Player'} has been removed from the room and their session ended.`, "success");
+                // The room view will update via Firestore listener.
+            } catch (error) {
+                console.error(`Error removing player ${targetPlayerId}:`, error);
+                showMessage(`Failed to remove player: ${error.message}`, "error");
+            }
+        }
 
         async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
