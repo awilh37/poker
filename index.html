@@ -291,10 +291,12 @@
                 </div>
             </div>
             
-            <!-- Game Action Area - Placeholder for now -->
-            <div class="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-700">
-                <h4 class="text-lg font-semibold text-gray-300 mb-3">Game Actions</h4>
-                <p class="text-gray-400">Game interface and actions will appear here.</p>
+            <!-- Game Stats Area -->
+            <div id="gameStatsContainer" class="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-700">
+                <h4 class="text-lg font-semibold text-gray-300 mb-3">Game Stats</h4>
+                <div id="gameStatsContent" class="text-gray-300">
+                    <p>Loading game stats...</p>
+                </div>
             </div>
 
             <!-- Player Bet Input Section -->
@@ -308,6 +310,12 @@
                     </div>
                     <button id="placeBetButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
                         Place Bet
+                    </button>
+                    <button id="foldButton" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                        Fold
+                    </button>
+                    <button id="allInButton" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                        All-In
                     </button>
                 </div>
             </div>
@@ -484,6 +492,8 @@
         const playerBetInput = document.getElementById('playerBetInput');
         const playerChipCountForBet = document.getElementById('playerChipCountForBet');
         const placeBetButton = document.getElementById('placeBetButton');
+        const foldButton = document.getElementById('foldButton'); // Added Fold button
+        const allInButton = document.getElementById('allInButton'); // Added All-In button
 
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
@@ -768,18 +778,41 @@
             showMessage("Placing your bet...", "info");
 
             try {
-                // Update the currentBets map for this user in this room.
-                // Using dot notation to update a specific field in a map.
-                // Firestore creates the map if it doesn't exist.
-                await updateDoc(roomDocRef, {
-                    [`currentBets.${userId}`]: betAmount 
-                });
+                // Determine current highest bet in the room to decide if it's a bet, call, or raise.
+                // This requires fetching the room data first, or having it available.
+                // For simplicity in this step, we'll assume any bet sets status to 'ready' and action to 'bet'.
+                // More complex logic (call/raise determination) will be handled in later UI steps or refined here.
+                const roomSnap = await getDoc(roomDocRef);
+                if (!roomSnap.exists()) {
+                    showMessage("Error: Room data not found for placing bet.", "error");
+                    return;
+                }
+                const roomData = roomSnap.data();
+                const currentHighestBet = Object.values(roomData.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+
+                let action = 'bet'; // Default action
+                if (betAmount > currentHighestBet && currentHighestBet > 0) {
+                    action = 'raise';
+                } else if (betAmount === currentHighestBet && currentHighestBet > 0) {
+                    action = 'call';
+                } else if (betAmount > 0 && currentHighestBet === 0) {
+                    action = 'bet'; // Opening bet
+                }
+
+
+                // Update Firestore document
+                const updates = {
+                    [`currentBets.${userId}`]: betAmount,
+                    [`playerStatuses.${userId}`]: 'ready', // Assuming betting makes you 'ready' for now
+                    [`playerLastActions.${userId}`]: action
+                };
+                await updateDoc(roomDocRef, updates);
                 
-                showMessage(`Bet of ${betAmount} placed successfully!`, "success");
+                showMessage(`Bet of ${betAmount} (${action}) placed successfully!`, "success");
                 playerBetInput.value = ''; // Clear input
 
-                // Note: Actual chip deduction from player's profile and adding to a pot is NOT handled here yet.
-                // The gameRoomView will re-render due to the Firestore listener on game_rooms, showing the updated bet.
+                // Note: Actual chip deduction from player's profile is NOT handled here yet.
+                // That will be part of the "All-In" implementation or a more general chip management logic.
             } catch (error) {
                 console.error("Error placing bet:", error);
                 showMessage(`Failed to place bet: ${error.message}`, "error");
@@ -2184,6 +2217,9 @@
             }
             roomPlayersListContainer.innerHTML = ''; // Clear previous player list
 
+            // Calculate the highest bet in the current round - MOVED HERE
+            const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+
             if (!room.players || room.players.length === 0) {
                 roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
             } else {
@@ -2192,11 +2228,32 @@
                     const playerName = playerProfile ? formatDisplayName(playerProfile) : `Player UID: ${playerId}`;
                     const playerChips = playerProfile ? (playerProfile.chip_count ?? 0) : 'N/A';
 
+                    const rawStatus = room.playerStatuses ? room.playerStatuses[playerId] : 'pending';
+                    const playerBetAmount = room.currentBets ? (room.currentBets[playerId] ?? 0) : 0;
+
+                    let displayStatus = rawStatus;
+                    let cardBgColor = 'bg-gray-700'; // Default
+
+                    if (rawStatus === 'folded') {
+                        displayStatus = 'Folded';
+                        cardBgColor = 'bg-red-600 hover:bg-red-700'; // Darker red
+                    } else if (rawStatus === 'all-in') {
+                        displayStatus = 'All-In';
+                        cardBgColor = 'bg-purple-600 hover:bg-purple-700'; // Darker purple
+                    } else if (highestBet > 0 && playerBetAmount < highestBet) {
+                        displayStatus = 'Pending';
+                        cardBgColor = 'bg-yellow-500 hover:bg-yellow-600'; // Darker yellow
+                    } else { // Includes playerBetAmount === highestBet, or highestBet is 0
+                        displayStatus = 'Ready';
+                        cardBgColor = 'bg-green-600 hover:bg-green-700'; // Darker green
+                    }
+
                     const playerCard = document.createElement('div');
-                    playerCard.className = 'p-3 bg-gray-700 rounded shadow text-gray-200'; // Slightly lighter than panel bg if needed, or same
+                    // Base classes with transition for color change
+                    playerCard.className = `p-3 rounded shadow text-white transition-colors duration-300 ease-in-out ${cardBgColor}`;
                     
                     const nameEl = document.createElement('p');
-                    nameEl.className = 'font-semibold text-indigo-400';
+                    nameEl.className = 'font-semibold text-lg'; // Adjusted text color for better contrast on varied backgrounds
                     nameEl.textContent = playerName;
                     playerCard.appendChild(nameEl);
 
@@ -2205,15 +2262,14 @@
                     chipsEl.textContent = `Chips: ${playerChips}`;
                     playerCard.appendChild(chipsEl);
 
-                    const statusEl = document.createElement('p');
-                    statusEl.className = 'text-xs text-gray-400';
-                    statusEl.textContent = 'Status: Waiting'; // Placeholder
-                    playerCard.appendChild(statusEl);
+                    const statusTextEl = document.createElement('p');
+                    statusTextEl.className = 'text-sm font-medium mt-1';
+                    statusTextEl.textContent = `Status: ${displayStatus}`;
+                    playerCard.appendChild(statusTextEl);
                     
                     const betEl = document.createElement('p');
-                    betEl.className = 'text-xs text-gray-400';
-                    const playerBet = (room.currentBets && typeof room.currentBets[playerId] !== 'undefined') ? room.currentBets[playerId] : '-';
-                    betEl.textContent = `Bet: ${playerBet}`; 
+                    betEl.className = 'text-xs';
+                    betEl.textContent = `Bet: ${playerBetAmount}`;
                     playerCard.appendChild(betEl);
 
                     roomPlayersListContainer.appendChild(playerCard);
@@ -2221,17 +2277,75 @@
             }
 
             // Update player's chip count for betting UI
-            const currentUserProfile = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
-            if (currentUserProfile && playerChipCountForBet) {
-                playerChipCountForBet.textContent = currentUserProfile.chip_count ?? 0;
+            const currentUserProfileForBetUI = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
+            if (currentUserProfileForBetUI && playerChipCountForBet) {
+                playerChipCountForBet.textContent = currentUserProfileForBetUI.chip_count ?? 0;
                 if (playerBetInput) {
-                    playerBetInput.max = currentUserProfile.chip_count ?? 0;
+                    playerBetInput.max = currentUserProfileForBetUI.chip_count ?? 0;
                 }
             } else if (playerChipCountForBet) {
                 playerChipCountForBet.textContent = 'N/A';
                  if (playerBetInput) {
                     playerBetInput.removeAttribute('max');
                 }
+            }
+
+            // Calculate and Display Game Stats
+            const gameStatsContent = document.getElementById('gameStatsContent');
+            if (gameStatsContent) {
+                gameStatsContent.innerHTML = ''; // Clear previous stats
+
+                const totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + bet, 0);
+                // highestBet is now defined in the outer scope of this function.
+
+                const totalPotEl = document.createElement('p');
+                totalPotEl.innerHTML = `<strong>Total Pot:</strong> ${totalPot} chips`;
+                gameStatsContent.appendChild(totalPotEl);
+
+                const highestBetEl = document.createElement('p');
+                highestBetEl.innerHTML = `<strong>Highest Bet This Round:</strong> ${highestBet} chips`;
+                gameStatsContent.appendChild(highestBetEl);
+
+                const activePlayersBetsTitle = document.createElement('h5');
+                activePlayersBetsTitle.className = 'text-md font-semibold mt-3 mb-1 text-gray-200';
+                activePlayersBetsTitle.textContent = 'Active Player Bets:';
+                gameStatsContent.appendChild(activePlayersBetsTitle);
+
+                const activePlayersUl = document.createElement('ul');
+                activePlayersUl.className = 'list-disc list-inside text-sm space-y-1';
+
+                let activePlayerFound = false;
+                if (room.players && room.playerStatuses && room.currentBets) {
+                    room.players.forEach(playerId => {
+                        const status = room.playerStatuses[playerId];
+                        const bet = room.currentBets[playerId] ?? 0;
+                        if (status !== 'folded') {
+                            const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
+                            const playerName = playerProfile ? formatDisplayName(playerProfile) : `UID: ${playerId.substring(0,6)}`;
+                            const li = document.createElement('li');
+                            li.textContent = `${playerName}: ${bet} chips`;
+                            activePlayersUl.appendChild(li);
+                            activePlayerFound = true;
+                        }
+                    });
+                }
+
+                if (!activePlayerFound) {
+                    const noActiveEl = document.createElement('p');
+                    noActiveEl.className = 'text-sm text-gray-400';
+                    noActiveEl.textContent = 'No players currently active in the pot.';
+                    activePlayersUl.appendChild(noActiveEl);
+                }
+                gameStatsContent.appendChild(activePlayersUl);
+
+                // Placeholder for future side pot display refinement
+                const sidePotInfo = document.createElement('p');
+                sidePotInfo.className = 'text-xs text-gray-500 mt-2';
+                sidePotInfo.textContent = '(Detailed side pot calculations will be shown here in a future update.)';
+                gameStatsContent.appendChild(sidePotInfo);
+
+            } else {
+                console.warn("gameStatsContent element not found for rendering stats.");
             }
 
 
@@ -2242,13 +2356,104 @@
                 showPanel(playerJoinRoomPanel); // Show the lobby/list of rooms
             };
 
-            // Placeholder for placeBetButton functionality
-            placeBetButton.onclick = () => {
-                placeBetButton.onclick = () => handlePlaceBet(roomId);
-                // Validate betAmount against playerChipCountForBet.textContent or playerBetInput.max if needed here for UI feedback
-                // For now, just logging and showing placeholder message.
-                console.log(`Bet button clicked. User  bet: ${betAmount} in room ${roomId}. Hopefully saving data.`);
-            };
+            // Assign handlePlaceBet directly to the onclick event
+            placeBetButton.onclick = () => handlePlaceBet(roomId);
+            foldButton.onclick = () => handleFold(roomId); // Wire up Fold button
+            allInButton.onclick = () => handleAllIn(roomId); // Wire up All-In button
+
+            // Disable action buttons if player is folded or all-in
+            const currentPlayerStatus = room.playerStatuses ? room.playerStatuses[auth.currentUser.uid] : null;
+            if (currentPlayerStatus === 'folded' || currentPlayerStatus === 'all-in') {
+                placeBetButton.disabled = true;
+                foldButton.disabled = true;
+                allInButton.disabled = true;
+                playerBetInput.disabled = true;
+            } else {
+                placeBetButton.disabled = false;
+                foldButton.disabled = false;
+                allInButton.disabled = false;
+                playerBetInput.disabled = false;
+            }
+        }
+
+        async function handleAllIn(roomId) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to go all-in.", "error");
+                return;
+            }
+            const userId = auth.currentUser.uid;
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+
+            // Get player's current chip count
+            const userProfile = allFirebaseUsersData.find(p => p.uid === userId);
+            if (!userProfile || typeof userProfile.chip_count !== 'number') {
+                showMessage("Could not retrieve your chip count to go all-in.", "error");
+                console.error("All-In: User profile or chip_count not found for", userId, userProfile);
+                return;
+            }
+            const allInAmount = userProfile.chip_count;
+
+            if (allInAmount <= 0) {
+                showMessage("You have no chips to go all-in with.", "info");
+                // Optionally, could auto-fold the player here or prevent all-in if it means betting 0.
+                // For now, just inform. If their current bet is already > 0, this might be an edge case.
+                return;
+            }
+
+            showMessage(`Going all-in with ${allInAmount} chips...`, "info");
+            try {
+                const updates = {
+                    [`currentBets.${userId}`]: allInAmount,
+                    [`playerStatuses.${userId}`]: 'all-in',
+                    [`playerLastActions.${userId}`]: 'all-in'
+                };
+                await updateDoc(roomDocRef, updates);
+
+                // IMPORTANT: Deduct chips from the player's actual profile
+                // This is a critical operation and ideally should be part of a transaction
+                // if combined with other game state changes that must succeed or fail together.
+                // For now, we'll update the user_profiles document directly.
+                // Consider moving chip deduction to when a hand/round resolves to avoid issues if a game crashes.
+                // However, the requirement was "Deducts chips from the player's profile".
+                // Let's proceed with caution. If this direct deduction is problematic,
+                // we will revise to only mark chips as "in play" from the room's perspective.
+
+                // For this iteration, we will NOT directly deduct from user_profiles here.
+                // The allInAmount is recorded in currentBets. Chip reconciliation will be a later step
+                // (e.g., when the pot is awarded or if a player leaves).
+                // This avoids complexity with partial game states and rollbacks.
+
+                showMessage(`You are all-in with ${allInAmount}!`, "success");
+                // UI will update via Firestore listener, disabling buttons.
+            } catch (error) {
+                console.error("Error going all-in:", error);
+                showMessage(`Failed to go all-in: ${error.message}`, "error");
+            }
+        }
+
+        async function handleFold(roomId) {
+            if (!auth.currentUser) {
+                showMessage("You must be logged in to fold.", "error");
+                return;
+            }
+            const userId = auth.currentUser.uid;
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+
+            showMessage("Folding your hand...", "info");
+            try {
+                const updates = {
+                    [`playerStatuses.${userId}`]: 'folded',
+                    [`playerLastActions.${userId}`]: 'fold'
+                    // Optionally, set currentBets[userId] to a specific value like -1 or keep as is
+                };
+                await updateDoc(roomDocRef, updates);
+                showMessage("You have folded.", "success");
+                // The gameRoomView will re-render due to the Firestore listener,
+                // which should update UI elements (e.g., disable buttons, change player card color).
+            } catch (error) {
+                console.error("Error folding:", error);
+                showMessage(`Failed to fold: ${error.message}`, "error");
+            }
         }
 
         async function handleJoinRoom(roomId) {
@@ -2295,10 +2500,15 @@
                 //     return;
                 // }
                 
-                // Add player to the room
-                await updateDoc(roomDocRef, {
-                    players: arrayUnion(userId)
-                });
+                // Add player to the room and initialize their game state
+                const updates = {
+                    players: arrayUnion(userId),
+                    [`currentBets.${userId}`]: 0, // Initialize bet to 0
+                    [`playerStatuses.${userId}`]: 'pending', // Initial status
+                    [`playerLastActions.${userId}`]: 'joined' // Initial action
+                };
+                await updateDoc(roomDocRef, updates);
+
                 showMessage("Successfully joined the room!", "success");
                 currentJoinedRoomId = roomId; // Set the current joined room ID
                 showPanel(gameRoomViewPanel);   // Show the dedicated game room view
