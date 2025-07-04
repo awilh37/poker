@@ -831,6 +831,7 @@
                 showMessage(`Failed to place bet for player: ${error.message}`, "error");
             }
         }
+        
         async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to remove players.", "error");
