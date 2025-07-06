@@ -832,50 +832,6 @@
             }
         }
 
-        async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
-            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
-                showMessage("You do not have permission to remove players.", "error");
-                return;
-            }
-
-            if (targetPlayerId === auth.currentUser.uid) {
-                showMessage("You cannot remove yourself using this admin action. Please use the 'Leave Room' button.", "info");
-                return;
-            }
-
-            if (!confirm(`Are you sure you want to remove ${targetPlayerName || 'this player'} from the room?`)) {
-                return;
-            }
-
-            showMessage(`Removing ${targetPlayerName || 'player'}...`, "info");
-            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
-            try {
-                const updates = {
-                    players: arrayRemove(targetPlayerId), // Remove from players array
-                    [`currentBets.${targetPlayerId}`]: deleteField(),
-                    [`playerStatuses.${targetPlayerId}`]: deleteField(),
-                    [`playerLastActions.${targetPlayerId}`]: deleteField()
-                };
-                await updateDoc(roomDocRef, updates);
-
-                // Also delete their active session to force a UI update/kick for them
-                try {
-                    const activeSessionRef = doc(activeSessionsCollectionRef, targetPlayerId);
-                    await deleteDoc(activeSessionRef);
-                    console.log(`Active session for player ${targetPlayerId} deleted by admin removal.`);
-                } catch (sessionError) {
-                    console.error(`Error deleting active session for removed player ${targetPlayerId}:`, sessionError);
-                    // Non-critical for the removal itself, but log it.
-                }
-
-                showMessage(`${targetPlayerName || 'Player'} has been removed from the room and their session ended.`, "success");
-                // The room view will update via Firestore listener.
-            } catch (error) {
-                console.error(`Error removing player ${targetPlayerId}:`, error);
-                showMessage(`Failed to remove player: ${error.message}`, "error");
-            }
-        }
-
         async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to force fold players.", "error");
@@ -904,6 +860,67 @@
             } catch (error) {
                 console.error(`Error force folding player ${targetPlayerId}:`, error);
                 showMessage(`Failed to force fold player: ${error.message}`, "error");
+            }
+        }
+
+        async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to remove players.", "error");
+                return;
+            }
+
+            if (targetPlayerId === auth.currentUser.uid) {
+                showMessage("You cannot remove yourself using this admin action. Please use the 'Leave Room' button.", "info");
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to remove ${targetPlayerName || 'this player'} from the room?`)) {
+                return;
+            }
+
+            showMessage(`Removing ${targetPlayerName || 'player'}...`, "info");
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            try {
+                // To remove fields from maps, we need FieldValue.delete()
+                // It's imported with: import { ..., FieldValue } from "firebase/firestore";
+                // However, FieldValue is not directly available in the global firebase object when using compat version.
+                // For modular SDK, it needs to be imported. Since we are using modular SDK,
+                // we need to ensure `deleteField` (the v9 equivalent) is available.
+                // It's `import { ..., deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";`
+                // Let's assume `deleteField` is available globally or correctly imported.
+                // If not, this will cause an error and we'll need to add `deleteField` to the import list.
+
+                // For now, let's try with direct update and arrayRemove.
+                // Removing map entries is trickier without FieldValue.delete() or equivalent.
+                // A common workaround if FieldValue.delete() isn't readily usable is to set the field to null or a special marker,
+                // or fetch the document, modify the map in JS, and overwrite the map.
+                // Given our current structure, arrayRemove is for arrays. For maps, we update the specific keys.
+
+                const updates = {
+                    players: arrayRemove(targetPlayerId), // Remove from players array
+                    [`currentBets.${targetPlayerId}`]: deleteField(),
+                    [`playerStatuses.${targetPlayerId}`]: deleteField(),
+                    [`playerLastActions.${targetPlayerId}`]: deleteField()
+                };
+
+                await updateDoc(roomDocRef, updates);
+
+                // Also delete their active session to force a UI update/kick for them
+                try {
+                    const activeSessionRef = doc(activeSessionsCollectionRef, targetPlayerId);
+                    await deleteDoc(activeSessionRef);
+                    console.log(`Active session for player ${targetPlayerId} deleted by admin removal.`);
+                } catch (sessionError) {
+                    console.error(`Error deleting active session for removed player ${targetPlayerId}:`, sessionError);
+                    // Non-critical for the removal itself, but log it.
+                    // The player might not get immediately kicked from UI if this fails, but they are out of the room data-wise.
+                }
+
+                showMessage(`${targetPlayerName || 'Player'} has been removed from the room and their session ended.`, "success");
+                // The room view will update via Firestore listener.
+            } catch (error) {
+                console.error(`Error removing player ${targetPlayerId}:`, error);
+                showMessage(`Failed to remove player: ${error.message}`, "error");
             }
         }
 
@@ -2430,14 +2447,13 @@
                     playerCard.appendChild(betEl);
 
                     // Admin Menu for Player Card - Debugging
-                    // console.log('Admin Check before if:', auth.currentUser?.uid, typeof auth.currentUser?.uid !== 'undefined' ? hasAdminAccess(auth.currentUser.uid) : 'N/A (no user)'); // Temporarily remove this console log
+                    // console.log('Admin Check before if:', auth.currentUser?.uid, typeof auth.currentUser?.uid !== 'undefined' ? hasAdminAccess(auth.currentUser.uid) : 'N/A (no user)');
                     if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
-                        // console.log('Admin menu WILL be created for player:', playerName); // Temporarily remove this console log
+                        // console.log('Admin menu WILL be created for player:', playerName);
                         const adminMenuButton = document.createElement('button');
-                        adminMenuButton.innerHTML = '&#8942;'; // This sets the ellipsis
-                        adminMenuButton.className = 'absolute top-2 right-2 text-gray-200 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500';
-
-                        // Override all classes with very direct, prominent styling
+                        adminMenuButton.innerHTML = '&#8942;'; // Vertical ellipsis
+                        // Restored Tailwind classes for subtle styling
+                        adminMenuButton.className = 'absolute top-2 right-2 text-gray-200 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500'; 
                         
                         const adminMenuDropdown = document.createElement('div');
                         adminMenuDropdown.className = 'hidden absolute top-8 right-2 bg-gray-600 text-white rounded-md shadow-lg py-1 z-10 min-w-max';
