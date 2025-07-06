@@ -831,7 +831,7 @@
                 showMessage(`Failed to place bet for player: ${error.message}`, "error");
             }
         }
-        
+
         async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to remove players.", "error");
@@ -904,55 +904,6 @@
             } catch (error) {
                 console.error(`Error force folding player ${targetPlayerId}:`, error);
                 showMessage(`Failed to force fold player: ${error.message}`, "error");
-            }
-        }
-
-        async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
-            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
-                showMessage("You do not have permission to remove players.", "error");
-                return;
-            }
-
-            if (targetPlayerId === auth.currentUser.uid) {
-                showMessage("You cannot remove yourself using this admin action. Please use the 'Leave Room' button.", "info");
-                return;
-            }
-
-            if (!confirm(`Are you sure you want to remove ${targetPlayerName || 'this player'} from the room?`)) {
-                return;
-            }
-
-            showMessage(`Removing ${targetPlayerName || 'player'}...`, "info");
-            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
-            try {
-                // To remove fields from maps, we need FieldValue.delete()
-                // It's imported with: import { ..., FieldValue } from "firebase/firestore";
-                // However, FieldValue is not directly available in the global firebase object when using compat version.
-                // For modular SDK, it needs to be imported. Since we are using modular SDK,
-                // we need to ensure `deleteField` (the v9 equivalent) is available.
-                // It's `import { ..., deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";`
-                // Let's assume `deleteField` is available globally or correctly imported.
-                // If not, this will cause an error and we'll need to add `deleteField` to the import list.
-
-                // For now, let's try with direct update and arrayRemove.
-                // Removing map entries is trickier without FieldValue.delete() or equivalent.
-                // A common workaround if FieldValue.delete() isn't readily usable is to set the field to null or a special marker,
-                // or fetch the document, modify the map in JS, and overwrite the map.
-                // Given our current structure, arrayRemove is for arrays. For maps, we update the specific keys.
-
-                const updates = {
-                    players: arrayRemove(targetPlayerId), // Remove from players array
-                    [`currentBets.${targetPlayerId}`]: deleteField(),
-                    [`playerStatuses.${targetPlayerId}`]: deleteField(),
-                    [`playerLastActions.${targetPlayerId}`]: deleteField()
-                };
-
-                await updateDoc(roomDocRef, updates);
-                showMessage(`${targetPlayerName || 'Player'} has been removed from the room.`, "success");
-                // The room view will update via Firestore listener.
-            } catch (error) {
-                console.error(`Error removing player ${targetPlayerId}:`, error);
-                showMessage(`Failed to remove player: ${error.message}`, "error");
             }
         }
 
