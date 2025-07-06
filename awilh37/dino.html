@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #e0e0e0; /* Lighter grey background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Nicer font */
+            color: #333; /* Darker text color for better contrast */
+            display: flex; /* Already here, but good to note */
+            flex-direction: column; /* Stack title, game, controls vertically */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #4a4a4a;
+            margin-bottom: 20px;
+        }
+        #gameContainer {
+            border: 2px solid #333; /* Thicker, darker border */
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2); /* Subtle shadow for depth */
+            position: relative;
+            background-color: #f7f7f7; /* Canvas background if needed, or for container */
+        }
+        canvas {
+            display: block;
+            background-color: #f0f0f0; /* Light background for the game itself */
+        }
+        .controls {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .controls label {
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        .controls select, .controls button {
+            padding: 8px 12px;
+            margin-right: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .controls select:hover, .controls button:hover {
+            background-color: #f0f0f0;
+            border-color: #bbb;
+        }
+        .controls button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+        }
+        .controls button:hover {
+            background-color: #45a049;
+            box-shadow: 0px 1px 5px rgba(0,0,0,0.2);
+        }
+        .controls button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .score-container {
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Customizable Dino Runner</h1>
+    <div id="gameArea">
+        <div id="gameContainer">
+            <canvas id="gameCanvas" width="600" height="150"></canvas>
+        </div>
+        <div class="controls">
+            <div>
+                <label for="dinoSkin">Dino Skin:</label>
+                <select id="dinoSkin">
+                    <option value="og">OG Dino</option>
+                    <option value="unicorn">Unicorn Dino</option>
+                    <option value="chicken">Chicken</option>
+                    <option value="ghost">Pac-Man Ghost</option>
+                </select>
+
+                <label for="cactiSkin">Cacti Skin:</label>
+                <select id="cactiSkin">
+                    <option value="og">OG Cacti</option>
+                    <option value="pacman">Pac-Man Power Pellet</option>
+                </select>
+            </div>
+            <button id="startGame" style="margin-top: 15px;">Start Game</button>
+            <div class="score-container">Score: <span id="score">0</span></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startGameButton = document.getElementById('startGame');
+        const dinoSkinSelect = document.getElementById('dinoSkin');
+        const cactiSkinSelect = document.getElementById('cactiSkin');
+
+        // --- Asset Management (Conceptual) ---
+        // In a real scenario, you'd load images here:
+        // const dinoImages = {
+        //     og: loadImage('path/to/og_dino.png'),
+        //     unicorn: loadImage('path/to/unicorn_dino.png'),
+        //     chicken: loadImage('path/to/chicken.png'),
+        //     ghost: loadImage('path/to/ghost.png')
+        // };
+        // const cactiImages = {
+        //     og: loadImage('path/to/og_cactus.png'),
+        //     pacman: loadImage('path/to/pacman_power_pellet_cactus.png')
+        // };
+        // const personImage = loadImage('path/to/person_throwing.png');
+        // const guitarImage = loadImage('path/to/guitar.png');
+
+        // For now, we'll use color codes for skins
+        const dinoSkins = {
+            og: { color: 'darkgreen', width: 20, height: 40 },
+            unicorn: { color: 'purple', width: 25, height: 45 }, // Slightly different size
+            chicken: { color: 'white', width: 30, height: 30 },
+            ghost: { color: 'lightblue', width: 30, height: 30 }
+        };
+
+        const cactiSkins = {
+            og: { color: 'green', baseWidth: 15, minHeight: 30, maxHeight: 50 },
+            pacman: { color: 'yellow', baseWidth: 25, minHeight: 25, maxHeight: 25 } // Pacman pellet is more uniform
+        };
+
+        let currentDinoSkin = dinoSkins.og;
+        let currentCactiSkin = cactiSkins.og;
+
+        let score = 0;
+        let gameSpeed = 5;
+        let isGameRunning = false;
+        let animationFrameId;
+
+        // Player (Dino)
+        const dino = {
+            x: 50,
+            y: canvas.height - currentDinoSkin.height, // Initial y position based on skin
+            width: currentDinoSkin.width,
+            height: currentDinoSkin.height,
+            dy: 0, // Change in y per frame
+            gravity: 1,
+            jumpPower: 15,
+            isJumping: false,
+            groundY: canvas.height - currentDinoSkin.height, // Ground level y
+
+            draw() {
+                // Placeholder: draw with current skin color and dimensions
+                // Replace this with actual image drawing: ctx.drawImage(dinoImages[dinoSkinSelect.value], this.x, this.y, this.width, this.height);
+                ctx.fillStyle = currentDinoSkin.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            },
+            jump() {
+                if (!this.isJumping) {
+                    this.isJumping = true;
+                    this.dy = -this.jumpPower;
+                }
+            },
+            update() {
+                // Apply gravity
+                if (this.isJumping) {
+                    this.y += this.dy;
+                    this.dy += this.gravity;
+                }
+
+                // Prevent falling through the ground
+                if (this.y + this.height >= this.groundY) { // Use >= for safety
+                    this.y = this.groundY;
+                    this.dy = 0;
+                    this.isJumping = false;
+                }
+            },
+            reset() { // Reset dino properties based on current skin
+                this.width = currentDinoSkin.width;
+                this.height = currentDinoSkin.height;
+                this.groundY = canvas.height - this.height;
+                this.y = this.groundY;
+                this.isJumping = false;
+                this.dy = 0;
+            }
+        };
+
+        // Obstacles & Projectiles
+        let obstacles = [];
+        let projectiles = []; // For guitars thrown by people
+
+        const obstacleBaseWidth = 20; // Base width, skin can modify
+        const personObstacle = {
+            width: 30,
+            height: 50,
+            throwInterval: 150, // Frames between throws
+            color: 'brown', // Placeholder for person
+            guitar: {
+                width: 25,
+                height: 10,
+                speed: 7, // Faster than gameSpeed
+                color: 'saddlebrown' // Placeholder for guitar
+            }
+        };
+
+        const obstacleSpawnConfig = {
+            minInterval: 80,  // Minimum frames between spawns
+            maxInterval: 200, // Maximum frames between spawns
+            nextSpawnFrame: 0, // When the next obstacle can spawn
+        };
+        let frameCount = 0;
+
+
+        function setNextSpawnFrame() {
+            obstacleSpawnConfig.nextSpawnFrame = frameCount + Math.floor(Math.random() * (obstacleSpawnConfig.maxInterval - obstacleSpawnConfig.minInterval + 1)) + obstacleSpawnConfig.minInterval;
+        }
+
+        function spawnObstacle() {
+            const randomType = Math.random();
+            let newObstacle;
+
+            if (randomType < 0.6) { // 60% chance for cactus
+                const skinProps = currentCactiSkin;
+                const height = Math.random() * (skinProps.maxHeight - skinProps.minHeight) + skinProps.minHeight;
+                newObstacle = {
+                    type: 'cactus',
+                    x: canvas.width,
+                    y: canvas.height - height,
+                    width: skinProps.baseWidth + (Math.random() * 10 - 5), // Slight width variation
+                    height: height,
+                    skin: currentCactiSkin,
+                    draw() {
+                        // Placeholder: ctx.drawImage(cactiImages[cactiSkinSelect.value], this.x, this.y, this.width, this.height);
+                        ctx.fillStyle = this.skin.color;
+                        ctx.fillRect(this.x, this.y, this.width, this.height);
+                    },
+                    update() {
+                        this.x -= gameSpeed;
+                    }
+                };
+            } else { // 40% chance for person throwing guitar
+                newObstacle = {
+                    type: 'person',
+                    x: canvas.width,
+                    y: canvas.height - personObstacle.height,
+                    width: personObstacle.width,
+                    height: personObstacle.height,
+                    throwTimer: 0,
+                    draw() {
+                        // Placeholder: ctx.drawImage(personImage, this.x, this.y, this.width, this.height);
+                        ctx.fillStyle = personObstacle.color;
+                        ctx.fillRect(this.x, this.y, this.width, this.height);
+                    },
+                    update() {
+                        this.x -= gameSpeed;
+                        this.throwTimer++;
+                        if (this.throwTimer % personObstacle.throwInterval === 0) {
+                            spawnProjectile(this.x, this.y + this.height / 3); // Throw from person's mid-upper body
+                        }
+                    }
+                };
+            }
+            obstacles.push(newObstacle);
+            setNextSpawnFrame();
+        }
+
+        function spawnProjectile(x, y) {
+            projectiles.push({
+                x: x,
+                y: y,
+                width: personObstacle.guitar.width,
+                height: personObstacle.guitar.height,
+                draw() {
+                    // Placeholder: ctx.drawImage(guitarImage, this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = personObstacle.guitar.color;
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                },
+                update() {
+                    this.x -= personObstacle.guitar.speed; // Guitar has its own speed
+                }
+            });
+        }
+
+
+        function updateObstaclesAndProjectiles() {
+            frameCount++;
+            if (frameCount >= obstacleSpawnConfig.nextSpawnFrame) {
+                spawnObstacle();
+            }
+
+            // Update and draw obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].update();
+                obstacles[i].draw();
+
+                // Collision detection with dino
+                if (
+                    dino.x < obstacles[i].x + obstacles[i].width &&
+                    dino.x + dino.width > obstacles[i].x &&
+                    dino.y < obstacles[i].y + obstacles[i].height &&
+                    dino.y + dino.height > obstacles[i].y
+                ) {
+                    gameOver();
+                    return;
+                }
+
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    if (obstacles[i].type !== 'person') { // Don't score for person, score for dodged guitars
+                        score++;
+                        scoreDisplay.textContent = score;
+                    }
+                }
+            }
+
+            // Update and draw projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                projectiles[i].update();
+                projectiles[i].draw();
+
+                // Collision detection with dino
+                if (
+                    dino.x < projectiles[i].x + projectiles[i].width &&
+                    dino.x + dino.width > projectiles[i].x &&
+                    dino.y < projectiles[i].y + projectiles[i].height &&
+                    dino.y + dino.height > projectiles[i].y
+                ) {
+                    gameOver();
+                    return;
+                }
+
+                if (projectiles[i].x + projectiles[i].width < 0) {
+                    projectiles.splice(i, 1);
+                    score++; // Score for dodging a guitar
+                    scoreDisplay.textContent = score;
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            dino.update();
+            dino.draw();
+
+            updateObstaclesAndProjectiles();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            if (isGameRunning) return;
+
+            // Apply selected skins before starting
+            currentDinoSkin = dinoSkins[dinoSkinSelect.value];
+            currentCactiSkin = cactiSkins[cactiSkinSelect.value];
+            dino.reset(); // Reset dino properties based on new skin
+
+            isGameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = score;
+            obstacles = [];
+            projectiles = [];
+            frameCount = 0;
+            setNextSpawnFrame(); // Initialize next spawn time
+            gameSpeed = 5;
+            gameLoop();
+        }
+
+        function gameOver() {
+            isGameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            ctx.font = "30px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.fillText("Game Over! Score: " + score, canvas.width / 2, canvas.height / 2);
+            ctx.fillText("Press Space or Start to play again", canvas.width / 2, canvas.height / 2 + 30);
+            startGameButton.disabled = false;
+        }
+
+        // Event Listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault(); // Prevent page scroll on space
+                if (isGameRunning) {
+                    dino.jump();
+                } else {
+                    startGameButton.disabled = true;
+                    startGame();
+                }
+            }
+        });
+
+        startGameButton.addEventListener('click', () => {
+            startGameButton.disabled = true;
+            startGame();
+        });
+
+        // Update dino skin preview if changed when game not running
+        dinoSkinSelect.addEventListener('change', () => {
+            currentDinoSkin = dinoSkins[dinoSkinSelect.value];
+            dino.reset(); // Update dino's size/position based on skin
+            if (!isGameRunning) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                dino.draw(); // Redraw dino with new skin
+                 ctx.font = "20px Arial";
+                ctx.fillStyle = "black";
+                ctx.textAlign = "center";
+                ctx.fillText("Press 'Start Game' or Space to begin", canvas.width/2, canvas.height/2);
+            }
+        });
+         cactiSkinSelect.addEventListener('change', () => {
+            currentCactiSkin = cactiSkins[cactiSkinSelect.value];
+            // No visual preview change needed for cacti when game not running
+        });
+
+
+        // Initial draw of dino and prompt
+        dino.draw();
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText("Press 'Start Game' or Space to begin", canvas.width/2, canvas.height/2);
+
+
+    </script>
+</body>
+</html>
+                }
+            });
+        }
+
+        function updateObstacles() {
+            frameCount++;
+            if (frameCount % obstacleSpawnInterval === 0) {
+                spawnObstacle();
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].update();
+                obstacles[i].draw();
+
+                // Collision detection
+                if (
+                    dino.x < obstacles[i].x + obstacles[i].width &&
+                    dino.x + dino.width > obstacles[i].x &&
+                    dino.y < obstacles[i].y + obstacles[i].height &&
+                    dino.y + dino.height > obstacles[i].y
+                ) {
+                    // Collision detected
+                    gameOver();
+                    return;
+                }
+
+                // Remove off-screen obstacles
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score++;
+                    scoreDisplay.textContent = score;
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            dino.update();
+            dino.draw();
+
+            updateObstacles();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            if (isGameRunning) return;
+            isGameRunning = true;
+            score = 0;
+            scoreDisplay.textContent = score;
+            obstacles = [];
+            frameCount = 0;
+            dino.y = dino.groundY - dino.height; // Reset dino position
+            dino.isJumping = false;
+            gameSpeed = 5; // Reset game speed
+            gameLoop();
+        }
+
+        function gameOver() {
+            isGameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            ctx.font = "30px Arial";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.fillText("Game Over!", canvas.width / 2, canvas.height / 2);
+            startGameButton.disabled = false;
+        }
+
+        // Event Listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === ' ') {
+                if (isGameRunning) {
+                    dino.jump();
+                } else {
+                    // Start game on spacebar if not running, after initial button press
+                    if (!animationFrameId && obstacles.length === 0){ // Check if it's truly the first start
+                         startGame();
+                         startGameButton.disabled = true;
+                    }
+                }
+            }
+        });
+
+        startGameButton.addEventListener('click', () => {
+            startGameButton.disabled = true;
+            startGame();
+        });
+
+        // Initial prompt to start
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText("Press 'Start Game' or Space to begin", canvas.width/2, canvas.height/2);
+
+
+    </script>
+</body>
+</html>
