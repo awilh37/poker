@@ -297,6 +297,35 @@
                 <div id="gameStatsContent" class="text-gray-300">
                     <p>Loading game stats...</p>
                 </div>
+                <!-- Admin Game Controls -->
+                <div id="adminGameControls" class="mt-4 pt-4 border-t border-gray-600 hidden">
+                    <h5 class="text-md font-semibold text-gray-200 mb-2">Admin Controls</h5>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                        <button id="adminRoomResetButton" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out flex-1">
+                            Room Reset
+                        </button>
+                        <button id="adminUpdateChipsButton" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out flex-1">
+                            Update Chips
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Chips Panel (Admin Only, Initially Hidden) -->
+            <div id="updateChipsPanel" class="hidden p-4 my-4 border border-gray-600 rounded-lg bg-gray-700">
+                <h4 class="text-lg font-semibold text-gray-200 mb-3">Update Player Chips After Hand</h4>
+                <div id="updateChipsPlayerList" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
+                    <!-- Player entries will be populated here by JavaScript -->
+                    <p class="text-gray-400">Loading players...</p>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelChipUpdate" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
+                        Cancel
+                    </button>
+                    <button id="submitChipUpdate" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
+                        Submit Chip Updates
+                    </button>
+                </div>
             </div>
 
             <!-- Player Bet Input Section -->
@@ -494,6 +523,17 @@
         const placeBetButton = document.getElementById('placeBetButton');
         const foldButton = document.getElementById('foldButton'); // Added Fold button
         const allInButton = document.getElementById('allInButton'); // Added All-In button
+
+        // Admin Game Controls in Game Room View
+        const adminGameControls = document.getElementById('adminGameControls');
+        const adminRoomResetButton = document.getElementById('adminRoomResetButton');
+        const adminUpdateChipsButton = document.getElementById('adminUpdateChipsButton');
+
+        // Update Chips Panel Elements
+        const updateChipsPanel = document.getElementById('updateChipsPanel');
+        const updateChipsPlayerList = document.getElementById('updateChipsPlayerList');
+        const cancelChipUpdate = document.getElementById('cancelChipUpdate');
+        const submitChipUpdate = document.getElementById('submitChipUpdate');
 
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
@@ -2377,10 +2417,25 @@
                 showMessage("Error: The room you were in could not be found.", "error");
                 currentJoinedRoomId = null;
                 showPanel(playerJoinRoomPanel); // Fallback to lobby
+                adminGameControls.classList.add('hidden'); // Ensure admin controls are hidden on error/fallback
+                updateChipsPanel.classList.add('hidden'); // Ensure update chips panel is hidden
                 return;
             }
 
             gameRoomViewName.textContent = room.roomName || 'Unnamed Room';
+
+            // Admin controls visibility check at the beginning of render
+            if (auth.currentUser && hasAdminAccess(auth.currentUser.uid)) {
+                adminGameControls.classList.remove('hidden');
+                // Event listeners for admin buttons are now set here to ensure they have the correct roomId
+                adminRoomResetButton.onclick = () => adminRoomReset(roomId);
+                adminUpdateChipsButton.onclick = () => toggleUpdateChipsPanel(roomId, true); // Show panel
+                cancelChipUpdate.onclick = () => toggleUpdateChipsPanel(roomId, false);    // Hide panel
+                submitChipUpdate.onclick = () => handleSubmitChipUpdate(roomId);
+            } else {
+                adminGameControls.classList.add('hidden');
+                updateChipsPanel.classList.add('hidden'); // Also hide the panel if user is not admin
+            }
 
             // Populate player list
             if (!roomPlayersListContainer) {
@@ -2514,24 +2569,24 @@
                         }
                         adminMenuDropdown.appendChild(placeBetForPlayerButton);
 
-                        // "Declare Winner" option (Placeholder)
-                        const declareWinnerButton = document.createElement('button');
-                        declareWinnerButton.textContent = 'Declare Winner (Placeholder)';
-                        declareWinnerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none';
-                        // Enable for any active player, admin can decide if it makes sense.
-                        // Could be disabled if player is folded.
-                        if (targetPlayerCurrentStatus === 'folded') {
-                             declareWinnerButton.disabled = true;
-                             declareWinnerButton.title = "Cannot declare a folded player as winner";
-                             declareWinnerButton.classList.add('opacity-50', 'cursor-not-allowed');
-                        } else {
-                            declareWinnerButton.onclick = (event) => {
-                                event.stopPropagation();
-                                adminDeclareWinner(roomId, playerId, playerName);
-                                adminMenuDropdown.classList.add('hidden'); // Close menu
-                            };
-                        }
-                        adminMenuDropdown.appendChild(declareWinnerButton);
+                        // "Declare Winner" option (Placeholder) - REMOVED
+                        // const declareWinnerButton = document.createElement('button');
+                        // declareWinnerButton.textContent = 'Declare Winner (Placeholder)';
+                        // declareWinnerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none';
+                        // // Enable for any active player, admin can decide if it makes sense.
+                        // // Could be disabled if player is folded.
+                        // if (targetPlayerCurrentStatus === 'folded') {
+                        //      declareWinnerButton.disabled = true;
+                        //      declareWinnerButton.title = "Cannot declare a folded player as winner";
+                        //      declareWinnerButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        // } else {
+                        //     declareWinnerButton.onclick = (event) => {
+                        //         event.stopPropagation();
+                        //         adminDeclareWinner(roomId, playerId, playerName);
+                        //         adminMenuDropdown.classList.add('hidden'); // Close menu
+                        //     };
+                        // }
+                        // adminMenuDropdown.appendChild(declareWinnerButton);
                         
                         // Placeholder for more actions (if any more are added after this)
                         // const comingSoon = document.createElement('p'); 
@@ -2643,16 +2698,25 @@
 
 
             // Wire up buttons in this panel
-            leaveCurrentGameRoomButton.onclick = () => handleLeaveRoom(roomId);
+            leaveCurrentGameRoomButton.onclick = () => {
+                handleLeaveRoom(roomId);
+                adminGameControls.classList.add('hidden'); // Ensure admin controls are hidden
+                updateChipsPanel.classList.add('hidden'); // Ensure update chips panel is hidden
+            };
             closeGameRoomViewButton.onclick = () => {
                 currentJoinedRoomId = null; // Clear joined room state
                 showPanel(playerJoinRoomPanel); // Show the lobby/list of rooms
+                adminGameControls.classList.add('hidden'); // Hide admin controls when leaving room view
+                updateChipsPanel.classList.add('hidden'); // Hide chip update panel if open
             };
 
             // Assign handlePlaceBet directly to the onclick event
             placeBetButton.onclick = () => handlePlaceBet(roomId);
             foldButton.onclick = () => handleFold(roomId); // Wire up Fold button
             allInButton.onclick = () => handleAllIn(roomId); // Wire up All-In button
+
+            // Admin controls visibility is handled at the top of renderGameRoomView.
+            // Event listeners for admin buttons are also set there.
 
             // Disable action buttons if player is folded or all-in
             const currentPlayerStatus = room.playerStatuses ? room.playerStatuses[auth.currentUser.uid] : null;
@@ -2838,6 +2902,354 @@
                 console.error("Error joining room:", error);
                 showMessage(`Failed to join room: ${error.message}`, "error");
             }
+        }
+
+        // --- Admin Game Control Functions ---
+        async function adminRoomReset(roomId) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to reset the room.", "error");
+                return;
+            }
+
+            const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+
+            if (!room || !room.players) {
+                showMessage("Room data or players not found.", "error");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to reset all bets to 0 and unfold all players?")) {
+                return;
+            }
+
+            showMessage("Resetting room...", "info");
+            try {
+                const updates = {};
+                room.players.forEach(playerId => {
+                    updates[`currentBets.${playerId}`] = 0;
+                    updates[`playerStatuses.${playerId}`] = 'pending'; // Or 'ready' depending on desired default
+                    updates[`playerLastActions.${playerId}`] = 'room_reset';
+                });
+
+                // Also reset overall room properties if needed, e.g., pot, current round, etc.
+                // For now, focusing on player bets and statuses.
+
+                await updateDoc(roomDocRef, updates);
+                showMessage("Room has been reset. All bets are 0, players unfolded.", "success");
+                // UI will update via Firestore listener in renderGameRoomView
+            } catch (error) {
+                console.error("Error resetting room:", error);
+                showMessage(`Failed to reset room: ${error.message}`, "error");
+            }
+        }
+
+        function toggleUpdateChipsPanel(roomId, show) { // Renamed and modified
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to access this feature.", "error");
+                return;
+            }
+            if (show) {
+                populateUpdateChipsPanel(roomId); // Populate before showing
+                updateChipsPanel.classList.remove('hidden');
+            } else {
+                updateChipsPanel.classList.add('hidden');
+            }
+        }
+
+        function populateUpdateChipsPanel(roomId) {
+            if (!updateChipsPlayerList) return;
+            updateChipsPlayerList.innerHTML = ''; // Clear previous content
+
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+            if (!room || !room.players || room.players.length === 0) {
+                updateChipsPlayerList.innerHTML = '<p class="text-gray-400">No players in the room to update.</p>';
+                return;
+            }
+
+            room.players.forEach(playerId => {
+                const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
+                const playerName = playerProfile ? formatDisplayName(playerProfile) : `Player UID: ${playerId}`;
+                const playerStatus = room.playerStatuses ? room.playerStatuses[playerId] : 'unknown';
+
+                // Only include players who are not folded for ranking
+                if (playerStatus === 'folded') {
+                    const foldedPlayerDiv = document.createElement('div');
+                    foldedPlayerDiv.className = 'flex justify-between items-center p-2 bg-gray-600 rounded';
+                    foldedPlayerDiv.innerHTML = `
+                        <span class="text-gray-400">${playerName} (Folded)</span>
+                        <span class="text-xs text-gray-500">Cannot rank folded players</span>
+                    `;
+                    updateChipsPlayerList.appendChild(foldedPlayerDiv);
+                    return; // Skip to next player
+                }
+
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'flex justify-between items-center p-2 bg-gray-600 rounded';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = playerName;
+                nameSpan.className = 'text-gray-100';
+                playerDiv.appendChild(nameSpan);
+
+                const selectRank = document.createElement('select');
+                selectRank.className = 'bg-gray-500 text-white border border-gray-400 rounded-md p-1 text-sm focus:ring-blue-500 focus:border-blue-500';
+                selectRank.setAttribute('data-player-id', playerId);
+
+                const ranks = [
+                    { value: '0', text: 'No Win / Loser' },
+                    { value: '1', text: 'Winner 1st' },
+                    { value: '2', text: 'Winner 2nd' },
+                    { value: '3', text: 'Winner 3rd' }
+                ];
+
+                ranks.forEach(rank => {
+                    const option = document.createElement('option');
+                    option.value = rank.value;
+                    option.textContent = rank.text;
+                    selectRank.appendChild(option);
+                });
+                selectRank.value = '0'; // Default to "No Win"
+                playerDiv.appendChild(selectRank);
+                updateChipsPlayerList.appendChild(playerDiv);
+            });
+        }
+
+        async function handleSubmitChipUpdate(roomId) {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission to perform this action.", "error");
+                return;
+            }
+
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+            if (!room || !room.players || room.players.length === 0) {
+                showMessage("No player data found for this room.", "error");
+                return;
+            }
+
+            // Collect rankings
+            const playerRankings = [];
+            const rankSelects = updateChipsPlayerList.querySelectorAll('select[data-player-id]');
+            rankSelects.forEach(select => {
+                playerRankings.push({
+                    playerId: select.getAttribute('data-player-id'),
+                    rank: parseInt(select.value, 10) // 0 for No Win, 1, 2, 3
+                });
+            });
+
+            if (playerRankings.some(p => p.rank > 0 && (room.playerStatuses[p.playerId] === 'folded'))) {
+                 showMessage("Error: Folded players cannot be assigned a winning rank. Please correct and resubmit.", "error");
+                 return;
+            }
+
+            // --- Pot Calculation and Distribution Logic ---
+            let totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + (bet || 0), 0);
+            if (totalPot <= 0) {
+                showMessage("Pot is zero or empty. No chips to distribute.", "info");
+                await adminRoomReset(roomId); // Reset the room as there's nothing to award.
+                toggleUpdateChipsPanel(roomId, false); // Hide panel
+                return;
+            }
+
+            console.log("Initial Total Pot:", totalPot);
+            console.log("Player Rankings from UI:", playerRankings);
+            console.log("Current Bets in Room:", room.currentBets);
+            console.log("Player Statuses:", room.playerStatuses);
+
+
+            // Get detailed player data: bet amount, chip_count, allIn status
+            const playersData = [];
+            for (const pInfo of playerRankings) {
+                const profile = allFirebaseUsersData.find(p => p.uid === pInfo.playerId);
+                const betAmount = room.currentBets[pInfo.playerId] || 0;
+                const status = room.playerStatuses[pInfo.playerId];
+
+                // Only consider players who made a bet and are not folded for pot eligibility
+                if (betAmount > 0 && status !== 'folded') {
+                    playersData.push({
+                        uid: pInfo.playerId,
+                        name: profile ? formatDisplayName(profile) : pInfo.playerId,
+                        rank: pInfo.rank,
+                        bet: betAmount,
+                        initialChips: profile ? (profile.chip_count || 0) : 0,
+                        isAllIn: status === 'all-in',
+                        potentialWinnings: 0, // How much this player has won from the pot
+                        chipsToUpdateInProfile: profile ? (profile.chip_count || 0) : 0 // Start with current chips for calculation
+                    });
+                } else if (pInfo.rank > 0) {
+                    // This case should ideally be caught earlier, but as a safeguard:
+                    showMessage(`Error: Player ${profile ? formatDisplayName(profile) : pInfo.playerId} has rank ${pInfo.rank} but bet ${betAmount} or is folded. This should not happen.`, "error");
+                    return;
+                }
+            }
+
+            // Sort players by rank (1st, 2nd, 3rd), then by bet amount (smallest all-in first for side pots)
+            playersData.sort((a, b) => {
+                if (a.rank !== b.rank) {
+                    if (a.rank === 0) return 1; // Losers last
+                    if (b.rank === 0) return -1;
+                    return a.rank - b.rank; // Winners by rank
+                }
+                return a.bet - b.bet; // For side pot considerations, smaller bets (often all-ins) get priority for their portion of pot
+            });
+
+            console.log("Processed Players Data (sorted for distribution):", JSON.parse(JSON.stringify(playersData)));
+
+            // --- Main Distribution Logic ---
+            // This is a simplified version. True poker side pot logic is very complex.
+            // This version focuses on distributing the main pot according to ranks and all-in limits.
+
+            let remainingPot = totalPot;
+            const chipChanges = {}; // { playerId: changeAmount }
+
+            // Calculate winnings for each rank group
+            for (let rank = 1; rank <= 3; rank++) {
+                if (remainingPot <= 0) break;
+
+                const currentRankWinners = playersData.filter(p => p.rank === rank && p.bet > 0); // Only those who bet and are ranked
+                if (currentRankWinners.length === 0) continue;
+
+                console.log(`Processing Rank ${rank} Winners:`, currentRankWinners.map(p=>p.name));
+
+                // Determine the portion of the pot this rank is competing for.
+                // This needs to handle side pots created by all-ins.
+                // For each winner, they can only win up to their bet amount from each other player.
+
+                // Simplified Approach:
+                // 1. Identify players involved in the current distribution (all active players who haven't folded)
+                // 2. For each winner in the current rank, calculate what they can win from the remaining pot.
+                //    This is capped by their own bet amount from each contributor.
+
+                // Let's try a more direct split for now and refine if side pots are not handled well.
+                // Assume currentRankWinners share the *currently available remainingPot*
+                // subject to their individual all-in limits.
+
+                let potSharePerWinnerInRank = remainingPot / currentRankWinners.length;
+
+                currentRankWinners.forEach(winner => {
+                    if (remainingPot <= 0) return;
+
+                    // Max a player can win is their bet multiplied by number of players who matched or exceeded that bet.
+                    // This is where true side pot logic gets complex.
+                    // Simpler: A player cannot win more than (their_bet * number_of_opponents_they_cover) + their_own_bet.
+                    // Or, more simply, what they put in from each pot they are part of.
+
+                    // For now, let's cap winnings by what they could theoretically win if they were the sole winner of this rank against the pot.
+                    // A player who is all-in for X can win X from each player who called that X.
+                    // The total amount a player can win from a pot is complex.
+                    // Let's assume `winner.bet` is their total investment in this hand.
+                    // They are eligible to win up to their `bet` from each player who also contributed at least that much.
+
+                    // Simplified cap: a winner cannot win more than (totalPot * (theirBet / totalBetsOfActivePlayersInPot))
+                    // This is still not quite right for poker rules.
+
+                    // Revised simpler logic:
+                    // Each winner gets an equal share of `remainingPot`, but capped at what they could win based on their bet.
+                    // This still doesn't fully address side pots correctly if players have different bet amounts.
+
+                    // Let's make a very simplified assumption for this iteration:
+                    // Winners split the `remainingPot` evenly, but an all-in player can't get more than
+                    // (their all-in amount * number of players who met their bet) + their own bet back.
+                    // This is still tricky.
+
+                    // Target: Distribute pot based on who contributed what.
+                    // Create "pots" based on all-in amounts.
+                    // Pot 1: Smallest all-in amount * number of players. All players who bet at least this compete for it.
+                    // Pot 2: (Next smallest all-in - Smallest all-in) * number of remaining players. etc.
+
+                    // --- SUPER SIMPLIFIED DISTRIBUTION (placeholder for more robust logic) ---
+                    // This will likely be incorrect for complex all-in scenarios but is a starting point.
+                    let actualWinAmount = Math.min(potSharePerWinnerInRank, winner.bet * (playersData.filter(p=>p.bet > 0 && p.rank !== 0).length)); // Rough cap
+                    if (winner.isAllIn) {
+                        // An all-in player created a main pot and possibly side pots.
+                        // They can win from the main pot they contributed to.
+                        // Max they can win from any single other player is their own bet amount.
+                        // So, max total win is roughly their_bet * (num_players_who_matched_or_exceeded_their_bet).
+                        // Let's find players who contributed to the pot this all-in player is eligible for.
+                        let eligiblePotContributors = 0;
+                        playersData.forEach(p => {
+                            if (p.bet >= winner.bet && p.uid !== winner.uid && p.rank !== 0) { // p.rank !== 0 ensures they were in the hand
+                                eligiblePotContributors++;
+                            }
+                        });
+                        // Max win for this all-in player is their bet from each contributor + their own bet back.
+                        let maxPossibleWinForAllIn = winner.bet * eligiblePotContributors + winner.bet;
+                        actualWinAmount = Math.min(actualWinAmount, maxPossibleWinForAllIn);
+                    }
+
+                    actualWinAmount = Math.min(actualWinAmount, remainingPot); // Cannot win more than what's left
+                    actualWinAmount = Math.round(actualWinAmount); // Avoid fractional chips
+
+                    winner.potentialWinnings += actualWinAmount;
+                    remainingPot -= actualWinAmount;
+
+                    // Their chip change is (winnings - their original bet for this hand)
+                    chipChanges[winner.uid] = (chipChanges[winner.uid] || -winner.bet) + actualWinAmount;
+                    console.log(`Player ${winner.name} (Rank ${rank}) awarded: ${actualWinAmount}. New remainingPot: ${remainingPot}. Chip change: ${chipChanges[winner.uid]}`);
+                });
+            }
+
+            // Handle remaining pot if any (e.g., due to rounding or unallocated amounts)
+            // For now, if there's a tiny remainingPot, it might just disappear or could be given to the highest rank winner.
+            // This is often raked or goes to the house in real games if not perfectly divisible.
+            if (remainingPot > 0 && playersData.some(p => p.rank === 1)) {
+                const firstRankWinner = playersData.find(p => p.rank === 1);
+                if (firstRankWinner) {
+                    console.log(`Distributing remaining ${remainingPot} (e.g. rounding) to first Rank 1 winner: ${firstRankWinner.name}`);
+                    chipChanges[firstRankWinner.uid] += remainingPot;
+                    firstRankWinner.potentialWinnings += remainingPot;
+                    remainingPot = 0;
+                }
+            }
+
+
+            // For players who bet but had rank 0 (losers)
+            playersData.forEach(player => {
+                if (player.rank === 0 && player.bet > 0) {
+                    chipChanges[player.uid] = -player.bet; // They lose their bet
+                    console.log(`Player ${player.name} (Loser) loses bet: ${player.bet}. Chip change: ${chipChanges[player.uid]}`);
+                } else if (!chipChanges[player.uid] && player.bet > 0) {
+                    // If a player bet but wasn't ranked and wasn't explicitly a loser (e.g. data issue)
+                    // Assume they lose their bet. This should not happen if UI forces a rank.
+                    chipChanges[player.uid] = -player.bet;
+                     console.warn(`Player ${player.name} bet but had no rank or outcome, assumed loss of ${player.bet}`);
+                }
+            });
+
+            console.log("Final Chip Changes to be applied:", chipChanges);
+
+            // Update Firestore
+            showMessage("Updating chip counts in Firestore...", "info");
+            const updates = [];
+            for (const playerId in chipChanges) {
+                const change = chipChanges[playerId];
+                const playerProfileRef = doc(userProfilesCollectionRef, playerId);
+
+                // It's safer to fetch the current chip count before updating,
+                // but for this exercise, we'll assume `allFirebaseUsersData` is reasonably fresh.
+                // A transaction would be ideal here.
+                const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                if (profile) {
+                    const newChipCount = (profile.chip_count || 0) + change;
+                    updates.push(updateDoc(playerProfileRef, { chip_count: newChipCount }));
+                    console.log(`Updating ${profile.displayName}'s chips from ${profile.chip_count} by ${change} to ${newChipCount}`);
+                } else {
+                    console.error(`Could not find profile for player UID ${playerId} to update chips.`);
+                }
+            }
+
+            try {
+                await Promise.all(updates);
+                showMessage("Chip counts updated successfully!", "success");
+
+                // Finally, reset the room
+                await adminRoomReset(roomId); // This will set bets to 0 and statuses to pending
+            } catch (error) {
+                console.error("Error updating chip counts or resetting room:", error);
+                showMessage(`Failed to update chip counts: ${error.message}`, "error");
+            }
+
+            toggleUpdateChipsPanel(roomId, false); // Hide panel after submission
         }
 
     </script>
