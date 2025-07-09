@@ -3051,187 +3051,235 @@
                 return;
             }
 
-            console.log("Initial Total Pot (sum of currentBets):", totalPot);
+            // --- Store Initial Total Room Chips (for final validation) ---
+            let initialTotalRoomChips = 0;
+            room.players.forEach(playerId => {
+                const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                if (profile) {
+                    initialTotalRoomChips += (profile.chip_count || 0);
+                }
+            });
+            console.log("Initial Total Room Chips (all players in room):", initialTotalRoomChips);
+
+            console.log("Original Total Pot (sum of currentBets):", totalPot);
             console.log("Player Rankings from UI:", playerRankings);
 
             // --- Phase 1: Debit all bets and prepare player data ---
-            const playersInHand = []; // Array to store processed player data for this hand
+            const playersData = []; // Renamed from playersInHand for clarity with plan
             const chipChanges = {};   // Stores net change for each player's profile update
 
-            for (const playerId in room.currentBets) {
-                if (room.currentBets.hasOwnProperty(playerId)) {
-                    const betAmount = room.currentBets[playerId] || 0;
-                    if (betAmount <= 0 && room.playerStatuses[playerId] !== 'folded') { // Allow folded players to have 0 bet if they folded before betting
-                        // If a player is active but has 0 bet, they are not really in the hand for winning/losing pot.
-                        // But if they were ranked, it's an inconsistency. The ranking UI should prevent this.
-                        // For now, we mostly care about players who have bet.
-                        continue;
-                    }
-
-                    const profile = allFirebaseUsersData.find(p => p.uid === playerId);
-                    const playerStatus = room.playerStatuses[playerId];
-                    const rankingInfo = playerRankings.find(r => r.playerId === playerId);
-                    const rank = rankingInfo ? rankingInfo.rank : 0; // Default to "No Win" if not in selection (e.g. folded player not in UI)
-
-                    if (rank > 0 && playerStatus === 'folded') {
-                         showMessage(`Error: Player ${profile ? formatDisplayName(profile) : playerId} is FOLDED but assigned rank ${rank}. Cannot proceed.`, "error");
-                         return; // Critical error, stop processing
-                    }
-
-                    playersInHand.push({
-                        uid: playerId,
-                        name: profile ? formatDisplayName(profile) : `UID: ${playerId.substring(0,6)}`,
-                        bet: betAmount,
-                        initialChips: profile ? (profile.chip_count || 0) : 0,
-                        isAllIn: playerStatus === 'all-in',
-                        isFolded: playerStatus === 'folded',
-                        rank: rank,
-                        winnings: 0, // How much this player wins from the pot
-                        // Initial change is loss of their bet. This will be adjusted by winnings or returned amounts.
-                        netChipChange: (betAmount > 0 && !playerStatus === 'folded') ? -betAmount : 0
-                                       // If folded, their bet is already "lost" to the pot.
-                                       // If they didn't bet, no change initially.
-                                       // This needs to be careful: if a player folds, their bet IS part of the pot.
-                                       // The `chipChanges` will store the *final* update amount for their profile.
-                    });
-
-                    // Initialize chipChanges: everyone who bet loses their bet initially.
-                    // If folded, their bet is already part of the pot calculation.
-                    if (betAmount > 0) {
-                         chipChanges[playerId] = -betAmount;
-                    } else {
-                         chipChanges[playerId] = 0;
-                    }
+            // Iterate over players in the room, not just currentBets, to include everyone for chip count tracking
+            for (const playerId of room.players) {
+                const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                if (!profile) {
+                    console.warn(`Profile not found for player UID ${playerId} in room. Skipping for chip calculations.`);
+                    continue;
                 }
+
+                const betAmount = room.currentBets[playerId] || 0;
+                const playerStatus = room.playerStatuses[playerId];
+                const rankingInfo = playerRankings.find(r => r.playerId === playerId);
+                // Default rank to 0 if player is folded or not in ranking UI (e.g. if they left mid-hand after betting)
+                const rank = (playerStatus === 'folded' || !rankingInfo) ? 0 : rankingInfo.rank;
+
+                if (rank > 0 && playerStatus === 'folded') {
+                     showMessage(`Error: Player ${formatDisplayName(profile)} is FOLDED but assigned rank ${rank}. Cannot proceed.`, "error");
+                     return; // Critical error, stop processing
+                }
+
+                playersData.push({
+                    uid: playerId,
+                    name: formatDisplayName(profile),
+                    betAmount: betAmount, // Store original bet amount
+                    initialChipCount: profile.chip_count || 0,
+                    currentChipsInHand: (profile.chip_count || 0) - betAmount, // Chips after bet is subtracted
+                    isAllIn: playerStatus === 'all-in',
+                    isFolded: playerStatus === 'folded',
+                    rank: rank,
+                    maxWinnings: 0, // To be calculated in next step
+                    winningsReceived: 0 // How much they actually receive from the pot
+                });
+
+                // Initialize chipChanges: represents the change from their initial chip count.
+                // So, if they bet, this starts as -betAmount.
+                chipChanges[playerId] = -betAmount;
             }
+
+            // Recalculate totalPot strictly from playersData to ensure consistency
+            totalPot = playersData.reduce((sum, p) => sum + p.betAmount, 0);
 
             console.log("--- Phase 1 Complete ---");
-            console.log("Total Pot (from sum of bets):", totalPot);
-            console.log("Players In Hand (with initial bet debit):", JSON.parse(JSON.stringify(playersInHand)));
+            console.log("Calculated Total Pot (sum of player bets in hand):", totalPot);
+            console.log("Players Data (after bets debited):", JSON.parse(JSON.stringify(playersData)));
             console.log("Initial Chip Changes (bets debited):", JSON.parse(JSON.stringify(chipChanges)));
 
-            // --- Phase 2: Distribute Winnings ---
-            // Sort WINNERS by rank (1st, 2nd, 3rd), then by bet amount (smallest all-in first to define side pots)
-            // Losers (rank 0) or folded players are not part of this sorted list for *winning* distribution.
-            const rankedWinners = playersInHand.filter(p => p.rank > 0 && !p.isFolded && p.bet > 0)
-                .sort((a, b) => {
-                    if (a.rank !== b.rank) return a.rank - b.rank;
-                    return a.bet - b.bet; // Smaller bets (usually all-ins) first for their pot slice
-                });
+            // --- Step 2: Calculate Maximum Possible Winnings per Player ---
+            const activePlayersForMaxWinnings = playersData.filter(p => !p.isFolded && p.betAmount > 0);
 
-            console.log("Ranked Winners (sorted for distribution):", JSON.parse(JSON.stringify(rankedWinners)));
-
-            let potContributions = playersInHand
-                .filter(p => !p.isFolded && p.bet > 0) // Only players who contributed to this pot and didn't fold
-                .map(p => ({ uid: p.uid, contributed: p.bet, stillInPlay: p.bet, returned: 0 }));
-
-            console.log("Initial Pot Contributions:", JSON.parse(JSON.stringify(potContributions)));
-
-            for (const winner of rankedWinners) {
-                if (totalPot <= 0) break; // No more pot to distribute
-
-                let amountWonByThisWinner = 0;
-                let winnerMaxEligibleFromThisPot = 0;
-
-                // Calculate the maximum this winner can win from the players still in play
-                // This forms the "pot" this winner is competing for.
-                let currentPotForWinner = 0;
-                potContributions.forEach(pc => {
-                    if (pc.stillInPlay > 0) {
-                         // Winner can take up to their own bet from pc's contribution, or what's left of pc's contribution
-                        currentPotForWinner += Math.min(winner.bet, pc.stillInPlay);
+            playersData.forEach(player => {
+                if (player.isFolded || player.betAmount <= 0) {
+                    player.maxWinnings = 0;
+                    return;
+                }
+                let calculatedMaxWinnings = player.betAmount; // Start with own bet back
+                activePlayersForMaxWinnings.forEach(otherPlayer => {
+                    if (player.uid !== otherPlayer.uid) {
+                        calculatedMaxWinnings += Math.min(player.betAmount, otherPlayer.betAmount);
                     }
                 });
-                // Winner's own bet is also part of this pot they are competing for
-                currentPotForWinner = Math.min(currentPotForWinner, totalPot); // Cannot be more than total available pot
-
-                // How many other winners of the same rank are also competing for this exact same pot slice?
-                const coWinnersForThisPotSlice = rankedWinners.filter(rw =>
-                    rw.rank === winner.rank &&
-                    rw.uid !== winner.uid &&
-                    rw.bet >= winner.bet // Co-winners must have bet at least as much to fully share this slice
-                ).length + 1; // +1 for the current winner
-
-                let shareForThisWinner = Math.round(currentPotForWinner / coWinnersForThisPotSlice);
-                shareForThisWinner = Math.min(shareForThisWinner, totalPot); // Cannot win more than what's globally left
-
-                // Distribute 'shareForThisWinner' by taking from potContributions
-                for (const contributor of potContributions) {
-                    if (shareForThisWinner <= 0) break;
-                    if (contributor.uid === winner.uid) continue; // Don't take from self here, own bet is "returned" as part of winnings
-
-                    const amountToTake = Math.min(shareForThisWinner, contributor.stillInPlay, winner.bet);
-                    if (amountToTake > 0) {
-                        contributor.stillInPlay -= amountToTake;
-                        amountWonByThisWinner += amountToTake;
-                        shareForThisWinner -= amountToTake;
-                        totalPot -= amountToTake;
-                    }
-                }
-                // Add winner's own bet back as part of their winnings
-                const winnerOriginalContributionRec = potContributions.find(pc => pc.uid === winner.uid);
-                if (winnerOriginalContributionRec) {
-                    const ownBetToReclaim = Math.min(winner.bet, winnerOriginalContributionRec.stillInPlay, amountWonByThisWinner > 0 ? winner.bet : 0);
-                    // ^ only reclaim own bet if actually won something from others, or if it's a pure chop of own money
-                    // More simply: if they won, their bet is part of the winnings.
-                    // The amountWonByThisWinner is from *others*. So total win = amountWonByThisWinner + own_bet_back.
-                    // Let's adjust chipChanges directly.
-                }
-
-                chipChanges[winner.uid] += amountWonByThisWinner + winner.bet; // Add winnings and get own bet back
-                // The initial chipChanges[winner.uid] was -winner.bet. So this becomes +amountWonByThisWinner.
-                // Let's re-evaluate: chipChanges[winner.uid] = -winner.bet (initial debit)
-                // chipChanges[winner.uid] was initialised to -winner.bet (total bet for hand)
-                // shareForThisWinner is the total value of this pot slice the winner gets.
-                // This includes their own contribution to this slice and what they take from others for this slice.
-                chipChanges[winner.uid] += shareForThisWinner;
-
-                const playerWinningsEntry = playersInHand.find(p => p.uid === winner.uid);
-                if(playerWinningsEntry) playerWinningsEntry.winnings = shareForThisWinner; // Total value they won from this pot slice
-
-                // totalPot was already reduced by amounts taken from OTHERS inside the contributor loop.
-                // Now, we need to account for the winner's own contribution to this share being "removed" from the pot.
-                let winnerOwnContributionToThisShare = shareForThisWinner - amountWonByThisWinner;
-                totalPot -= winnerOwnContributionToThisShare;
-
-
-                console.log(`Player ${winner.name} (Rank ${winner.rank}) awarded total slice of ${shareForThisWinner} (of which ${amountWonByThisWinner} was from others). ChipChange now ${chipChanges[winner.uid]}`);
-                console.log(`Total pot remaining: ${totalPot}`);
-                console.log(`Updated Pot Contributions:`, JSON.parse(JSON.stringify(potContributions)));
-                console.log(`Updated Chip Changes:`, JSON.parse(JSON.stringify(chipChanges)));
-
-            }
-
-            // --- Phase 3: Return un-won portions of bets (Chip Conservation) ---
-            potContributions.forEach(pc => {
-                if (pc.stillInPlay > 0) {
-                    // This amount was bet but not won by anyone. Return to contributor.
-                    chipChanges[pc.uid] += pc.stillInPlay;
-                    pc.returned = pc.stillInPlay;
-                    totalPot -= pc.stillInPlay; // Should bring totalPot to 0 if all logic is correct
-                    pc.stillInPlay = 0;
-                    console.log(`Player UID ${pc.uid} gets ${pc.returned} chips back (unwon portion of bet). Final chipChange: ${chipChanges[pc.uid]}`);
-                }
+                player.maxWinnings = calculatedMaxWinnings;
             });
+            console.log("Players Data (with Max Winnings calculated):", JSON.parse(JSON.stringify(playersData)));
 
-            if (totalPot > 0.5) { // Using 0.5 to handle potential small floating point residuals
-                console.warn(`Warning: Pot has ${totalPot} remaining after distribution and returns. This might be due to rounding or logic gap. Attempting to give to highest winner or log.`);
-                // For simplicity, this small amount might be lost or could be given to the first place winner if one exists.
-                const firstPlaceWinner = rankedWinners.find(p => p.rank === 1);
-                if (firstPlaceWinner) {
-                    chipChanges[firstPlaceWinner.uid] += totalPot;
-                    console.log(`Awarded lingering ${totalPot} from pot to ${firstPlaceWinner.name}.`);
-                    totalPot = 0;
-                } else {
-                    console.error(`Lingering pot of ${totalPot} could not be distributed.`);
+            // --- Step 3 & 4: Implement Ranked Distribution Logic (Iterating Ranks 1, 2, 3) ---
+            for (let rank = 1; rank <= 3; rank++) {
+                if (totalPot < 0.01) { // Use a small threshold for floating point comparisons, effectively zero
+                    console.log(`Rank ${rank} processing skipped: totalPot is negligible or zero.`);
+                    break;
                 }
+
+                // Get winners for the current rank from the overall playersData list
+                const currentRankWinnersInput = playersData.filter(p => p.rank === rank && !p.isFolded && p.betAmount > 0);
+
+                // Further filter to only those who can still win something
+                const currentRankWinners = currentRankWinnersInput.filter(w => w.winningsReceived < w.maxWinnings);
+
+
+                if (currentRankWinners.length === 0) {
+                    console.log(`No eligible winners found for Rank ${rank} (either no winners, or they've already won their max).`);
+                    continue;
+                }
+
+                console.log(`Processing Rank ${rank}. Initial totalPot for this rank: ${totalPot}. Eligible Winners:`,
+                    currentRankWinners.map(w => ({name: w.name, maxCanStillWin: w.maxWinnings - w.winningsReceived}) ));
+
+                // Calculate total "claim" this rank has on the current pot, capped by individual maxWinnings remaining.
+                let totalClaimFromPotByThisRank = 0;
+                currentRankWinners.forEach(winner => {
+                    totalClaimFromPotByThisRank += Math.max(0, winner.maxWinnings - winner.winningsReceived);
+                });
+                // Round to avoid precision issues with sum of proportions later
+                totalClaimFromPotByThisRank = Math.round(totalClaimFromPotByThisRank * 100) / 100;
+
+
+                // The actual amount this rank can take from the pot is limited by the pot itself.
+                let actualPotSliceForThisRank = Math.min(totalPot, totalClaimFromPotByThisRank);
+                actualPotSliceForThisRank = Math.round(actualPotSliceForThisRank * 100) / 100;
+
+                console.log(`Rank ${rank}: Total claim by current rank winners is ${totalClaimFromPotByThisRank}. Actual pot slice for this rank (min of totalPot, totalClaim): ${actualPotSliceForThisRank}`);
+
+                let sumAwardedThisRank = 0; // How much is actually given out from actualPotSliceForThisRank
+                let awardsList = []; // Store {uid, amount} to handle rounding later
+
+                if (actualPotSliceForThisRank > 0) {
+                    if (totalClaimFromPotByThisRank === 0) {
+                        console.warn(`Rank ${rank}: actualPotSliceForThisRank > 0 but totalClaimFromPotByThisRank is 0. Skipping distribution for this rank.`);
+                    } else if (totalClaimFromPotByThisRank <= actualPotSliceForThisRank) {
+                        // Enough in the pot slice for everyone in this rank to get what they still can win.
+                        currentRankWinners.forEach(winner => {
+                            let awardAmount = Math.max(0, winner.maxWinnings - winner.winningsReceived);
+                            // Ensure we don't try to award more than what's available in the slice for this rank
+                            awardAmount = Math.min(awardAmount, actualPotSliceForThisRank - sumAwardedThisRank);
+                            awardAmount = Math.max(0, awardAmount); // Final check
+                            awardsList.push({uid: winner.uid, amount: awardAmount});
+                            sumAwardedThisRank += awardAmount;
+                        });
+                    } else {
+                        // Not enough in actualPotSliceForThisRank to satisfy all claims. Distribute proportionally.
+                        currentRankWinners.forEach(winner => {
+                            let individualRemainingMaxWin = Math.max(0, winner.maxWinnings - winner.winningsReceived);
+                            let proportion = individualRemainingMaxWin / totalClaimFromPotByThisRank;
+                            let awardAmount = actualPotSliceForThisRank * proportion; // Keep precision for now
+                            awardsList.push({uid: winner.uid, amount: awardAmount});
+                            // sumAwardedThisRank is calculated after rounding
+                        });
+
+                        // Round and sum awards, then adjust for any discrepancy with actualPotSliceForThisRank
+                        let roundedSum = 0;
+                        awardsList.forEach(award => {
+                            award.amount = Math.round(award.amount * 100) / 100; // Round to 2 decimal places (cents)
+                            roundedSum += award.amount;
+                        });
+                        sumAwardedThisRank = roundedSum;
+
+                        let diff = Math.round((actualPotSliceForThisRank - sumAwardedThisRank) * 100) / 100;
+                        if (Math.abs(diff) >= 0.01 && awardsList.length > 0) {
+                           console.log(`Rank ${rank}: Adjusting for rounding difference of ${diff} from proportional distribution.`);
+                           awardsList.sort((a,b) => b.amount - a.amount); // Give to largest award first
+
+                           for (let i = 0; i < awardsList.length; i++) {
+                               const winnerToAdjust = playersData.find(p=>p.uid === awardsList[i].uid);
+                               const currentAwardForWinner = awardsList[i].amount;
+                               const canReceiveMore = (winnerToAdjust.maxWinnings - winnerToAdjust.winningsReceived) - currentAwardForWinner;
+
+                               if (diff > 0) { // Need to award more
+                                   let adjustment = Math.min(diff, canReceiveMore);
+                                   awardsList[i].amount += adjustment;
+                                   sumAwardedThisRank += adjustment;
+                                   diff -= adjustment;
+                                    if (Math.abs(diff) < 0.01) break;
+                               } else { // Need to award less (diff is negative)
+                                   let adjustment = Math.max(diff, -currentAwardForWinner); // Don't make award negative
+                                   awardsList[i].amount += adjustment;
+                                   sumAwardedThisRank += adjustment;
+                                   diff -= adjustment;
+                                   if (Math.abs(diff) < 0.01) break;
+                               }
+                           }
+                        }
+                    }
+                }
+
+                // Apply the final calculated awards
+                awardsList.forEach(awardEntry => {
+                    const winner = playersData.find(p => p.uid === awardEntry.uid);
+                    if (winner && awardEntry.amount > 0) {
+                        chipChanges[winner.uid] += awardEntry.amount;
+                        winner.winningsReceived += awardEntry.amount;
+                        console.log(`Rank ${rank} Winner ${winner.name} awarded: ${awardEntry.amount}. Total received now: ${winner.winningsReceived}. ChipChange now: ${chipChanges[winner.uid]}`);
+                    }
+                });
+
+                totalPot -= sumAwardedThisRank; // Reduce actual total pot by sum awarded
+                totalPot = Math.round(totalPot * 100) / 100; // Keep totalPot tidy
+                console.log(`End of Rank ${rank}. Sum awarded this rank: ${sumAwardedThisRank}. Remaining totalPot: ${totalPot}`);
             }
+            console.log("--- Ranked Distribution Complete ---");
 
+            // --- Step 5: Final Validation Checks ---
+            // 5.1: Remaining Pot Check
+            if (totalPot > 0.01) { // Using a small threshold for floating point residuals
+                const errorMessage = `Error: Pot has ${totalPot} remaining after distribution. This should be zero. Changes will not be saved.`;
+                console.error(errorMessage);
+                showMessage(errorMessage, "error");
+                // Do not proceed with Firestore updates. UI will remain, admin can cancel or re-evaluate.
+                // No explicit "revert" of in-memory changes is needed if we simply don't save.
+                return;
+            } else {
+                // Ensure totalPot is exactly 0 if it's very close, to prevent tiny negative values if logic was imperfect.
+                totalPot = 0;
+            }
+            console.log("Validation: Remaining pot check passed (pot is ~0).");
 
-            console.log("--- Phase 2 & 3 Complete ---");
-            console.log("Final Chip Changes to be applied:", chipChanges);
-            console.log("Final Pot Contributions state:", potContributions);
+            // 5.2: Chip Conservation Check
+            let finalTotalRoomChips = 0;
+            playersData.forEach(player => {
+                // chipChanges[player.uid] is the NET change.
+                // So, final chips = initialChipCount + chipChanges[player.uid]
+                finalTotalRoomChips += (player.initialChipCount + (chipChanges[player.uid] || 0));
+            });
+            finalTotalRoomChips = Math.round(finalTotalRoomChips * 100) / 100; // Round for comparison
 
+            console.log("Validation: Initial Total Room Chips:", initialTotalRoomChips);
+            console.log("Validation: Final Total Room Chips calculated:", finalTotalRoomChips);
+
+            if (Math.abs(initialTotalRoomChips - finalTotalRoomChips) > 0.01) { // Allow for small rounding diffs
+                const conservationErrorMessage = `Error: Chip conservation failed! Initial: ${initialTotalRoomChips}, Final: ${finalTotalRoomChips}. Changes will not be saved.`;
+                console.error(conservationErrorMessage);
+                showMessage(conservationErrorMessage, "error");
+                return; // Do not proceed
+            }
+            console.log("Validation: Chip conservation check passed.");
 
             // Update Firestore
             showMessage("Updating chip counts in Firestore...", "info");
