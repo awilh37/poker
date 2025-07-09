@@ -3051,172 +3051,187 @@
                 return;
             }
 
-            console.log("Initial Total Pot:", totalPot);
+            console.log("Initial Total Pot (sum of currentBets):", totalPot);
             console.log("Player Rankings from UI:", playerRankings);
-            console.log("Current Bets in Room:", room.currentBets);
-            console.log("Player Statuses:", room.playerStatuses);
 
+            // --- Phase 1: Debit all bets and prepare player data ---
+            const playersInHand = []; // Array to store processed player data for this hand
+            const chipChanges = {};   // Stores net change for each player's profile update
 
-            // Get detailed player data: bet amount, chip_count, allIn status
-            const playersData = [];
-            for (const pInfo of playerRankings) {
-                const profile = allFirebaseUsersData.find(p => p.uid === pInfo.playerId);
-                const betAmount = room.currentBets[pInfo.playerId] || 0;
-                const status = room.playerStatuses[pInfo.playerId];
-
-                // Only consider players who made a bet and are not folded for pot eligibility
-                if (betAmount > 0 && status !== 'folded') {
-                    playersData.push({
-                        uid: pInfo.playerId,
-                        name: profile ? formatDisplayName(profile) : pInfo.playerId,
-                        rank: pInfo.rank,
-                        bet: betAmount,
-                        initialChips: profile ? (profile.chip_count || 0) : 0,
-                        isAllIn: status === 'all-in',
-                        potentialWinnings: 0, // How much this player has won from the pot
-                        chipsToUpdateInProfile: profile ? (profile.chip_count || 0) : 0 // Start with current chips for calculation
-                    });
-                } else if (pInfo.rank > 0) {
-                    // This case should ideally be caught earlier, but as a safeguard:
-                    showMessage(`Error: Player ${profile ? formatDisplayName(profile) : pInfo.playerId} has rank ${pInfo.rank} but bet ${betAmount} or is folded. This should not happen.`, "error");
-                    return;
-                }
-            }
-
-            // Sort players by rank (1st, 2nd, 3rd), then by bet amount (smallest all-in first for side pots)
-            playersData.sort((a, b) => {
-                if (a.rank !== b.rank) {
-                    if (a.rank === 0) return 1; // Losers last
-                    if (b.rank === 0) return -1;
-                    return a.rank - b.rank; // Winners by rank
-                }
-                return a.bet - b.bet; // For side pot considerations, smaller bets (often all-ins) get priority for their portion of pot
-            });
-
-            console.log("Processed Players Data (sorted for distribution):", JSON.parse(JSON.stringify(playersData)));
-
-            // --- Main Distribution Logic ---
-            // This is a simplified version. True poker side pot logic is very complex.
-            // This version focuses on distributing the main pot according to ranks and all-in limits.
-
-            let remainingPot = totalPot;
-            const chipChanges = {}; // { playerId: changeAmount }
-
-            // Calculate winnings for each rank group
-            for (let rank = 1; rank <= 3; rank++) {
-                if (remainingPot <= 0) break;
-
-                const currentRankWinners = playersData.filter(p => p.rank === rank && p.bet > 0); // Only those who bet and are ranked
-                if (currentRankWinners.length === 0) continue;
-
-                console.log(`Processing Rank ${rank} Winners:`, currentRankWinners.map(p=>p.name));
-
-                // Determine the portion of the pot this rank is competing for.
-                // This needs to handle side pots created by all-ins.
-                // For each winner, they can only win up to their bet amount from each other player.
-
-                // Simplified Approach:
-                // 1. Identify players involved in the current distribution (all active players who haven't folded)
-                // 2. For each winner in the current rank, calculate what they can win from the remaining pot.
-                //    This is capped by their own bet amount from each contributor.
-
-                // Let's try a more direct split for now and refine if side pots are not handled well.
-                // Assume currentRankWinners share the *currently available remainingPot*
-                // subject to their individual all-in limits.
-
-                let potSharePerWinnerInRank = remainingPot / currentRankWinners.length;
-
-                currentRankWinners.forEach(winner => {
-                    if (remainingPot <= 0) return;
-
-                    // Max a player can win is their bet multiplied by number of players who matched or exceeded that bet.
-                    // This is where true side pot logic gets complex.
-                    // Simpler: A player cannot win more than (their_bet * number_of_opponents_they_cover) + their_own_bet.
-                    // Or, more simply, what they put in from each pot they are part of.
-
-                    // For now, let's cap winnings by what they could theoretically win if they were the sole winner of this rank against the pot.
-                    // A player who is all-in for X can win X from each player who called that X.
-                    // The total amount a player can win from a pot is complex.
-                    // Let's assume `winner.bet` is their total investment in this hand.
-                    // They are eligible to win up to their `bet` from each player who also contributed at least that much.
-
-                    // Simplified cap: a winner cannot win more than (totalPot * (theirBet / totalBetsOfActivePlayersInPot))
-                    // This is still not quite right for poker rules.
-
-                    // Revised simpler logic:
-                    // Each winner gets an equal share of `remainingPot`, but capped at what they could win based on their bet.
-                    // This still doesn't fully address side pots correctly if players have different bet amounts.
-
-                    // Let's make a very simplified assumption for this iteration:
-                    // Winners split the `remainingPot` evenly, but an all-in player can't get more than
-                    // (their all-in amount * number of players who met their bet) + their own bet back.
-                    // This is still tricky.
-
-                    // Target: Distribute pot based on who contributed what.
-                    // Create "pots" based on all-in amounts.
-                    // Pot 1: Smallest all-in amount * number of players. All players who bet at least this compete for it.
-                    // Pot 2: (Next smallest all-in - Smallest all-in) * number of remaining players. etc.
-
-                    // --- SUPER SIMPLIFIED DISTRIBUTION (placeholder for more robust logic) ---
-                    // This will likely be incorrect for complex all-in scenarios but is a starting point.
-                    let actualWinAmount = Math.min(potSharePerWinnerInRank, winner.bet * (playersData.filter(p=>p.bet > 0 && p.rank !== 0).length)); // Rough cap
-                    if (winner.isAllIn) {
-                        // An all-in player created a main pot and possibly side pots.
-                        // They can win from the main pot they contributed to.
-                        // Max they can win from any single other player is their own bet amount.
-                        // So, max total win is roughly their_bet * (num_players_who_matched_or_exceeded_their_bet).
-                        // Let's find players who contributed to the pot this all-in player is eligible for.
-                        let eligiblePotContributors = 0;
-                        playersData.forEach(p => {
-                            if (p.bet >= winner.bet && p.uid !== winner.uid && p.rank !== 0) { // p.rank !== 0 ensures they were in the hand
-                                eligiblePotContributors++;
-                            }
-                        });
-                        // Max win for this all-in player is their bet from each contributor + their own bet back.
-                        let maxPossibleWinForAllIn = winner.bet * eligiblePotContributors + winner.bet;
-                        actualWinAmount = Math.min(actualWinAmount, maxPossibleWinForAllIn);
+            for (const playerId in room.currentBets) {
+                if (room.currentBets.hasOwnProperty(playerId)) {
+                    const betAmount = room.currentBets[playerId] || 0;
+                    if (betAmount <= 0 && room.playerStatuses[playerId] !== 'folded') { // Allow folded players to have 0 bet if they folded before betting
+                        // If a player is active but has 0 bet, they are not really in the hand for winning/losing pot.
+                        // But if they were ranked, it's an inconsistency. The ranking UI should prevent this.
+                        // For now, we mostly care about players who have bet.
+                        continue;
                     }
 
-                    actualWinAmount = Math.min(actualWinAmount, remainingPot); // Cannot win more than what's left
-                    actualWinAmount = Math.round(actualWinAmount); // Avoid fractional chips
+                    const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                    const playerStatus = room.playerStatuses[playerId];
+                    const rankingInfo = playerRankings.find(r => r.playerId === playerId);
+                    const rank = rankingInfo ? rankingInfo.rank : 0; // Default to "No Win" if not in selection (e.g. folded player not in UI)
 
-                    winner.potentialWinnings += actualWinAmount;
-                    remainingPot -= actualWinAmount;
+                    if (rank > 0 && playerStatus === 'folded') {
+                         showMessage(`Error: Player ${profile ? formatDisplayName(profile) : playerId} is FOLDED but assigned rank ${rank}. Cannot proceed.`, "error");
+                         return; // Critical error, stop processing
+                    }
 
-                    // Their chip change is (winnings - their original bet for this hand)
-                    chipChanges[winner.uid] = (chipChanges[winner.uid] || -winner.bet) + actualWinAmount;
-                    console.log(`Player ${winner.name} (Rank ${rank}) awarded: ${actualWinAmount}. New remainingPot: ${remainingPot}. Chip change: ${chipChanges[winner.uid]}`);
-                });
-            }
+                    playersInHand.push({
+                        uid: playerId,
+                        name: profile ? formatDisplayName(profile) : `UID: ${playerId.substring(0,6)}`,
+                        bet: betAmount,
+                        initialChips: profile ? (profile.chip_count || 0) : 0,
+                        isAllIn: playerStatus === 'all-in',
+                        isFolded: playerStatus === 'folded',
+                        rank: rank,
+                        winnings: 0, // How much this player wins from the pot
+                        // Initial change is loss of their bet. This will be adjusted by winnings or returned amounts.
+                        netChipChange: (betAmount > 0 && !playerStatus === 'folded') ? -betAmount : 0
+                                       // If folded, their bet is already "lost" to the pot.
+                                       // If they didn't bet, no change initially.
+                                       // This needs to be careful: if a player folds, their bet IS part of the pot.
+                                       // The `chipChanges` will store the *final* update amount for their profile.
+                    });
 
-            // Handle remaining pot if any (e.g., due to rounding or unallocated amounts)
-            // For now, if there's a tiny remainingPot, it might just disappear or could be given to the highest rank winner.
-            // This is often raked or goes to the house in real games if not perfectly divisible.
-            if (remainingPot > 0 && playersData.some(p => p.rank === 1)) {
-                const firstRankWinner = playersData.find(p => p.rank === 1);
-                if (firstRankWinner) {
-                    console.log(`Distributing remaining ${remainingPot} (e.g. rounding) to first Rank 1 winner: ${firstRankWinner.name}`);
-                    chipChanges[firstRankWinner.uid] += remainingPot;
-                    firstRankWinner.potentialWinnings += remainingPot;
-                    remainingPot = 0;
+                    // Initialize chipChanges: everyone who bet loses their bet initially.
+                    // If folded, their bet is already part of the pot calculation.
+                    if (betAmount > 0) {
+                         chipChanges[playerId] = -betAmount;
+                    } else {
+                         chipChanges[playerId] = 0;
+                    }
                 }
             }
 
+            console.log("--- Phase 1 Complete ---");
+            console.log("Total Pot (from sum of bets):", totalPot);
+            console.log("Players In Hand (with initial bet debit):", JSON.parse(JSON.stringify(playersInHand)));
+            console.log("Initial Chip Changes (bets debited):", JSON.parse(JSON.stringify(chipChanges)));
 
-            // For players who bet but had rank 0 (losers)
-            playersData.forEach(player => {
-                if (player.rank === 0 && player.bet > 0) {
-                    chipChanges[player.uid] = -player.bet; // They lose their bet
-                    console.log(`Player ${player.name} (Loser) loses bet: ${player.bet}. Chip change: ${chipChanges[player.uid]}`);
-                } else if (!chipChanges[player.uid] && player.bet > 0) {
-                    // If a player bet but wasn't ranked and wasn't explicitly a loser (e.g. data issue)
-                    // Assume they lose their bet. This should not happen if UI forces a rank.
-                    chipChanges[player.uid] = -player.bet;
-                     console.warn(`Player ${player.name} bet but had no rank or outcome, assumed loss of ${player.bet}`);
+            // --- Phase 2: Distribute Winnings ---
+            // Sort WINNERS by rank (1st, 2nd, 3rd), then by bet amount (smallest all-in first to define side pots)
+            // Losers (rank 0) or folded players are not part of this sorted list for *winning* distribution.
+            const rankedWinners = playersInHand.filter(p => p.rank > 0 && !p.isFolded && p.bet > 0)
+                .sort((a, b) => {
+                    if (a.rank !== b.rank) return a.rank - b.rank;
+                    return a.bet - b.bet; // Smaller bets (usually all-ins) first for their pot slice
+                });
+
+            console.log("Ranked Winners (sorted for distribution):", JSON.parse(JSON.stringify(rankedWinners)));
+
+            let potContributions = playersInHand
+                .filter(p => !p.isFolded && p.bet > 0) // Only players who contributed to this pot and didn't fold
+                .map(p => ({ uid: p.uid, contributed: p.bet, stillInPlay: p.bet, returned: 0 }));
+
+            console.log("Initial Pot Contributions:", JSON.parse(JSON.stringify(potContributions)));
+
+            for (const winner of rankedWinners) {
+                if (totalPot <= 0) break; // No more pot to distribute
+
+                let amountWonByThisWinner = 0;
+                let winnerMaxEligibleFromThisPot = 0;
+
+                // Calculate the maximum this winner can win from the players still in play
+                // This forms the "pot" this winner is competing for.
+                let currentPotForWinner = 0;
+                potContributions.forEach(pc => {
+                    if (pc.stillInPlay > 0) {
+                         // Winner can take up to their own bet from pc's contribution, or what's left of pc's contribution
+                        currentPotForWinner += Math.min(winner.bet, pc.stillInPlay);
+                    }
+                });
+                // Winner's own bet is also part of this pot they are competing for
+                currentPotForWinner = Math.min(currentPotForWinner, totalPot); // Cannot be more than total available pot
+
+                // How many other winners of the same rank are also competing for this exact same pot slice?
+                const coWinnersForThisPotSlice = rankedWinners.filter(rw =>
+                    rw.rank === winner.rank &&
+                    rw.uid !== winner.uid &&
+                    rw.bet >= winner.bet // Co-winners must have bet at least as much to fully share this slice
+                ).length + 1; // +1 for the current winner
+
+                let shareForThisWinner = Math.round(currentPotForWinner / coWinnersForThisPotSlice);
+                shareForThisWinner = Math.min(shareForThisWinner, totalPot); // Cannot win more than what's globally left
+
+                // Distribute 'shareForThisWinner' by taking from potContributions
+                for (const contributor of potContributions) {
+                    if (shareForThisWinner <= 0) break;
+                    if (contributor.uid === winner.uid) continue; // Don't take from self here, own bet is "returned" as part of winnings
+
+                    const amountToTake = Math.min(shareForThisWinner, contributor.stillInPlay, winner.bet);
+                    if (amountToTake > 0) {
+                        contributor.stillInPlay -= amountToTake;
+                        amountWonByThisWinner += amountToTake;
+                        shareForThisWinner -= amountToTake;
+                        totalPot -= amountToTake;
+                    }
+                }
+                // Add winner's own bet back as part of their winnings
+                const winnerOriginalContributionRec = potContributions.find(pc => pc.uid === winner.uid);
+                if (winnerOriginalContributionRec) {
+                    const ownBetToReclaim = Math.min(winner.bet, winnerOriginalContributionRec.stillInPlay, amountWonByThisWinner > 0 ? winner.bet : 0);
+                    // ^ only reclaim own bet if actually won something from others, or if it's a pure chop of own money
+                    // More simply: if they won, their bet is part of the winnings.
+                    // The amountWonByThisWinner is from *others*. So total win = amountWonByThisWinner + own_bet_back.
+                    // Let's adjust chipChanges directly.
+                }
+
+                chipChanges[winner.uid] += amountWonByThisWinner + winner.bet; // Add winnings and get own bet back
+                // The initial chipChanges[winner.uid] was -winner.bet. So this becomes +amountWonByThisWinner.
+                // Let's re-evaluate: chipChanges[winner.uid] = -winner.bet (initial debit)
+                // chipChanges[winner.uid] was initialised to -winner.bet (total bet for hand)
+                // shareForThisWinner is the total value of this pot slice the winner gets.
+                // This includes their own contribution to this slice and what they take from others for this slice.
+                chipChanges[winner.uid] += shareForThisWinner;
+
+                const playerWinningsEntry = playersInHand.find(p => p.uid === winner.uid);
+                if(playerWinningsEntry) playerWinningsEntry.winnings = shareForThisWinner; // Total value they won from this pot slice
+
+                // totalPot was already reduced by amounts taken from OTHERS inside the contributor loop.
+                // Now, we need to account for the winner's own contribution to this share being "removed" from the pot.
+                let winnerOwnContributionToThisShare = shareForThisWinner - amountWonByThisWinner;
+                totalPot -= winnerOwnContributionToThisShare;
+
+
+                console.log(`Player ${winner.name} (Rank ${winner.rank}) awarded total slice of ${shareForThisWinner} (of which ${amountWonByThisWinner} was from others). ChipChange now ${chipChanges[winner.uid]}`);
+                console.log(`Total pot remaining: ${totalPot}`);
+                console.log(`Updated Pot Contributions:`, JSON.parse(JSON.stringify(potContributions)));
+                console.log(`Updated Chip Changes:`, JSON.parse(JSON.stringify(chipChanges)));
+
+            }
+
+            // --- Phase 3: Return un-won portions of bets (Chip Conservation) ---
+            potContributions.forEach(pc => {
+                if (pc.stillInPlay > 0) {
+                    // This amount was bet but not won by anyone. Return to contributor.
+                    chipChanges[pc.uid] += pc.stillInPlay;
+                    pc.returned = pc.stillInPlay;
+                    totalPot -= pc.stillInPlay; // Should bring totalPot to 0 if all logic is correct
+                    pc.stillInPlay = 0;
+                    console.log(`Player UID ${pc.uid} gets ${pc.returned} chips back (unwon portion of bet). Final chipChange: ${chipChanges[pc.uid]}`);
                 }
             });
 
+            if (totalPot > 0.5) { // Using 0.5 to handle potential small floating point residuals
+                console.warn(`Warning: Pot has ${totalPot} remaining after distribution and returns. This might be due to rounding or logic gap. Attempting to give to highest winner or log.`);
+                // For simplicity, this small amount might be lost or could be given to the first place winner if one exists.
+                const firstPlaceWinner = rankedWinners.find(p => p.rank === 1);
+                if (firstPlaceWinner) {
+                    chipChanges[firstPlaceWinner.uid] += totalPot;
+                    console.log(`Awarded lingering ${totalPot} from pot to ${firstPlaceWinner.name}.`);
+                    totalPot = 0;
+                } else {
+                    console.error(`Lingering pot of ${totalPot} could not be distributed.`);
+                }
+            }
+
+
+            console.log("--- Phase 2 & 3 Complete ---");
             console.log("Final Chip Changes to be applied:", chipChanges);
+            console.log("Final Pot Contributions state:", potContributions);
+
 
             // Update Firestore
             showMessage("Updating chip counts in Firestore...", "info");
