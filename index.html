@@ -2117,7 +2117,6 @@
         // Event listeners for Bulk User Actions
         setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips); // Re-enabled
         forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers); // Re-enabled
-
         // Event listener for Bulk Game Room Actions
         // deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms); // Temporarily commented out
 
@@ -3054,7 +3053,7 @@
                 updateChipsPlayerList.appendChild(playerDiv);
             });
         }
-
+        
         async function handleSubmitChipUpdate(roomId) {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to perform this action.", "error");
@@ -3081,7 +3080,7 @@
                  showMessage("Error: Folded players cannot be assigned a winning rank. Please correct and resubmit.", "error");
                  return;
             }
-
+            
             // --- Pot Calculation and Distribution Logic ---
             let totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + (bet || 0), 0);
             if (totalPot <= 0) {
@@ -3090,7 +3089,7 @@
                 toggleUpdateChipsPanel(roomId, false); // Hide panel
                 return;
             }
-
+            
             // --- Store Initial Total Room Chips (for final validation) ---
             let initialTotalRoomChips = 0;
             room.players.forEach(playerId => {
@@ -3103,7 +3102,7 @@
 
             console.log("Original Total Pot (sum of currentBets):", totalPot);
             console.log("Player Rankings from UI:", playerRankings);
-
+            
             // --- Phase 1: Debit all bets and prepare player data ---
             const playersData = []; // Renamed from playersInHand for clarity with plan
             const chipChanges = {};   // Stores net change for each player's profile update
@@ -3126,7 +3125,7 @@
                      showMessage(`Error: Player ${formatDisplayName(profile)} is FOLDED but assigned rank ${rank}. Cannot proceed.`, "error");
                      return; // Critical error, stop processing
                 }
-
+                
                 playersData.push({
                     uid: playerId,
                     name: formatDisplayName(profile),
@@ -3144,7 +3143,7 @@
                 // So, if they bet, this starts as -betAmount.
                 chipChanges[playerId] = -betAmount;
             }
-
+            
             // Recalculate totalPot strictly from playersData to ensure consistency
             totalPot = playersData.reduce((sum, p) => sum + p.betAmount, 0);
 
@@ -3175,12 +3174,12 @@
             for (let rank = 1; rank <= 3; rank++) {
                 if (totalPot < 0.01) { // Use a small threshold for floating point comparisons, effectively zero
                     console.log(`Rank ${rank} processing skipped: totalPot is negligible or zero.`);
-                    break;
+                    break; 
                 }
 
                 // Get winners for the current rank from the overall playersData list
                 const currentRankWinnersInput = playersData.filter(p => p.rank === rank && !p.isFolded && p.betAmount > 0);
-
+                
                 // Further filter to only those who can still win something
                 const currentRankWinners = currentRankWinnersInput.filter(w => w.winningsReceived < w.maxWinnings);
 
@@ -3189,8 +3188,8 @@
                     console.log(`No eligible winners found for Rank ${rank} (either no winners, or they've already won their max).`);
                     continue;
                 }
-
-                console.log(`Processing Rank ${rank}. Initial totalPot for this rank: ${totalPot}. Eligible Winners:`,
+                
+                console.log(`Processing Rank ${rank}. Initial totalPot for this rank: ${totalPot}. Eligible Winners:`, 
                     currentRankWinners.map(w => ({name: w.name, maxCanStillWin: w.maxWinnings - w.winningsReceived}) ));
 
                 // Calculate total "claim" this rank has on the current pot, capped by individual maxWinnings remaining.
@@ -3212,23 +3211,23 @@
                 let awardsList = []; // Store {uid, amount} to handle rounding later
 
                 if (actualPotSliceForThisRank > 0) {
-                    if (totalClaimFromPotByThisRank === 0) {
+                    if (totalClaimFromPotByThisRank === 0) { 
                         console.warn(`Rank ${rank}: actualPotSliceForThisRank > 0 but totalClaimFromPotByThisRank is 0. Skipping distribution for this rank.`);
-                    } else if (totalClaimFromPotByThisRank <= actualPotSliceForThisRank) {
+                    } else if (totalClaimFromPotByThisRank <= actualPotSliceForThisRank) { 
                         // Enough in the pot slice for everyone in this rank to get what they still can win.
                         currentRankWinners.forEach(winner => {
                             let awardAmount = Math.max(0, winner.maxWinnings - winner.winningsReceived);
                             // Ensure we don't try to award more than what's available in the slice for this rank
-                            awardAmount = Math.min(awardAmount, actualPotSliceForThisRank - sumAwardedThisRank);
+                            awardAmount = Math.min(awardAmount, actualPotSliceForThisRank - sumAwardedThisRank); 
                             awardAmount = Math.max(0, awardAmount); // Final check
                             awardsList.push({uid: winner.uid, amount: awardAmount});
                             sumAwardedThisRank += awardAmount;
                         });
-                    } else {
+                    } else { 
                         // Not enough in actualPotSliceForThisRank to satisfy all claims. Distribute proportionally.
                         currentRankWinners.forEach(winner => {
                             let individualRemainingMaxWin = Math.max(0, winner.maxWinnings - winner.winningsReceived);
-                            let proportion = individualRemainingMaxWin / totalClaimFromPotByThisRank;
+                            let proportion = individualRemainingMaxWin / totalClaimFromPotByThisRank; 
                             let awardAmount = actualPotSliceForThisRank * proportion; // Keep precision for now
                             awardsList.push({uid: winner.uid, amount: awardAmount});
                             // sumAwardedThisRank is calculated after rounding
@@ -3241,7 +3240,7 @@
                             roundedSum += award.amount;
                         });
                         sumAwardedThisRank = roundedSum;
-
+                        
                         let diff = Math.round((actualPotSliceForThisRank - sumAwardedThisRank) * 100) / 100;
                         if (Math.abs(diff) >= 0.01 && awardsList.length > 0) {
                            console.log(`Rank ${rank}: Adjusting for rounding difference of ${diff} from proportional distribution.`);
@@ -3269,7 +3268,7 @@
                         }
                     }
                 }
-
+                
                 // Apply the final calculated awards
                 awardsList.forEach(awardEntry => {
                     const winner = playersData.find(p => p.uid === awardEntry.uid);
@@ -3279,7 +3278,7 @@
                         console.log(`Rank ${rank} Winner ${winner.name} awarded: ${awardEntry.amount}. Total received now: ${winner.winningsReceived}. ChipChange now: ${chipChanges[winner.uid]}`);
                     }
                 });
-
+                
                 totalPot -= sumAwardedThisRank; // Reduce actual total pot by sum awarded
                 totalPot = Math.round(totalPot * 100) / 100; // Keep totalPot tidy
                 console.log(`End of Rank ${rank}. Sum awarded this rank: ${sumAwardedThisRank}. Remaining totalPot: ${totalPot}`);
@@ -3294,10 +3293,10 @@
                 showMessage(errorMessage, "error");
                 // Do not proceed with Firestore updates. UI will remain, admin can cancel or re-evaluate.
                 // No explicit "revert" of in-memory changes is needed if we simply don't save.
-                return;
+                return; 
             } else {
                 // Ensure totalPot is exactly 0 if it's very close, to prevent tiny negative values if logic was imperfect.
-                totalPot = 0;
+                totalPot = 0; 
             }
             console.log("Validation: Remaining pot check passed (pot is ~0).");
 
@@ -3328,7 +3327,7 @@
             for (const playerId in chipChanges) {
                 const change = chipChanges[playerId];
                 const playerProfileRef = doc(userProfilesCollectionRef, playerId);
-
+                
                 // It's safer to fetch the current chip count before updating,
                 // but for this exercise, we'll assume `allFirebaseUsersData` is reasonably fresh.
                 // A transaction would be ideal here.
@@ -3385,7 +3384,7 @@
                 querySnapshot.forEach(docSnap => {
                     const userProfile = docSnap.data();
                     const userRole = getCurrentUserRole(userProfile.uid); // Use existing role helper
-
+                    
                     // Do not update SUPER_ADMIN, owners, or admins with this bulk action
                     if (userProfile.uid === SUPER_ADMIN_UID || userRole === 'owner' || userRole === 'admin') {
                         console.log(`Skipping chip update for ${userProfile.displayName} (UID: ${userProfile.uid}) due to role: ${userRole}`);
@@ -3434,7 +3433,7 @@
                     // Do not log out the admin performing the action
                     if (sessionUid === currentAdminUid) {
                         console.log("Skipping force logout for self (current admin).");
-                        return;
+                        return; 
                     }
                     // Additional check: an admin should not be able to force logout an owner or SUPER_ADMIN
                     // unless they themselves are an owner (or SUPER_ADMIN).
@@ -3446,7 +3445,7 @@
                         console.log(`Skipping force logout for ${sessionUid} (Role: ${targetUserRole}) by non-owner admin.`);
                         return;
                     }
-
+                    
                     updates.push(deleteDoc(doc(activeSessionsCollectionRef, sessionUid)));
                     usersLoggedOutCount++;
                 });
