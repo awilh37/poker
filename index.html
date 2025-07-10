@@ -2775,28 +2775,32 @@
                 foldButton.disabled = false;
                 allInButton.disabled = false;
                 playerBetInput.disabled = false;
-            callButton.disabled = false;
-            callButton.textContent = 'Call';
+                callButton.disabled = false; // Base state
+                callButton.textContent = 'Call';
 
+                // Define currentPlayerChips here using the already fetched profile
+                const userProfileForChips = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
+                const currentPlayerChips = userProfileForChips ? (userProfileForChips.chip_count ?? 0) : 0;
 
-            // Additional logic for Call button text and disabled state
-            const highestBetInRoomForCall = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
-            const currentPlayerBet = room.currentBets ? (room.currentBets[auth.currentUser.uid] ?? 0) : 0;
+                // Additional logic for Call button text and disabled state
+                const highestBetInRoomForCall = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+                const currentPlayerBet = room.currentBets ? (room.currentBets[auth.currentUser.uid] ?? 0) : 0;
 
-            if (highestBetInRoomForCall === 0 || currentPlayerBet === highestBetInRoomForCall) {
-                callButton.textContent = 'Check';
-                // Allow checking even with 0 chips if current bet is also 0 and highest bet is 0
-            } else {
-                callButton.textContent = 'Call ' + highestBetInRoomForCall;
+                if (highestBetInRoomForCall === 0 || currentPlayerBet === highestBetInRoomForCall) {
+                    callButton.textContent = 'Check';
+                } else {
+                    callButton.textContent = 'Call ' + highestBetInRoomForCall;
+                }
+
+                if (currentPlayerChips === 0 && highestBetInRoomForCall > 0 && currentPlayerBet < highestBetInRoomForCall) {
+                    callButton.disabled = true;
+                }
+                 // This check is somewhat redundant due to the outer 'else' for folded/all-in, but safe.
+                 // The outer check for currentPlayerStatus already handles disabling if folded or all-in.
+                 // if (currentPlayerStatus === 'folded' || currentPlayerStatus === 'all-in') {
+                 //    callButton.disabled = true;
+                 // }
             }
-
-            if (currentPlayerChips === 0 && highestBetInRoomForCall > 0 && currentPlayerBet < highestBetInRoomForCall) {
-                callButton.disabled = true; // No chips to make any call
-            }
-             if (currentPlayerStatus === 'folded' || currentPlayerStatus === 'all-in') {
-                callButton.disabled = true;
-            }
-
         }
     }
 
