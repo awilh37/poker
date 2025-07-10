@@ -648,13 +648,27 @@
 
         // --- Utility Functions ---
         function showPanel(panelToShow) {
-            // logViewer variable was removed, so it's no longer in this list.
-            const panels = [loginButtonsContainer, adminPanel, userManagementPanel, accountManagementPanel, userDirectoryPanel, gameRoomManagementPanel, playerJoinRoomPanel, gameRoomViewPanel, loadingIndicator];
-            panels.forEach(panel => {
-                if (panel === panelToShow) {
-                    panel.classList.remove('hidden');
+            const panelList = [
+                {el: loginButtonsContainer, name: "loginButtonsContainer"},
+                {el: adminPanel, name: "adminPanel"},
+                {el: userManagementPanel, name: "userManagementPanel"},
+                {el: accountManagementPanel, name: "accountManagementPanel"},
+                {el: userDirectoryPanel, name: "userDirectoryPanel"},
+                {el: gameRoomManagementPanel, name: "gameRoomManagementPanel"},
+                {el: playerJoinRoomPanel, name: "playerJoinRoomPanel"},
+                {el: gameRoomViewPanel, name: "gameRoomViewPanel"},
+                {el: loadingIndicator, name: "loadingIndicator"}
+            ];
+
+            panelList.forEach(item => {
+                if (!item.el) {
+                    console.warn(`showPanel: DOM element for '${item.name}' is null or undefined. Check ID and HTML.`);
+                    return; // Skip this problematic panel
+                }
+                if (item.el === panelToShow) {
+                    item.el.classList.remove('hidden');
                 } else {
-                    panel.classList.add('hidden');
+                    item.el.classList.add('hidden');
                 }
             });
         }
@@ -2101,26 +2115,27 @@
         saveUserRolesButton.addEventListener('click', collectAndSaveChanges); // Updated function name
 
         // Event listeners for Bulk User Actions
-        setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips);
-        forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers);
+        setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips); // Re-enabled
+        forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers); // Re-enabled
 
         // Event listener for Bulk Game Room Actions
-        deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms);
+        // deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms); // Temporarily commented out
 
 
         // Event listeners for log viewer buttons (REMOVED as feature is removed)
 
         // --- Account Management Button Event Listeners ---
-        manageAccountButton.addEventListener('click', () => {
-            const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-            if (loggedInUser) {
-                showPanel(accountManagementPanel);
-                renderAccountManagementPanel(loggedInUser);
-                // addLogEntry("Account Management Panel Opened", { user: loggedInUser.username }); // Removed for log simplification
-            } else {
-                showMessage("Please log in to manage your account.", 'info');
-            }
-        });
+        // The #manageAccountButton (from admin panel) was removed, so its listener must also be removed.
+        // manageAccountButton.addEventListener('click', () => {
+        //     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+        //     if (loggedInUser) {
+        //         showPanel(accountManagementPanel);
+        //         renderAccountManagementPanel(loggedInUser);
+        //         // addLogEntry("Account Management Panel Opened", { user: loggedInUser.username }); // Removed for log simplification
+        //     } else {
+        //         showMessage("Please log in to manage your account.", 'info');
+        //     }
+        // });
 
         hideAccountManagementButton.addEventListener('click', () => {
             showPanel(null); // Hide account management, return to the neutral view with main action buttons
