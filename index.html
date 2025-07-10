@@ -649,14 +649,14 @@
         // --- Utility Functions ---
         function showPanel(panelToShow) {
             const panelList = [
-                {el: loginButtonsContainer, name: "loginButtonsContainer"}, 
-                {el: adminPanel, name: "adminPanel"}, 
-                {el: userManagementPanel, name: "userManagementPanel"}, 
-                {el: accountManagementPanel, name: "accountManagementPanel"}, 
-                {el: userDirectoryPanel, name: "userDirectoryPanel"}, 
-                {el: gameRoomManagementPanel, name: "gameRoomManagementPanel"}, 
-                {el: playerJoinRoomPanel, name: "playerJoinRoomPanel"}, 
-                {el: gameRoomViewPanel, name: "gameRoomViewPanel"}, 
+                {el: loginButtonsContainer, name: "loginButtonsContainer"},
+                {el: adminPanel, name: "adminPanel"},
+                {el: userManagementPanel, name: "userManagementPanel"},
+                {el: accountManagementPanel, name: "accountManagementPanel"},
+                {el: userDirectoryPanel, name: "userDirectoryPanel"},
+                {el: gameRoomManagementPanel, name: "gameRoomManagementPanel"},
+                {el: playerJoinRoomPanel, name: "playerJoinRoomPanel"},
+                {el: gameRoomViewPanel, name: "gameRoomViewPanel"},
                 {el: loadingIndicator, name: "loadingIndicator"}
             ];
 
@@ -2115,9 +2115,8 @@
         saveUserRolesButton.addEventListener('click', collectAndSaveChanges); // Updated function name
 
         // Event listeners for Bulk User Actions
-        // setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips); // Temporarily commented out
-        // forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers); // Temporarily commented out
-
+        setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips); // Re-enabled
+        forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers); // Re-enabled
         // Event listener for Bulk Game Room Actions
         // deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms); // Temporarily commented out
 
