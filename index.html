@@ -351,10 +351,13 @@
                     <button id="placeBetButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
                         Place Bet
                     </button>
-                    <button id="foldButton" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                    <button id="callButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                        Call
+                    </button>
+                    <button id="foldButton" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
                         Fold
                     </button>
-                    <button id="allInButton" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
+                    <button id="allInButton" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
                         All-In
                     </button>
                 </div>
@@ -532,6 +535,7 @@
         const playerBetInput = document.getElementById('playerBetInput');
         const playerChipCountForBet = document.getElementById('playerChipCountForBet');
         const placeBetButton = document.getElementById('placeBetButton');
+        const callButton = document.getElementById('callButton'); // Added Call button
         const foldButton = document.getElementById('foldButton'); // Added Fold button
         const allInButton = document.getElementById('allInButton'); // Added All-In button
 
@@ -2117,8 +2121,9 @@
         // Event listeners for Bulk User Actions
         setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips); // Re-enabled
         forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers); // Re-enabled
+
         // Event listener for Bulk Game Room Actions
-        // deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms); // Temporarily commented out
+        deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms); // Re-enabled
 
 
         // Event listeners for log viewer buttons (REMOVED as feature is removed)
@@ -2751,6 +2756,7 @@
 
             // Assign handlePlaceBet directly to the onclick event
             placeBetButton.onclick = () => handlePlaceBet(roomId);
+            callButton.onclick = () => handleCallBet(roomId); // Wire up Call button
             foldButton.onclick = () => handleFold(roomId); // Wire up Fold button
             allInButton.onclick = () => handleAllIn(roomId); // Wire up All-In button
 
@@ -2769,6 +2775,100 @@
                 foldButton.disabled = false;
                 allInButton.disabled = false;
                 playerBetInput.disabled = false;
+            callButton.disabled = false;
+            callButton.textContent = 'Call';
+
+
+            // Additional logic for Call button text and disabled state
+            const highestBetInRoomForCall = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+            const currentPlayerBet = room.currentBets ? (room.currentBets[auth.currentUser.uid] ?? 0) : 0;
+
+            if (highestBetInRoomForCall === 0 || currentPlayerBet === highestBetInRoomForCall) {
+                callButton.textContent = 'Check';
+                // Allow checking even with 0 chips if current bet is also 0 and highest bet is 0
+            } else {
+                callButton.textContent = 'Call ' + highestBetInRoomForCall;
+            }
+
+            if (currentPlayerChips === 0 && highestBetInRoomForCall > 0 && currentPlayerBet < highestBetInRoomForCall) {
+                callButton.disabled = true; // No chips to make any call
+            }
+             if (currentPlayerStatus === 'folded' || currentPlayerStatus === 'all-in') {
+                callButton.disabled = true;
+            }
+
+        }
+    }
+
+    async function handleCallBet(roomId) {
+        if (!auth.currentUser) {
+            showMessage("You must be logged in to make this action.", "error");
+            return;
+        }
+        const userId = auth.currentUser.uid;
+        const roomDocRef = doc(gameRoomsCollectionRef, roomId);
+
+        const roomSnap = await getDoc(roomDocRef);
+        if (!roomSnap.exists()) {
+            showMessage("Error: Room data not found.", "error");
+            return;
+        }
+        const roomData = roomSnap.data();
+        const highestBetInRoom = Object.values(roomData.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
+
+        const currentUserProfile = allFirebaseUsersData.find(p => p.uid === userId);
+        const currentPlayerChips = currentUserProfile ? (currentUserProfile.chip_count ?? 0) : 0;
+        const currentPlayerBet = roomData.currentBets ? (roomData.currentBets[userId] ?? 0) : 0;
+
+
+        let betAmount = 0;
+        let newStatus = 'ready';
+        let actionMessage = "";
+        let action = "call";
+
+        if (highestBetInRoom === 0 || currentPlayerBet === highestBetInRoom) { // Effective Check
+            betAmount = currentPlayerBet; // Keep current bet if it matches, or 0 if checking
+            action = 'check';
+            actionMessage = "You checked.";
+            if (currentPlayerBet > 0 && highestBetInRoom === currentPlayerBet) { // Already called/bet this amount
+                 actionMessage = `You are already at the highest bet of ${currentPlayerBet}. Action treated as check.`;
+            }
+
+        } else { // Standard Call or Call All-In
+            if (currentPlayerChips >= (highestBetInRoom - currentPlayerBet) ) { // Has enough to cover the difference
+                betAmount = highestBetInRoom;
+                actionMessage = `You called ${betAmount}.`;
+                action = 'call';
+            } else { // Not enough to cover, goes all-in for a partial call
+                betAmount = currentPlayerChips + currentPlayerBet; // Their remaining chips + what they already bet
+                newStatus = 'all-in';
+                action = 'call_all_in';
+                actionMessage = `You called by going all-in with your remaining ${currentPlayerChips} (total bet: ${betAmount}).`;
+            }
+        }
+
+        // Prevent betting more than total chips, though covered by all-in logic mostly
+        if (betAmount > (currentUserProfile.chip_count + currentPlayerBet) && newStatus !== 'all-in') {
+             // This case should ideally be prevented by UI or prior logic, but as a safeguard
+            console.warn("Call logic tried to bet more than available chips, adjusting to all-in.");
+            betAmount = currentUserProfile.chip_count + currentPlayerBet; // All current chips + what's already in pot by them
+            newStatus = 'all-in';
+             action = 'call_all_in'; // Ensure action reflects all-in
+        }
+
+
+        showMessage(`Performing action: ${actionMessage}`, "info");
+        try {
+            const updates = {
+                [`currentBets.${userId}`]: betAmount,
+                [`playerStatuses.${userId}`]: newStatus,
+                [`playerLastActions.${userId}`]: action
+            };
+            await updateDoc(roomDocRef, updates);
+            showMessage(actionMessage, "success");
+        } catch (error) {
+            console.error(`Error during ${action}:`, error);
+            showMessage(`Failed to ${action}: ${error.message}`, "error");
             }
         }
 
@@ -3053,7 +3153,7 @@
                 updateChipsPlayerList.appendChild(playerDiv);
             });
         }
-        
+
         async function handleSubmitChipUpdate(roomId) {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
                 showMessage("You do not have permission to perform this action.", "error");
@@ -3080,7 +3180,7 @@
                  showMessage("Error: Folded players cannot be assigned a winning rank. Please correct and resubmit.", "error");
                  return;
             }
-            
+
             // --- Pot Calculation and Distribution Logic ---
             let totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + (bet || 0), 0);
             if (totalPot <= 0) {
@@ -3089,7 +3189,7 @@
                 toggleUpdateChipsPanel(roomId, false); // Hide panel
                 return;
             }
-            
+
             // --- Store Initial Total Room Chips (for final validation) ---
             let initialTotalRoomChips = 0;
             room.players.forEach(playerId => {
@@ -3102,7 +3202,7 @@
 
             console.log("Original Total Pot (sum of currentBets):", totalPot);
             console.log("Player Rankings from UI:", playerRankings);
-            
+
             // --- Phase 1: Debit all bets and prepare player data ---
             const playersData = []; // Renamed from playersInHand for clarity with plan
             const chipChanges = {};   // Stores net change for each player's profile update
@@ -3125,7 +3225,7 @@
                      showMessage(`Error: Player ${formatDisplayName(profile)} is FOLDED but assigned rank ${rank}. Cannot proceed.`, "error");
                      return; // Critical error, stop processing
                 }
-                
+
                 playersData.push({
                     uid: playerId,
                     name: formatDisplayName(profile),
@@ -3143,7 +3243,7 @@
                 // So, if they bet, this starts as -betAmount.
                 chipChanges[playerId] = -betAmount;
             }
-            
+
             // Recalculate totalPot strictly from playersData to ensure consistency
             totalPot = playersData.reduce((sum, p) => sum + p.betAmount, 0);
 
@@ -3174,12 +3274,12 @@
             for (let rank = 1; rank <= 3; rank++) {
                 if (totalPot < 0.01) { // Use a small threshold for floating point comparisons, effectively zero
                     console.log(`Rank ${rank} processing skipped: totalPot is negligible or zero.`);
-                    break; 
+                    break;
                 }
 
                 // Get winners for the current rank from the overall playersData list
                 const currentRankWinnersInput = playersData.filter(p => p.rank === rank && !p.isFolded && p.betAmount > 0);
-                
+
                 // Further filter to only those who can still win something
                 const currentRankWinners = currentRankWinnersInput.filter(w => w.winningsReceived < w.maxWinnings);
 
@@ -3188,8 +3288,8 @@
                     console.log(`No eligible winners found for Rank ${rank} (either no winners, or they've already won their max).`);
                     continue;
                 }
-                
-                console.log(`Processing Rank ${rank}. Initial totalPot for this rank: ${totalPot}. Eligible Winners:`, 
+
+                console.log(`Processing Rank ${rank}. Initial totalPot for this rank: ${totalPot}. Eligible Winners:`,
                     currentRankWinners.map(w => ({name: w.name, maxCanStillWin: w.maxWinnings - w.winningsReceived}) ));
 
                 // Calculate total "claim" this rank has on the current pot, capped by individual maxWinnings remaining.
@@ -3211,23 +3311,23 @@
                 let awardsList = []; // Store {uid, amount} to handle rounding later
 
                 if (actualPotSliceForThisRank > 0) {
-                    if (totalClaimFromPotByThisRank === 0) { 
+                    if (totalClaimFromPotByThisRank === 0) {
                         console.warn(`Rank ${rank}: actualPotSliceForThisRank > 0 but totalClaimFromPotByThisRank is 0. Skipping distribution for this rank.`);
-                    } else if (totalClaimFromPotByThisRank <= actualPotSliceForThisRank) { 
+                    } else if (totalClaimFromPotByThisRank <= actualPotSliceForThisRank) {
                         // Enough in the pot slice for everyone in this rank to get what they still can win.
                         currentRankWinners.forEach(winner => {
                             let awardAmount = Math.max(0, winner.maxWinnings - winner.winningsReceived);
                             // Ensure we don't try to award more than what's available in the slice for this rank
-                            awardAmount = Math.min(awardAmount, actualPotSliceForThisRank - sumAwardedThisRank); 
+                            awardAmount = Math.min(awardAmount, actualPotSliceForThisRank - sumAwardedThisRank);
                             awardAmount = Math.max(0, awardAmount); // Final check
                             awardsList.push({uid: winner.uid, amount: awardAmount});
                             sumAwardedThisRank += awardAmount;
                         });
-                    } else { 
+                    } else {
                         // Not enough in actualPotSliceForThisRank to satisfy all claims. Distribute proportionally.
                         currentRankWinners.forEach(winner => {
                             let individualRemainingMaxWin = Math.max(0, winner.maxWinnings - winner.winningsReceived);
-                            let proportion = individualRemainingMaxWin / totalClaimFromPotByThisRank; 
+                            let proportion = individualRemainingMaxWin / totalClaimFromPotByThisRank;
                             let awardAmount = actualPotSliceForThisRank * proportion; // Keep precision for now
                             awardsList.push({uid: winner.uid, amount: awardAmount});
                             // sumAwardedThisRank is calculated after rounding
@@ -3240,7 +3340,7 @@
                             roundedSum += award.amount;
                         });
                         sumAwardedThisRank = roundedSum;
-                        
+
                         let diff = Math.round((actualPotSliceForThisRank - sumAwardedThisRank) * 100) / 100;
                         if (Math.abs(diff) >= 0.01 && awardsList.length > 0) {
                            console.log(`Rank ${rank}: Adjusting for rounding difference of ${diff} from proportional distribution.`);
@@ -3268,7 +3368,7 @@
                         }
                     }
                 }
-                
+
                 // Apply the final calculated awards
                 awardsList.forEach(awardEntry => {
                     const winner = playersData.find(p => p.uid === awardEntry.uid);
@@ -3278,7 +3378,7 @@
                         console.log(`Rank ${rank} Winner ${winner.name} awarded: ${awardEntry.amount}. Total received now: ${winner.winningsReceived}. ChipChange now: ${chipChanges[winner.uid]}`);
                     }
                 });
-                
+
                 totalPot -= sumAwardedThisRank; // Reduce actual total pot by sum awarded
                 totalPot = Math.round(totalPot * 100) / 100; // Keep totalPot tidy
                 console.log(`End of Rank ${rank}. Sum awarded this rank: ${sumAwardedThisRank}. Remaining totalPot: ${totalPot}`);
@@ -3293,10 +3393,10 @@
                 showMessage(errorMessage, "error");
                 // Do not proceed with Firestore updates. UI will remain, admin can cancel or re-evaluate.
                 // No explicit "revert" of in-memory changes is needed if we simply don't save.
-                return; 
+                return;
             } else {
                 // Ensure totalPot is exactly 0 if it's very close, to prevent tiny negative values if logic was imperfect.
-                totalPot = 0; 
+                totalPot = 0;
             }
             console.log("Validation: Remaining pot check passed (pot is ~0).");
 
@@ -3327,7 +3427,7 @@
             for (const playerId in chipChanges) {
                 const change = chipChanges[playerId];
                 const playerProfileRef = doc(userProfilesCollectionRef, playerId);
-                
+
                 // It's safer to fetch the current chip count before updating,
                 // but for this exercise, we'll assume `allFirebaseUsersData` is reasonably fresh.
                 // A transaction would be ideal here.
@@ -3362,7 +3462,7 @@
                 return;
             }
 
-            const newChipAmountString = prompt("Enter the chip amount to set for all non-admin/owner users:");
+            const newChipAmountString = prompt("Enter the chip amount to set for ALL users (including admins/owners):");
             if (newChipAmountString === null) return; // User cancelled
 
             const newChipAmount = parseInt(newChipAmountString, 10);
@@ -3371,11 +3471,11 @@
                 return;
             }
 
-            if (!confirm(`Are you sure you want to set the chip count of ALL non-admin/owner users to ${newChipAmount}? This cannot be undone.`)) {
+            if (!confirm(`Are you sure you want to set the chip count of ALL USERS (INCLUDING ADMINS/OWNERS) to ${newChipAmount}? This cannot be undone.`)) {
                 return;
             }
 
-            showMessage("Updating chip counts for all eligible users...", 'info');
+            showMessage("Updating chip counts for all users...", 'info');
             try {
                 const querySnapshot = await getDocs(userProfilesCollectionRef);
                 const updates = [];
@@ -3383,14 +3483,7 @@
 
                 querySnapshot.forEach(docSnap => {
                     const userProfile = docSnap.data();
-                    const userRole = getCurrentUserRole(userProfile.uid); // Use existing role helper
-                    
-                    // Do not update SUPER_ADMIN, owners, or admins with this bulk action
-                    if (userProfile.uid === SUPER_ADMIN_UID || userRole === 'owner' || userRole === 'admin') {
-                        console.log(`Skipping chip update for ${userProfile.displayName} (UID: ${userProfile.uid}) due to role: ${userRole}`);
-                        return;
-                    }
-
+                    // No exclusion based on role, update all users.
                     updates.push(updateDoc(doc(userProfilesCollectionRef, userProfile.uid), { chip_count: newChipAmount }));
                     usersUpdatedCount++;
                 });
@@ -3399,7 +3492,7 @@
                 if (usersUpdatedCount > 0) {
                     showMessage(`Successfully set chip count to ${newChipAmount} for ${usersUpdatedCount} users.`, 'success');
                 } else {
-                    showMessage(`No eligible users found to update. Admins, Owners, and SUPER_ADMIN are excluded.`, 'info');
+                    showMessage(`No users found to update (this should ideally not happen if there are users).`, 'info');
                 }
                 // The user roles table will update via Firestore listener if visible.
             } catch (error) {
@@ -3433,7 +3526,7 @@
                     // Do not log out the admin performing the action
                     if (sessionUid === currentAdminUid) {
                         console.log("Skipping force logout for self (current admin).");
-                        return; 
+                        return;
                     }
                     // Additional check: an admin should not be able to force logout an owner or SUPER_ADMIN
                     // unless they themselves are an owner (or SUPER_ADMIN).
@@ -3445,7 +3538,7 @@
                         console.log(`Skipping force logout for ${sessionUid} (Role: ${targetUserRole}) by non-owner admin.`);
                         return;
                     }
-                    
+
                     updates.push(deleteDoc(doc(activeSessionsCollectionRef, sessionUid)));
                     usersLoggedOutCount++;
                 });
