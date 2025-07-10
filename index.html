@@ -173,16 +173,10 @@
                 <button id="manageGameRoomsButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Manage Game Rooms
                 </button>
-                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Manage Game Data (Placeholder)
-                </button>
-                <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Configure Games
-                </button>
+                <!-- Removed "Manage Game Data (Placeholder)" button -->
+                <!-- Removed "Configure Games" button -->
                 <!-- "View Activity Logs" button removed -->
-                <button id="manageAccountButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Account Management
-                </button>
+                <!-- Removed "Account Management" button (id="manageAccountButton") from Admin Panel -->
                 <button id="closeAdminPanelButton" class="mt-6 w-1/2 mx-auto bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Close Admin Panel
                 </button>
@@ -221,6 +215,16 @@
                     Hide Panel
                 </button>
             </div>
+            <!-- Bulk User Actions -->
+            <div class="mt-6 border-t pt-4 space-y-3">
+                <h4 class="text-lg font-semibold text-gray-700 text-center mb-2">Bulk User Actions</h4>
+                <button id="setAllPlayerChipsButton" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
+                    Set All Player Chips
+                </button>
+                <button id="forceLogoutAllUsersButton" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
+                    Force Logout All Users (Except Self)
+                </button>
+            </div>
         </div>
 
         <!-- Game Room Management Panel (Initially hidden) -->
@@ -253,6 +257,13 @@
             <div class="flex justify-center mt-6">
                 <button id="closeGameRoomManagementPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
                     Close & Return to Admin Panel
+                </button>
+            </div>
+
+            <!-- Bulk Room Action -->
+            <div class="mt-6 border-t pt-4">
+                <button id="deleteAllGameRoomsButton" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
+                    Delete All Game Rooms (USE WITH CAUTION)
                 </button>
             </div>
         </div>
@@ -534,6 +545,13 @@
         const updateChipsPlayerList = document.getElementById('updateChipsPlayerList');
         const cancelChipUpdate = document.getElementById('cancelChipUpdate');
         const submitChipUpdate = document.getElementById('submitChipUpdate');
+
+        // Bulk User Action Buttons
+        const setAllPlayerChipsButton = document.getElementById('setAllPlayerChipsButton');
+        const forceLogoutAllUsersButton = document.getElementById('forceLogoutAllUsersButton');
+
+        // Bulk Game Room Action Button
+        const deleteAllGameRoomsButton = document.getElementById('deleteAllGameRoomsButton');
 
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
@@ -2082,6 +2100,13 @@
 
         saveUserRolesButton.addEventListener('click', collectAndSaveChanges); // Updated function name
 
+        // Event listeners for Bulk User Actions
+        setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips);
+        forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers);
+
+        // Event listener for Bulk Game Room Actions
+        deleteAllGameRoomsButton.addEventListener('click', handleDeleteAllGameRooms);
+
 
         // Event listeners for log viewer buttons (REMOVED as feature is removed)
 
@@ -3281,6 +3306,7 @@
             }
             console.log("Validation: Chip conservation check passed.");
 
+            // ---Firestore Update moved to a separate block for clarity after validation---
             // Update Firestore
             showMessage("Updating chip counts in Firestore...", "info");
             const updates = [];
@@ -3313,6 +3339,153 @@
             }
 
             toggleUpdateChipsPanel(roomId, false); // Hide panel after submission
+        }
+
+        // --- Bulk User Management Functions ---
+        async function handleSetAllPlayerChips() {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission for this action.", 'error');
+                return;
+            }
+
+            const newChipAmountString = prompt("Enter the chip amount to set for all non-admin/owner users:");
+            if (newChipAmountString === null) return; // User cancelled
+
+            const newChipAmount = parseInt(newChipAmountString, 10);
+            if (isNaN(newChipAmount) || newChipAmount < 0) {
+                showMessage("Invalid chip amount. Please enter a non-negative number.", 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to set the chip count of ALL non-admin/owner users to ${newChipAmount}? This cannot be undone.`)) {
+                return;
+            }
+
+            showMessage("Updating chip counts for all eligible users...", 'info');
+            try {
+                const querySnapshot = await getDocs(userProfilesCollectionRef);
+                const updates = [];
+                let usersUpdatedCount = 0;
+
+                querySnapshot.forEach(docSnap => {
+                    const userProfile = docSnap.data();
+                    const userRole = getCurrentUserRole(userProfile.uid); // Use existing role helper
+
+                    // Do not update SUPER_ADMIN, owners, or admins with this bulk action
+                    if (userProfile.uid === SUPER_ADMIN_UID || userRole === 'owner' || userRole === 'admin') {
+                        console.log(`Skipping chip update for ${userProfile.displayName} (UID: ${userProfile.uid}) due to role: ${userRole}`);
+                        return;
+                    }
+
+                    updates.push(updateDoc(doc(userProfilesCollectionRef, userProfile.uid), { chip_count: newChipAmount }));
+                    usersUpdatedCount++;
+                });
+
+                await Promise.all(updates);
+                if (usersUpdatedCount > 0) {
+                    showMessage(`Successfully set chip count to ${newChipAmount} for ${usersUpdatedCount} users.`, 'success');
+                } else {
+                    showMessage(`No eligible users found to update. Admins, Owners, and SUPER_ADMIN are excluded.`, 'info');
+                }
+                // The user roles table will update via Firestore listener if visible.
+            } catch (error) {
+                console.error("Error setting all player chips:", error);
+                showMessage(`Failed to update all chip counts: ${error.message}`, 'error');
+            }
+        }
+
+        async function handleForceLogoutAllUsers() {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission for this action.", 'error');
+                return;
+            }
+
+            // if (!confirm("Are you sure you want to force logout ALL users (except yourself if you are an admin/owner)? This will end their active sessions.")) {
+            //     return;
+            // }
+            if (!confirm("Are you sure you want to force logout ALL OTHER users? Admins will not log out other Admins or Owners unless they are an Owner themselves. Your own session will not be affected.")) {
+                return;
+            }
+
+            showMessage("Forcing logout for all applicable users...", 'info');
+            try {
+                const activeSessionsSnapshot = await getDocs(activeSessionsCollectionRef);
+                const currentAdminUid = auth.currentUser.uid;
+                const updates = [];
+                let usersLoggedOutCount = 0;
+
+                activeSessionsSnapshot.forEach(docSnap => {
+                    const sessionUid = docSnap.id;
+                    // Do not log out the admin performing the action
+                    if (sessionUid === currentAdminUid) {
+                        console.log("Skipping force logout for self (current admin).");
+                        return;
+                    }
+                    // Additional check: an admin should not be able to force logout an owner or SUPER_ADMIN
+                    // unless they themselves are an owner (or SUPER_ADMIN).
+                    // The individual force logout already has this, but good for bulk too.
+                    const targetUserRole = getCurrentUserRole(sessionUid);
+                    const currentUserIsOwner = isOwner(currentAdminUid);
+
+                    if (!currentUserIsOwner && (targetUserRole === 'owner' || sessionUid === SUPER_ADMIN_UID)) {
+                        console.log(`Skipping force logout for ${sessionUid} (Role: ${targetUserRole}) by non-owner admin.`);
+                        return;
+                    }
+
+                    updates.push(deleteDoc(doc(activeSessionsCollectionRef, sessionUid)));
+                    usersLoggedOutCount++;
+                });
+
+                await Promise.all(updates);
+                if (usersLoggedOutCount > 0) {
+                    showMessage(`Successfully initiated force logout for ${usersLoggedOutCount} users.`, 'success');
+                } else {
+                    showMessage("No other active user sessions found to log out.", 'info');
+                }
+                // User tables (management & directory) will update via listeners.
+            } catch (error) {
+                console.error("Error forcing logout for all users:", error);
+                showMessage(`Failed to force logout all users: ${error.message}`, 'error');
+            }
+        }
+
+        // --- Bulk Game Room Management Function ---
+        async function handleDeleteAllGameRooms() {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission for this action.", 'error');
+                return;
+            }
+
+            if (!confirm("EXTREME CAUTION: Are you absolutely sure you want to delete ALL game rooms? This action is irreversible and will affect all ongoing games.")) {
+                return;
+            }
+            // Second, more aggressive confirmation
+            if (!confirm("SECOND WARNING: Confirm again to delete ALL game rooms. There is no undo.")) {
+                return;
+            }
+
+            showMessage("Deleting all game rooms...", 'info');
+            try {
+                const gameRoomsSnapshot = await getDocs(gameRoomsCollectionRef);
+                if (gameRoomsSnapshot.empty) {
+                    showMessage("No game rooms found to delete.", 'info');
+                    return;
+                }
+
+                const deletePromises = [];
+                let deletedCount = 0;
+                gameRoomsSnapshot.forEach(docSnap => {
+                    deletePromises.push(deleteDoc(doc(gameRoomsCollectionRef, docSnap.id)));
+                    deletedCount++;
+                });
+
+                await Promise.all(deletePromises);
+                showMessage(`Successfully deleted ${deletedCount} game room(s).`, 'success');
+                // The game rooms list will update automatically via its Firestore listener.
+            } catch (error) {
+                console.error("Error deleting all game rooms:", error);
+                showMessage(`Failed to delete all game rooms: ${error.message}`, 'error');
+            }
         }
 
     </script>
