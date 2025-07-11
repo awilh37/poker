@@ -603,7 +603,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, linkWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy, updateDoc, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, onSnapshot, collection, query, getDocs, deleteDoc, serverTimestamp, orderBy, updateDoc, arrayUnion, arrayRemove, deleteField, writeBatch } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
         // --- Firebase Configuration ---
         const firebaseConfig = {
@@ -738,7 +738,7 @@
         const investPayoutPercent = document.getElementById('investPayoutPercent');
         const investHandsPayout = document.getElementById('investHandsPayout');
         const submitInvestmentOfferButton = document.getElementById('submitInvestmentOfferButton');
-
+        
         // My Shares List Elements (Shares Tab)
         const mySharesListContainer = document.getElementById('mySharesListContainer');
         const mySharesList = document.getElementById('mySharesList');
@@ -1193,7 +1193,7 @@
                 showMessage("This offer is not awaiting your response to an amendment.", "info");
                 return;
             }
-
+            
             if (!confirm("Are you sure you want to reject this amendment and effectively cancel the offer?")) {
                 return;
             }
@@ -4013,7 +4013,7 @@
 
                 for (const investment of activeInvestments) {
                     let newHandsRemaining = (investment.handsRemaining || 0) - 1;
-                    let investmentUpdateData = {
+                    let investmentUpdateData = { 
                         handsRemaining: newHandsRemaining,
                         lastUpdated: serverTimestamp()
                     };
@@ -4039,7 +4039,7 @@
                                 const investeeData = investeeSnap.data();
                                 const investorData = investorSnap.data();
                                 const investeeTotalChips = investeeData.chip_count || 0;
-
+                                
                                 const payoutPercent = investment.requestedPayoutPercent || 0;
                                 const payoutAmount = Math.floor((investeeTotalChips * payoutPercent) / 100);
 
@@ -4051,7 +4051,7 @@
                                     investmentUpdates.push(updateDoc(investeeProfileRef, { chip_count: newInvesteeChips }));
                                     // Update investor profile (add payout)
                                     investmentUpdates.push(updateDoc(investorProfileRef, { chip_count: newInvestorChips }));
-
+                                    
                                     investmentUpdateData.actualPayoutAmount = payoutAmount; // Record actual payout
                                     console.log(`Investment ${investment.id}: Payout of ${payoutAmount} from ${investment.investeeName} to ${investment.investorName}.`);
                                     showMessage(`Investment Payout: ${payoutAmount} from ${investment.investeeName} to ${investment.investorName}.`, "info");
@@ -4279,7 +4279,7 @@
             }
 
             const currentUid = auth.currentUser.uid;
-            investPlayerSelect.innerHTML = '<option value="">Select a player to invest in...</option>';
+            investPlayerSelect.innerHTML = '<option value="">Select a player to invest in...</option>'; 
 
             const availablePlayers = allFirebaseUsersData
                 .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled')
@@ -4295,7 +4295,7 @@
                     investPlayerSelect.appendChild(option);
                 });
             }
-
+            
             const currentUserProfile = allFirebaseUsersData.find(p => p.uid === currentUid);
             if (currentUserProfile && maxInvestableChips) {
                 const userChipCount = currentUserProfile.chip_count || 0;
@@ -4376,7 +4376,7 @@
                 acceptedDate: null,
                 completedDate: null,
                 payoutDate: null,
-                handsRemaining: handsForPayout,
+                handsRemaining: handsForPayout, 
                 investorMessage: "",
                 investeeMessage: "",
                 originalOfferId: null,
@@ -4395,7 +4395,7 @@
                 showMessage(`Failed to submit offer: ${error.message}`, "error");
             }
         }
-
+        
         // Add event listener for the investment offer form submission
         if (offerInvestmentForm) {
             offerInvestmentForm.addEventListener('submit', handleOfferInvestment);
@@ -4405,25 +4405,25 @@
             if (!timestamp || !timestamp.seconds) return 'N/A';
             return new Date(timestamp.seconds * 1000).toLocaleDateString();
         }
-
+        
         function renderMySharesList() {
             if (!mySharesList || !auth.currentUser) return;
             const currentUid = auth.currentUser.uid;
-
+        
             const userShares = firestoreInvestments.filter(inv => inv.investorUid === currentUid);
             mySharesList.innerHTML = ''; // Clear previous list
-
+        
             if (userShares.length === 0) {
                 mySharesList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have not offered any shares.</p>';
                 return;
             }
-
+        
             userShares.sort((a, b) => (b.offerDate?.seconds || 0) - (a.offerDate?.seconds || 0)); // Newest first
-
+        
             userShares.forEach(share => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'p-3 border rounded-md bg-gray-50 shadow-sm';
-
+                
                 let statusText = share.status.replace(/_/g, ' '); // Prettify status
                 statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1);
                 let statusColor = 'bg-gray-200 text-gray-800'; // Default
@@ -4478,15 +4478,15 @@
             const currentUid = auth.currentUser.uid;
 
             const receivedOffers = firestoreInvestments.filter(inv => inv.investeeUid === currentUid && (inv.status === 'pending_investee_action' || inv.status === 'pending_investor_action'));
-            incomingOffersList.innerHTML = '';
-
+            incomingOffersList.innerHTML = ''; 
+        
             if (receivedOffers.length === 0) {
                 incomingOffersList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have no incoming investment offers.</p>';
                 return;
             }
-
+        
             receivedOffers.sort((a, b) => (b.offerDate?.seconds || 0) - (a.offerDate?.seconds || 0));
-
+        
             receivedOffers.forEach(offer => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'p-3 border rounded-md bg-gray-50 shadow-sm';
@@ -4525,17 +4525,17 @@
         function renderMyInvestmentsAsInvesteeList() {
             if (!myInvestmentsAsInvesteeList || !auth.currentUser) return;
             const currentUid = auth.currentUser.uid;
-
+        
             const acceptedInvestments = firestoreInvestments.filter(inv => inv.investeeUid === currentUid && (inv.status === 'active' || inv.status === 'completed'));
-            myInvestmentsAsInvesteeList.innerHTML = '';
-
+            myInvestmentsAsInvesteeList.innerHTML = ''; 
+        
             if (acceptedInvestments.length === 0) {
                 myInvestmentsAsInvesteeList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have no active or completed investments as an investee.</p>';
                 return;
             }
-
+        
             acceptedInvestments.sort((a, b) => (b.acceptedDate?.seconds || b.offerDate?.seconds || 0) - (a.acceptedDate?.seconds || a.offerDate?.seconds || 0));
-
+        
             acceptedInvestments.forEach(inv => {
                 const itemDiv = document.createElement('div');
                 let statusText = inv.status.replace(/_/g, ' ');
@@ -4554,7 +4554,7 @@
                     roiText = "Finalized (to be calculated)"; // Placeholder
                 }
                 itemDiv.className = itemClasses;
-
+        
                 itemDiv.innerHTML = `
                     <div class="flex justify-between items-center mb-1">
                         <p class="font-semibold text-gray-800">Investment from: <span class="font-normal">${inv.investorName || 'N/A'}</span></p>
@@ -4570,7 +4570,7 @@
                 myInvestmentsAsInvesteeList.appendChild(itemDiv);
             });
         }
-
+        
         // Update investmentsButton listener to call populateInvestmentPlayerSelect
         if (investmentsButton) {
             investmentsButton.addEventListener('click', () => {
@@ -4578,7 +4578,7 @@
                     showPanel(investmentsPanel);
                     // Default to showing the 'Shares' tab and populate its specific content
                     activateInvestmentsTab(sharesTab, sharesContent);
-                    populateInvestmentPlayerSelect();
+                    populateInvestmentPlayerSelect(); 
                 } else {
                     showMessage("Please log in to access investments.", "info");
                     showPanel(loginButtonsContainer);
