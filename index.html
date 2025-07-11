@@ -1048,11 +1048,8 @@
                 return;
             }
 
-            // Simplification: Disallow editing if there's any amendment history/messages
-            if (investment.investeeMessage || investment.investorMessage) {
-                showMessage("This offer cannot be edited as it has amendment messages. Please cancel and create a new offer if you wish to change terms.", "info");
-                return;
-            }
+            // Allow editing even if there are messages, as per simplified flow.
+            // Messages will be cleared upon successful edit.
 
             const newOfferAmountStr = prompt("Enter new offer amount:", investment.offerAmount);
             if (newOfferAmountStr === null) return; // User cancelled
@@ -1095,6 +1092,8 @@
                     requestedPayoutPercent: newPayoutPercent,
                     handsForPayout: newHandsPayout,
                     handsRemaining: newHandsPayout, // Reset handsRemaining as well
+                    investorMessage: "", // Clear investor message upon successful edit
+                    investeeMessage: "", // Clear investee message upon successful edit
                     lastUpdated: serverTimestamp()
                     // Status remains 'pending_investee_action'
                 });
@@ -1103,112 +1102,6 @@
             } catch (error) {
                 console.error("Error updating investment offer:", error);
                 showMessage(`Failed to update offer: ${error.message}`, "error");
-            }
-        }
-
-        async function handleInvestorAcceptAmendment(investmentId) {
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to respond to an amendment.", "error");
-                return;
-            }
-            const currentUid = auth.currentUser.uid;
-            const investment = firestoreInvestments.find(inv => inv.id === investmentId);
-
-            if (!investment) {
-                showMessage("Investment offer not found.", "error");
-                return;
-            }
-            if (investment.investorUid !== currentUid) {
-                showMessage("You are not authorized to respond to this amendment.", "error");
-                return;
-            }
-            if (investment.status !== 'pending_investor_action') {
-                showMessage("This offer is not awaiting your response to an amendment.", "info");
-                return;
-            }
-
-            showMessage("Accepting amended investment offer...", "info");
-
-            const investorProfileRef = doc(userProfilesCollectionRef, currentUid); // currentUid is investorUid
-            const investeeProfileRef = doc(userProfilesCollectionRef, investment.investeeUid);
-            const investmentDocRef = doc(investmentsCollectionRef, investmentId);
-
-            try {
-                const investorSnap = await getDoc(investorProfileRef);
-                const investeeSnap = await getDoc(investeeProfileRef);
-
-                if (!investorSnap.exists() || !investeeSnap.exists()) {
-                    showMessage("Investor or Investee profile not found. Cannot complete acceptance.", "error");
-                    await updateDoc(investmentDocRef, { status: 'error_profile_missing_on_amend_accept', lastUpdated: serverTimestamp() });
-                    return;
-                }
-
-                const investorData = investorSnap.data();
-                const investeeData = investeeSnap.data();
-                const investorCurrentChips = investorData.chip_count || 0;
-                const offerAmount = investment.offerAmount;
-
-                if (investorCurrentChips < offerAmount) {
-                    showMessage("You do not have sufficient chips to fund this investment. The offer is now void.", "error");
-                    await updateDoc(investmentDocRef, { status: 'cancelled_insufficient_funds', lastUpdated: serverTimestamp() });
-                    return;
-                }
-
-                const batch = writeBatch(db);
-                batch.update(investorProfileRef, { chip_count: investorCurrentChips - offerAmount });
-                batch.update(investeeProfileRef, { chip_count: (investeeData.chip_count || 0) + offerAmount });
-                batch.update(investmentDocRef, {
-                    status: 'active',
-                    acceptedDate: serverTimestamp(), // Terms were implicitly accepted with amendment
-                    handsRemaining: investment.handsForPayout,
-                    lastUpdated: serverTimestamp()
-                });
-
-                await batch.commit();
-                showMessage("Amendment accepted and investment is now active! Chips transferred.", "success");
-
-            } catch (error) {
-                console.error("Error accepting amendment:", error);
-                showMessage(`Failed to accept amendment: ${error.message}`, "error");
-            }
-        }
-
-        async function handleInvestorRejectAmendment(investmentId) {
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to respond to an amendment.", "error");
-                return;
-            }
-            const currentUid = auth.currentUser.uid;
-            const investment = firestoreInvestments.find(inv => inv.id === investmentId);
-
-            if (!investment) {
-                showMessage("Investment offer not found.", "error");
-                return;
-            }
-            if (investment.investorUid !== currentUid) {
-                showMessage("You are not authorized to respond to this amendment.", "error");
-                return;
-            }
-            if (investment.status !== 'pending_investor_action') {
-                showMessage("This offer is not awaiting your response to an amendment.", "info");
-                return;
-            }
-            
-            if (!confirm("Are you sure you want to reject this amendment and effectively cancel the offer?")) {
-                return;
-            }
-
-            showMessage("Rejecting amendment...", "info");
-            const investmentDocRef = doc(investmentsCollectionRef, investmentId);
-            try {
-                await updateDoc(investmentDocRef, {
-                    status: 'declined_by_investor', // Or 'amendment_rejected_by_investor'
-                    lastUpdated: serverTimestamp()
-                });
-                showMessage("Amendment rejected. The investment offer is now closed.", "success");
-            } catch (error) {
-                console.error("Error rejecting amendment:", error);
-                showMessage(`Failed to reject amendment: ${error.message}`, "error");
             }
         }
 
@@ -1251,11 +1144,11 @@
 
             try {
                 await updateDoc(investmentDocRef, {
-                    status: 'pending_investor_action', // Now investor needs to respond
+                    // Status remains 'pending_investee_action'
                     investeeMessage: amendmentMessage,
                     lastUpdated: serverTimestamp()
                 });
-                showMessage("Amendment submitted. Waiting for investor response.", "success");
+                showMessage("Feedback submitted to the investor. They may choose to edit their offer or cancel it.", "success");
                 // UI will update via Firestore listener, which calls renderIncomingOffersList.
             } catch (error) {
                 console.error("Error submitting amendment:", error);
@@ -4450,21 +4343,14 @@
                     ${share.status === 'active' ? `<p class="text-sm text-gray-600">Hands Remaining: <span class="font-medium">${share.handsRemaining}</span></p>` : ''}
                     ${share.status === 'active' || share.status === 'completed' ? `<p class="text-sm text-gray-600">Return on Investment (ROI): <span class="font-medium">${roiText}</span></p>` : ''}
                     ${share.investeeMessage && (share.status === 'pending_investor_action' || share.status === 'declined_by_investee' || statusText.toLowerCase().includes('rejected')) ? `<div class="mt-2 p-2 bg-orange-100 border-l-4 border-orange-500 text-orange-700 text-xs"><p><strong>Investee Message:</strong> ${share.investeeMessage}</p></div>` : ''}
-                    ${share.investorMessage && (share.status === 'pending_investee_action') ? `<div class="mt-2 p-2 bg-blue-100 border-l-4 border-blue-500 text-blue-700 text-xs"><p><strong>Your Last Message:</strong> ${share.investorMessage}</p></div>` : ''}
+                    ${share.investorMessage && (share.status === 'pending_investee_action') ? `<div class="mt-2 p-2 bg-blue-100 border-l-4 border-blue-500 text-blue-700 text-xs"><p><strong>Your Last Message (cleared on edit):</strong> ${share.investorMessage}</p></div>` : ''}
+                    ${share.investeeMessage && (share.status === 'pending_investee_action') ? `<div class="mt-2 p-2 bg-orange-100 border-l-4 border-orange-500 text-orange-700 text-xs"><p><strong>Investee Feedback:</strong> ${share.investeeMessage}</p></div>` : ''}
                     <div class="mt-2 space-x-2">
-                        ${(share.status === 'pending_investee_action' && !share.investorMessage && !share.investeeMessage) ? `
-                            <button data-id="${share.id}" class="edit-share-offer-btn text-xs bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded">Edit</button>
-                        ` : ''}
-                        ${(share.status === 'pending_investee_action' || share.status === 'pending_investor_action') ? `
+                        ${(share.status === 'pending_investee_action') ? `
+                            <button data-id="${share.id}" class="edit-share-offer-btn text-xs bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded">Edit Offer</button>
                             <button data-id="${share.id}" class="cancel-share-offer-btn text-xs bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded">Cancel Offer</button>
                         ` : ''}
-                        ${(share.status === 'pending_investor_action') ? `
-                            <button data-id="${share.id}" class="accept-amendment-btn text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded">Accept Amendment</button>
-                            <button data-id="${share.id}" class="reject-amendment-btn text-xs bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded">Reject Amendment & Cancel</button>
-                            <!-- Optionally, add a button here to propose a counter-amendment -->
-                            <button data-id="${share.id}" class="cancel-share-offer-btn text-xs bg-gray-500 hover:bg-gray-600 text-white py-1 px-2 rounded">Cancel Offer Entirely</button>
-                        ` : ''}
-                         <!-- View Message button might be redundant if message is displayed above -->
+                         <!-- No more pending_investor_action specific buttons here for simplified flow -->
                     </div>
                 `;
                 mySharesList.appendChild(itemDiv);
@@ -4616,13 +4502,10 @@
 
                 if (target.classList.contains('cancel-share-offer-btn')) {
                     cancelPendingOffer(investmentId);
-                } else if (target.classList.contains('accept-amendment-btn')) {
-                    handleInvestorAcceptAmendment(investmentId);
-                } else if (target.classList.contains('reject-amendment-btn')) {
-                    handleInvestorRejectAmendment(investmentId);
                 } else if (target.classList.contains('edit-share-offer-btn')) {
                     editPendingOffer(investmentId);
                 }
+                // Removed logic for accept-amendment-btn and reject-amendment-btn
             });
         }
 
