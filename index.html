@@ -1013,9 +1013,10 @@
                     }
 
                     if (chipCountChanged && typeof newChipCount === 'number') { // Double check it's a number
+                        const roundedChipCount = Math.round(newChipCount);
                         const profileDocRef = doc(userProfilesCollectionRef, uid);
-                        await setDoc(profileDocRef, { chip_count: newChipCount }, { merge: true });
-                        // addLogEntry("User Chip Count Changed", { targetUser: uid, oldChipCount: oldChipCount === undefined ? "N/A" : oldChipCount, newChipCount, by: auth.currentUser.email }); // Removed
+                        await setDoc(profileDocRef, { chip_count: roundedChipCount }, { merge: true });
+                        // addLogEntry("User Chip Count Changed", { targetUser: uid, oldChipCount: oldChipCount === undefined ? "N/A" : oldChipCount, newChipCount: roundedChipCount, by: auth.currentUser.email }); // Removed
                     }
                 }
                 showMessage("User changes processed and saved to Firestore.", 'success');
@@ -3887,8 +3888,8 @@
                 // A transaction would be ideal here.
                 const profile = allFirebaseUsersData.find(p => p.uid === playerId);
                 if (profile) {
-                    const newChipCount = (profile.chip_count || 0) + change;
-                    updates.push(updateDoc(playerProfileRef, { chip_count: newChipCount }));
+                    const newChipCount = Math.round((profile.chip_count || 0) + change);
+                    updates.push(updateDoc(playerProfileRef, { chip_count: Math.max(0, newChipCount) })); // Ensure chips don't go negative
                     console.log(`Updating ${profile.displayName}'s chips from ${profile.chip_count} by ${change} to ${newChipCount}`);
                 } else {
                     console.error(`Could not find profile for player UID ${playerId} to update chips.`);
@@ -3934,18 +3935,21 @@
                                 const investeeTotalChips = investeeData.chip_count || 0;
                                 
                                 const payoutPercent = investment.requestedPayoutPercent || 0;
+                                // payoutAmount is floored, so it's an integer.
                                 const payoutAmount = Math.floor((investeeTotalChips * payoutPercent) / 100);
 
                                 if (payoutAmount > 0) {
-                                    const newInvesteeChips = investeeTotalChips - payoutAmount;
-                                    const newInvestorChips = (investorData.chip_count || 0) + payoutAmount;
+                                    // Chip counts should already be integers from previous roundings.
+                                    // Applying Math.round() here is for robustness and explicitness.
+                                    const newInvesteeChips = Math.round(investeeTotalChips - payoutAmount);
+                                    const newInvestorChips = Math.round((investorData.chip_count || 0) + payoutAmount);
 
                                     // Update investee profile (subtract payout)
-                                    investmentUpdates.push(updateDoc(investeeProfileRef, { chip_count: newInvesteeChips }));
+                                    investmentUpdates.push(updateDoc(investeeProfileRef, { chip_count: Math.max(0, newInvesteeChips) }));
                                     // Update investor profile (add payout)
-                                    investmentUpdates.push(updateDoc(investorProfileRef, { chip_count: newInvestorChips }));
+                                    investmentUpdates.push(updateDoc(investorProfileRef, { chip_count: Math.max(0, newInvestorChips) }));
                                     
-                                    investmentUpdateData.actualPayoutAmount = payoutAmount; // Record actual payout
+                                    investmentUpdateData.actualPayoutAmount = payoutAmount; // Record actual payout (which is an integer)
                                     console.log(`Investment ${investment.id}: Payout of ${payoutAmount} from ${investment.investeeName} to ${investment.investorName}.`);
                                     showMessage(`Investment Payout: ${payoutAmount} from ${investment.investeeName} to ${investment.investorName}.`, "info");
                                 } else {
@@ -3989,11 +3993,12 @@
             const newChipAmountString = prompt("Enter the chip amount to set for ALL users (including admins/owners):");
             if (newChipAmountString === null) return; // User cancelled
 
-            const newChipAmount = parseInt(newChipAmountString, 10);
+            let newChipAmount = parseInt(newChipAmountString, 10);
             if (isNaN(newChipAmount) || newChipAmount < 0) {
                 showMessage("Invalid chip amount. Please enter a non-negative number.", 'error');
                 return;
             }
+            newChipAmount = Math.round(newChipAmount); // Round the input amount
 
             if (!confirm(`Are you sure you want to set the chip count of ALL USERS (INCLUDING ADMINS/OWNERS) to ${newChipAmount}? This cannot be undone.`)) {
                 return;
@@ -4327,9 +4332,18 @@
 
                 // Placeholder for ROI calculation
                 let roiText = "N/A";
-                if (share.status === 'active') roiText = "Calculating...";
-                else if (share.status === 'completed') roiText = "Finalized (to be calculated)";
-
+                if (share.status === 'active') {
+                    const investeeProfile = allFirebaseUsersData.find(p => p.uid === share.investeeUid);
+                    if (investeeProfile && typeof investeeProfile.chip_count === 'number') {
+                        const investeeChips = investeeProfile.chip_count;
+                        const estimatedReturn = (investeeChips * (share.requestedPayoutPercent || 0)) / 100;
+                        roiText = `${Math.round(estimatedReturn)} chips (Est.)`;
+                    } else {
+                        roiText = "Calculating (Investee data pending)...";
+                    }
+                } else if (share.status === 'completed') {
+                    roiText = `${Math.round(share.actualPayoutAmount || 0)} chips (Paid)`;
+                }
 
                 itemDiv.innerHTML = `
                     <div class="flex justify-between items-center mb-1">
@@ -4433,11 +4447,19 @@
                 if (inv.status === 'active') {
                     itemClasses += ' bg-blue-50';
                     statusColor = 'bg-blue-200 text-blue-800';
-                    roiText = "Calculating..."; // Placeholder
+                    // User is the investee, so use their own chip count
+                    const currentUserProfile = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
+                    if (currentUserProfile && typeof currentUserProfile.chip_count === 'number') {
+                        const currentUserChips = currentUserProfile.chip_count;
+                        const estimatedPayout = (currentUserChips * (inv.requestedPayoutPercent || 0)) / 100;
+                        roiText = `${Math.round(estimatedPayout)} chips (Est. Payout)`;
+                    } else {
+                        roiText = "Calculating (Your data pending)...";
+                    }
                 } else if (inv.status === 'completed') {
                     itemClasses += ' bg-gray-200 opacity-80';
                     statusColor = 'bg-gray-300 text-gray-700';
-                    roiText = "Finalized (to be calculated)"; // Placeholder
+                    roiText = `${Math.round(inv.actualPayoutAmount || 0)} chips (Paid)`;
                 }
                 itemDiv.className = itemClasses;
         
@@ -4585,12 +4607,38 @@
 
                 const batch = writeBatch(db);
 
-                // 1. Decrement investor's chips
-                batch.update(investorProfileRef, { chip_count: investorCurrentChips - offerAmount });
+                const investorInitialChips = investorData.chip_count || 0;
+                const investeeInitialChips = investeeData.chip_count || 0;
 
-                // 2. Increment investee's chips
-                const investeeCurrentChips = investeeData.chip_count || 0;
-                batch.update(investeeProfileRef, { chip_count: investeeCurrentChips + offerAmount });
+                let potentialInvestorNewChips = investorInitialChips - offerAmount;
+                let potentialInvesteeNewChips = investeeInitialChips + offerAmount;
+
+                let finalInvestorChips = Math.round(potentialInvestorNewChips);
+                let finalInvesteeChips = Math.round(potentialInvesteeNewChips);
+
+                const investorHadHalf = Math.abs(potentialInvestorNewChips % 1) === 0.5;
+                const investeeHadHalf = Math.abs(potentialInvesteeNewChips % 1) === 0.5;
+
+                if (investorHadHalf && investeeHadHalf) {
+                    console.log("Applying .5 random rounding for investment acceptance.");
+                    if (Math.random() < 0.5) { // Investor rounds towards zero, Investee rounds away from zero
+                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.floor(potentialInvestorNewChips) : Math.ceil(potentialInvestorNewChips);
+                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.ceil(potentialInvesteeNewChips) : Math.floor(potentialInvesteeNewChips);
+                    } else { // Investor rounds away from zero, Investee rounds towards zero
+                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.ceil(potentialInvestorNewChips) : Math.floor(potentialInvestorNewChips);
+                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.floor(potentialInvesteeNewChips) : Math.ceil(potentialInvesteeNewChips);
+                    }
+                }
+
+                // Ensure chip counts are not negative after rounding
+                finalInvestorChips = Math.max(0, finalInvestorChips);
+                finalInvesteeChips = Math.max(0, finalInvesteeChips);
+
+                // 1. Update investor's chips
+                batch.update(investorProfileRef, { chip_count: finalInvestorChips });
+
+                // 2. Update investee's chips
+                batch.update(investeeProfileRef, { chip_count: finalInvesteeChips });
 
                 // 3. Update investment document
                 batch.update(investmentDocRef, {
