@@ -852,6 +852,7 @@
         let firestoreActiveSessions = []; // Stores active sessions from Firestore
         let firestoreGameRooms = []; // Stores game rooms fetched from Firestore
         let firestoreInvestments = []; // Stores investments fetched from Firestore
+        let firestoreMessages = [];
         let currentJoinedRoomId = null; // Stores the ID of the room the current player has joined
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
@@ -1030,10 +1031,10 @@
 
         let currentChatId = null;
         let unsubscribeMessagesListener = null;
-        let firestoreMessages = [];
 
         onSnapshot(query(messagesCollectionRef), (snapshot) => {
             firestoreMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Firestore messages:", firestoreMessages);
             renderMessagesPlayerList(playerSearchInput.value);
         });
 
