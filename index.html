@@ -3655,8 +3655,8 @@
                 };
             });
 
+            const bets = players.map(p => p.bet);
             const eligiblePlayers = players.filter(p => p.status !== 'folded');
-            const bets = eligiblePlayers.map(p => p.bet);
 
             eligiblePlayers.forEach(player => {
                 let maxWin = 0;
