@@ -982,7 +982,11 @@
         });
 
         function renderMessagesPlayerList(filter = '') {
-            if (!messagesPlayerList || !auth.currentUser) return;
+            console.log("Rendering messages player list with filter:", filter);
+            if (!messagesPlayerList || !auth.currentUser) {
+                console.log("Cannot render player list: list element or user not available.");
+                return;
+            }
 
             const currentUid = auth.currentUser.uid;
             messagesPlayerList.innerHTML = '';
@@ -1016,6 +1020,7 @@
         }
 
         messagesButton.addEventListener('click', () => {
+            console.log("Messages button clicked.");
             if (auth.currentUser) {
                 showPanel(messagesPanel);
                 renderMessagesPlayerList();
@@ -1033,12 +1038,14 @@
         let unsubscribeMessagesListener = null;
 
         onSnapshot(query(messagesCollectionRef), (snapshot) => {
+            console.log("Messages collection snapshot received.");
             firestoreMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             console.log("Firestore messages:", firestoreMessages);
             renderMessagesPlayerList(playerSearchInput.value);
         });
 
         messagesPlayerList.addEventListener('click', (e) => {
+            console.log("Player list clicked.");
             if (e.target.matches('[data-uid]')) {
                 const otherPlayerId = e.target.getAttribute('data-uid');
                 const otherPlayerName = e.target.textContent;
