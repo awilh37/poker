@@ -298,35 +298,6 @@
                     Close
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Player List -->
-                <div class="md:col-span-1 bg-white p-4 rounded-lg shadow">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800">Players</h4>
-                        <button id="createGroupChatButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-lg text-sm">+</button>
-                    </div>
-                    <input type="text" id="playerSearchInput" placeholder="Search players..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                    <div id="messagesPlayerList" class="max-h-96 overflow-y-auto">
-                        <div class="p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold" data-gid="group_1678886400000">General</div>
-                    </div>
-                </div>
-
-                <!-- Chat Area -->
-                <div class="md:col-span-2 bg-white p-4 rounded-lg shadow flex flex-col">
-                    <div id="chatHeader" class="border-b pb-2 mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800">Select a conversation</h4>
-                    </div>
-                    <div id="chatMessages" class="flex-grow overflow-y-auto mb-4">
-                        <div class="p-2 my-1 rounded-lg bg-gray-200 text-gray-800 self-start">Welcome to the chat!</div>
-                    </div>
-                    <div id="chatInputContainer" class="mt-auto">
-                        <div class="flex">
-                            <input type="text" id="messageInput" placeholder="Type a message..." class="w-full border rounded-l-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <button id="sendMessageButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Game Room View Panel (Initially hidden) -->
@@ -474,6 +445,35 @@
                 <button id="hideUserDirectoryPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
                     Close
                 </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Player List -->
+                <div class="md:col-span-1 bg-white p-4 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-semibold text-gray-800">Players</h4>
+                        <button id="createGroupChatButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-lg text-sm">+</button>
+                    </div>
+                    <input type="text" id="playerSearchInput" placeholder="Search players..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+                    <div id="messagesPlayerList" class="max-h-96 overflow-y-auto">
+                        <div class="p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold" data-gid="group_1678886400000">General</div>
+                    </div>
+                </div>
+
+                <!-- Chat Area -->
+                <div class="md:col-span-2 bg-white p-4 rounded-lg shadow flex flex-col">
+                    <div id="chatHeader" class="border-b pb-2 mb-4">
+                        <h4 class="text-lg font-semibold text-gray-800">Select a conversation</h4>
+                    </div>
+                    <div id="chatMessages" class="flex-grow overflow-y-auto mb-4">
+                        <div class="p-2 my-1 rounded-lg bg-gray-200 text-gray-800 self-start">Welcome to the chat!</div>
+                    </div>
+                    <div id="chatInputContainer" class="mt-auto">
+                        <div class="flex">
+                            <input type="text" id="messageInput" placeholder="Type a message..." class="w-full border rounded-l-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button id="sendMessageButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg">Send</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
