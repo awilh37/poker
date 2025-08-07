@@ -166,14 +166,6 @@
             Investments
         </button>
 
-        <!-- "Messages" Button (Initially hidden, for all logged-in users) -->
-        <button
-            id="messagesButton"
-            class="hidden mt-4 w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-        >
-            Messages
-        </button>
-
         <!-- Admin Panel (Initially hidden) -->
         <div id="adminPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full text-center">
             <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Admin Panel</h3>
@@ -298,35 +290,6 @@
                     Close
                 </button>
             </div>
-            <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                Player List
-                <div class="md:col-span-1 bg-white p-4 rounded-lg shadow">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800">Players</h4>
-                        <button id="createGroupChatButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-lg text-sm">+</button>
-                    </div>
-                    <input type="text" id="playerSearchInput" placeholder="Search players..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                    <div id="messagesPlayerList" class="max-h-96 overflow-y-auto">
-                        <div class="p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold" data-gid="group_1678886400000">General</div>
-                    </div>
-                </div>
-
-                Chat Area
-                <div class="md:col-span-2 bg-white p-4 rounded-lg shadow flex flex-col">
-                    <div id="chatHeader" class="border-b pb-2 mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800">Select a conversation</h4>
-                    </div>
-                    <div id="chatMessages" class="flex-grow overflow-y-auto mb-4">
-                        <div class="p-2 my-1 rounded-lg bg-gray-200 text-gray-800 self-start">Welcome to the chat!</div>
-                    </div>
-                    <div id="chatInputContainer" class="mt-auto">
-                        <div class="flex">
-                            <input type="text" id="messageInput" placeholder="Type a message..." class="w-full border rounded-l-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <button id="sendMessageButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
         </div>
 
         <!-- Game Room View Panel (Initially hidden) -->
@@ -633,39 +596,6 @@
             </div>
         </div>
 
-        <!-- Create Group Chat Modal -->
-        <div id="createGroupChatModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3 text-center">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Create Group Chat</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <input type="text" id="groupNameInput" placeholder="Group Name" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                        <div id="groupPlayerList" class="max-h-60 overflow-y-auto border rounded-lg p-2">
-                            <!-- Player list for group selection will be rendered here -->
-                        </div>
-                    </div>
-                    <div class="items-center px-4 py-3">
-                        <button id="createGroupButton" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
-                            Create Group
-                        </button>
-                        <button id="cancelGroupButton" class="mt-2 px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Messages Panel (Initially hidden) -->
-        <div id="messagesPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-2xl lg:max-w-4xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl md:text-3xl font-bold text-gray-700">Messages</h3>
-                <button id="closeMessagesPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
-                    Close
-                </button>
-            </div>
-        </div>
-
     </div>
 
     <script type="module">
@@ -793,7 +723,6 @@
 
         // Investments Panel Elements
         const investmentsButton = document.getElementById('investmentsButton');
-        const messagesButton = document.getElementById('messagesButton');
         const investmentsPanel = document.getElementById('investmentsPanel');
         const closeInvestmentsPanelButton = document.getElementById('closeInvestmentsPanelButton');
         const sharesTab = document.getElementById('shares-tab');
@@ -822,24 +751,6 @@
         const myInvestmentsAsInvesteeContainer = document.getElementById('myInvestmentsAsInvesteeContainer');
         const myInvestmentsAsInvesteeList = document.getElementById('myInvestmentsAsInvesteeList');
 
-        // Messages Panel Elements
-        const messagesPanel = document.getElementById('messagesPanel');
-        const closeMessagesPanelButton = document.getElementById('closeMessagesPanelButton');
-        const playerSearchInput = document.getElementById('playerSearchInput');
-        const messagesPlayerList = document.getElementById('messagesPlayerList');
-        const chatHeader = document.getElementById('chatHeader');
-        const chatMessages = document.getElementById('chatMessages');
-        const messageInput = document.getElementById('messageInput');
-        const sendMessageButton = document.getElementById('sendMessageButton');
-
-        // Group Chat Modal Elements
-        const createGroupChatModal = document.getElementById('createGroupChatModal');
-        const groupNameInput = document.getElementById('groupNameInput');
-        const groupPlayerList = document.getElementById('groupPlayerList');
-        const createGroupButton = document.getElementById('createGroupButton');
-        const cancelGroupButton = document.getElementById('cancelGroupButton');
-        const createGroupChatButton = document.getElementById('createGroupChatButton');
-
 
         // const logFilterType = document.getElementById('logFilterType'); // Removed
         // const logSearchText = document.getElementById('logSearchText'); // Removed
@@ -851,7 +762,6 @@
         let firestoreActiveSessions = []; // Stores active sessions from Firestore
         let firestoreGameRooms = []; // Stores game rooms fetched from Firestore
         let firestoreInvestments = []; // Stores investments fetched from Firestore
-        let firestoreMessages = [];
         let currentJoinedRoomId = null; // Stores the ID of the room the current player has joined
 
         const ROLES = ['disabled', 'player', 'admin', 'owner']; // Defined roles for the system
@@ -934,7 +844,6 @@
         const activeSessionsCollectionRef = collection(db, `artifacts/${appId}/public/data/active_sessions`);
         const gameRoomsCollectionRef = collection(db, `artifacts/${appId}/public/data/game_rooms`);
         const investmentsCollectionRef = collection(db, `artifacts/${appId}/public/data/investments`); // New collection for investments
-        const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
 
 
         // --- Utility Functions ---
@@ -949,7 +858,6 @@
                 {el: playerJoinRoomPanel, name: "playerJoinRoomPanel"},
                 {el: gameRoomViewPanel, name: "gameRoomViewPanel"},
                 {el: investmentsPanel, name: "investmentsPanel"}, // Added Investments Panel
-                {el: messagesPanel, name: "messagesPanel"},
                 {el: loadingIndicator, name: "loadingIndicator"}
             ];
 
@@ -965,218 +873,6 @@
                 }
             });
         }
-
-        // --- Messages Panel Event Listeners ---
-        messagesButton.addEventListener('click', () => {
-            if (auth.currentUser) {
-                showPanel(messagesPanel);
-            } else {
-                showMessage("Please log in to access messages.", "info");
-                showPanel(loginButtonsContainer);
-            }
-        });
-
-        closeMessagesPanelButton.addEventListener('click', () => {
-            showPanel(null); // Return to neutral view
-        });
-
-        function renderMessagesPlayerList(filter = '') {
-            console.log("Rendering messages player list with filter:", filter);
-            if (!messagesPlayerList || !auth.currentUser) {
-                console.log("Cannot render player list: list element or user not available.");
-                return;
-            }
-
-            const currentUid = auth.currentUser.uid;
-            messagesPlayerList.innerHTML = '';
-
-            const filteredPlayers = allFirebaseUsersData
-                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled' && formatDisplayName(user).toLowerCase().includes(filter.toLowerCase()))
-                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
-
-            const filteredGroups = firestoreMessages.filter(msg => msg.isGroup && msg.members.includes(currentUid) && msg.name.toLowerCase().includes(filter.toLowerCase()));
-
-            if (filteredPlayers.length === 0 && filteredGroups.length === 0) {
-                messagesPlayerList.innerHTML = '<p class="text-gray-500 p-3 text-center">No players or groups found.</p>';
-                return;
-            }
-
-            filteredGroups.forEach(group => {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold';
-                groupDiv.textContent = group.name;
-                groupDiv.setAttribute('data-gid', group.id);
-                messagesPlayerList.appendChild(groupDiv);
-            });
-
-            filteredPlayers.forEach(user => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'p-2 hover:bg-gray-100 cursor-pointer rounded-md';
-                playerDiv.textContent = formatDisplayName(user);
-                playerDiv.setAttribute('data-uid', user.uid);
-                messagesPlayerList.appendChild(playerDiv);
-            });
-        }
-
-        messagesButton.addEventListener('click', () => {
-            console.log("Messages button clicked.");
-            if (auth.currentUser) {
-                showPanel(messagesPanel);
-                renderMessagesPlayerList();
-            } else {
-                showMessage("Please log in to access messages.", "info");
-                showPanel(loginButtonsContainer);
-            }
-        });
-
-        playerSearchInput.addEventListener('input', (e) => {
-            renderMessagesPlayerList(e.target.value);
-        });
-
-        let currentChatId = null;
-        let unsubscribeMessagesListener = null;
-
-        onSnapshot(query(messagesCollectionRef), (snapshot) => {
-            console.log("Messages collection snapshot received.");
-            firestoreMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log("Firestore messages:", firestoreMessages);
-            renderMessagesPlayerList(playerSearchInput.value);
-        });
-
-        messagesPlayerList.addEventListener('click', (e) => {
-            console.log("Player list clicked.");
-            if (e.target.matches('[data-uid]')) {
-                const otherPlayerId = e.target.getAttribute('data-uid');
-                const otherPlayerName = e.target.textContent;
-                const currentUid = auth.currentUser.uid;
-
-                currentChatId = [currentUid, otherPlayerId].sort().join('_');
-
-                chatHeader.innerHTML = `<h4 class="text-lg font-semibold text-gray-800">${otherPlayerName}</h4>`;
-
-                if (unsubscribeMessagesListener) {
-                    unsubscribeMessagesListener();
-                }
-
-                const q = query(collection(db, `messages/${currentChatId}/messages`), orderBy("timestamp"));
-                unsubscribeMessagesListener = onSnapshot(q, (snapshot) => {
-                    chatMessages.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const message = doc.data();
-                        const messageDiv = document.createElement('div');
-                        messageDiv.textContent = message.text;
-                        const isSender = message.senderId === currentUid;
-                        messageDiv.className = `p-2 my-1 rounded-lg ${isSender ? 'bg-blue-500 text-white self-end' : 'bg-gray-200 text-gray-800 self-start'}`;
-                        chatMessages.appendChild(messageDiv);
-                    });
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                });
-            } else if (e.target.matches('[data-gid]')) {
-                const groupId = e.target.getAttribute('data-gid');
-                const groupName = e.target.textContent;
-                const currentUid = auth.currentUser.uid;
-
-                currentChatId = groupId;
-
-                chatHeader.innerHTML = `<h4 class="text-lg font-semibold text-gray-800">${groupName}</h4>`;
-
-                if (unsubscribeMessagesListener) {
-                    unsubscribeMessagesListener();
-                }
-
-                const q = query(collection(db, `messages/${currentChatId}/messages`), orderBy("timestamp"));
-                unsubscribeMessagesListener = onSnapshot(q, (snapshot) => {
-                    chatMessages.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const message = doc.data();
-                        const messageDiv = document.createElement('div');
-                        const senderName = allFirebaseUsersData.find(p => p.uid === message.senderId)?.displayName || 'Unknown';
-                        messageDiv.textContent = `${senderName}: ${message.text}`;
-                        const isSender = message.senderId === currentUid;
-                        messageDiv.className = `p-2 my-1 rounded-lg ${isSender ? 'bg-blue-500 text-white self-end' : 'bg-gray-200 text-gray-800 self-start'}`;
-                        chatMessages.appendChild(messageDiv);
-                    });
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                });
-            }
-        });
-
-        sendMessageButton.addEventListener('click', async () => {
-            const text = messageInput.value.trim();
-            if (text && currentChatId) {
-                await addDoc(collection(db, `messages/${currentChatId}/messages`), {
-                    text,
-                    senderId: auth.currentUser.uid,
-                    timestamp: serverTimestamp()
-                });
-                messageInput.value = '';
-            }
-        });
-
-        createGroupChatButton.addEventListener('click', () => {
-            createGroupChatModal.classList.remove('hidden');
-            renderGroupPlayerList();
-        });
-
-        cancelGroupButton.addEventListener('click', () => {
-            createGroupChatModal.classList.add('hidden');
-        });
-
-        function renderGroupPlayerList() {
-            if (!groupPlayerList || !auth.currentUser) return;
-
-            const currentUid = auth.currentUser.uid;
-            groupPlayerList.innerHTML = '';
-
-            const availablePlayers = allFirebaseUsersData
-                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled')
-                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
-
-            if (availablePlayers.length === 0) {
-                groupPlayerList.innerHTML = '<p class="text-gray-500 p-3 text-center">No other players available.</p>';
-                return;
-            }
-
-            availablePlayers.forEach(user => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center p-2 hover:bg-gray-100 rounded-md';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = user.uid;
-                checkbox.className = 'mr-2';
-                playerDiv.appendChild(checkbox);
-                const label = document.createElement('label');
-                label.textContent = formatDisplayName(user);
-                playerDiv.appendChild(label);
-                groupPlayerList.appendChild(playerDiv);
-            });
-        }
-
-        createGroupButton.addEventListener('click', async () => {
-            const groupName = groupNameInput.value.trim();
-            if (!groupName) {
-                showMessage("Please enter a group name.", "error");
-                return;
-            }
-
-            const selectedPlayers = Array.from(groupPlayerList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-            if (selectedPlayers.length === 0) {
-                showMessage("Please select at least one player.", "error");
-                return;
-            }
-
-            const members = [auth.currentUser.uid, ...selectedPlayers];
-            const groupChatId = `group_${new Date().getTime()}`;
-
-            await setDoc(doc(db, "messages", groupChatId), {
-                name: groupName,
-                members: members,
-                isGroup: true
-            });
-
-            createGroupChatModal.classList.add('hidden');
-            groupNameInput.value = '';
-        });
 
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
@@ -2353,7 +2049,6 @@
             openAccountManagementButton.classList.remove('hidden');
             joinGameButton.classList.remove('hidden'); // Show for all logged-in users
             investmentsButton.classList.remove('hidden'); // Show Investments button for all logged-in users
-            messagesButton.classList.remove('hidden');
 
             if (userHasAdminAccess) {
                 openAdminPanelButton.classList.remove('hidden');
@@ -2447,7 +2142,6 @@
             openAdminPanelButton.classList.add('hidden');
             joinGameButton.classList.add('hidden'); // Hide on logout
             investmentsButton.classList.add('hidden'); // Hide Investments button on logout
-            messagesButton.classList.add('hidden');
 
             // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
@@ -3942,90 +3636,351 @@
                  return;
             }
 
-            // 1. For every eligible (non-folded) player in the room, create a variable calculated by adding all bets that are lower than the player's bet together plus the player's bet times any bets that are equal to/greater than their own, including their own bet. This variable will reflect the max amount of chips each player can win.
-            console.log("Step 1: Calculating max win for each player.");
-            const players = room.players.map(playerId => {
-                const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
-                const bet = room.currentBets[playerId] || 0;
-                const status = room.playerStatuses[playerId];
-                const rank = playerRankings.find(p => p.playerId === playerId)?.rank || 0;
-
-                return {
-                    id: playerId,
-                    name: playerProfile ? formatDisplayName(playerProfile) : `Player ${playerId}`,
-                    bet,
-                    status,
-                    rank,
-                    winnings: 0,
-                    chips: playerProfile.chip_count
-                };
-            });
-
-            const bets = players.map(p => p.bet);
-            const eligiblePlayers = players.filter(p => p.status !== 'folded');
-
-            eligiblePlayers.forEach(player => {
-                let maxWin = 0;
-                bets.forEach(bet => {
-                    if (bet < player.bet) {
-                        maxWin += bet;
-                    } else {
-                        maxWin += player.bet;
-                    }
-                });
-                player.maxWin = maxWin;
-            });
-            console.log("Eligible players with max win:", eligiblePlayers);
-
-            // 2. Create a new variable called available_pot that starts equal to the original pot. This new variable will be changed as the pot is calculated to see how many chips remain.
-            let available_pot = bets.reduce((a, b) => a + b, 0);
-            console.log("Step 2: Initial available pot:", available_pot);
-
-            // 3. Create a new variable called 1st_win_quotient that equals the number of players who are marked as 1st winner divided by the available_pot.
-            // 4. Based on the division, for each player marked as 1st winner, compare each players max they can win vs. 1st_win_quotient. if their max is equal to or smaller than the 1st_win_quotient, set their winnings to 1st_win_quotient. if 1st_win_quotient is larger than their max, set their winnings to their max.
-            // 5. Set the available_pot variable to available_pot minus all of the players winnings.
-            // 6. Repeat steps 3-5 for 2nd winners and 3rd winners.
-            for (let i = 1; i <= 3; i++) {
-                console.log(`Step 3-6: Calculating winnings for rank ${i}`);
-                const winners = eligiblePlayers.filter(p => p.rank === i);
-                if (winners.length > 0) {
-                    const win_quotient = available_pot / winners.length;
-                    console.log(`Rank ${i} win quotient:`, win_quotient);
-                    winners.forEach(winner => {
-                        if (winner.maxWin <= win_quotient) {
-                            winner.winnings = winner.maxWin;
-                        } else {
-                            winner.winnings = win_quotient;
-                        }
-                        available_pot -= winner.winnings;
-                        console.log(`Winner ${winner.name} winnings:`, winner.winnings);
-                        console.log("Available pot after winner:", available_pot);
-                    });
-                }
-            }
-
-            // 7. If the available_pot variable is not equal to 0, return an error, and set all of the winnings back to 0.
-            console.log("Step 7: Final available pot check:", available_pot);
-            if (available_pot !== 0) {
-                showMessage("Error: Pot not distributed correctly. All winnings have been reset to 0.", "error");
-                eligiblePlayers.forEach(player => {
-                    player.winnings = 0;
-                });
+            // --- Pot Calculation and Distribution Logic ---
+            let totalPot = Object.values(room.currentBets || {}).reduce((sum, bet) => sum + (bet || 0), 0);
+            if (totalPot <= 0) {
+                showMessage("Pot is zero or empty. No chips to distribute.", "info");
+                await adminRoomReset(roomId); // Reset the room as there's nothing to award.
+                toggleUpdateChipsPanel(roomId, false); // Hide panel
                 return;
             }
 
-            // 8. If there is no error, subtract each player's bets from their chips in firestore, and add their winnings to their chips in firestore. Then run the reset room function.
-            const updates = [];
-            players.forEach(player => {
-                const playerProfileRef = doc(userProfilesCollectionRef, player.id);
-                const newChipCount = player.chips - player.bet + player.winnings;
-                updates.push(updateDoc(playerProfileRef, { chip_count: newChipCount }));
+            // --- Store Initial Total Room Chips (for final validation) ---
+            let initialTotalRoomChips = 0;
+            room.players.forEach(playerId => {
+                const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                if (profile) {
+                    initialTotalRoomChips += (profile.chip_count || 0);
+                }
             });
+            console.log("Initial Total Room Chips (all players in room):", initialTotalRoomChips);
 
-            Promise.all(updates).then(() => {
-                adminRoomReset(roomId);
-                toggleUpdateChipsPanel(roomId, false);
+            console.log("Original Total Pot (sum of currentBets):", totalPot);
+            console.log("Player Rankings from UI:", playerRankings);
+
+            // --- Phase 1: Debit all bets and prepare player data ---
+            const playersData = []; // Renamed from playersInHand for clarity with plan
+            const chipChanges = {};   // Stores net change for each player's profile update
+
+            // Iterate over players in the room, not just currentBets, to include everyone for chip count tracking
+            for (const playerId of room.players) {
+                const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                if (!profile) {
+                    console.warn(`Profile not found for player UID ${playerId} in room. Skipping for chip calculations.`);
+                    continue;
+                }
+
+                const betAmount = room.currentBets[playerId] || 0;
+                const playerStatus = room.playerStatuses[playerId];
+                const rankingInfo = playerRankings.find(r => r.playerId === playerId);
+                // Default rank to 0 if player is folded or not in ranking UI (e.g. if they left mid-hand after betting)
+                const rank = (playerStatus === 'folded' || !rankingInfo) ? 0 : rankingInfo.rank;
+
+                if (rank > 0 && playerStatus === 'folded') {
+                     showMessage(`Error: Player ${formatDisplayName(profile)} is FOLDED but assigned rank ${rank}. Cannot proceed.`, "error");
+                     return; // Critical error, stop processing
+                }
+
+                playersData.push({
+                    uid: playerId,
+                    name: formatDisplayName(profile),
+                    betAmount: betAmount, // Store original bet amount
+                    initialChipCount: profile.chip_count || 0,
+                    currentChipsInHand: (profile.chip_count || 0) - betAmount, // Chips after bet is subtracted
+                    isAllIn: playerStatus === 'all-in',
+                    isFolded: playerStatus === 'folded',
+                    rank: rank,
+                    maxWinnings: 0, // To be calculated in next step
+                    winningsReceived: 0 // How much they actually receive from the pot
+                });
+
+                // Initialize chipChanges: represents the change from their initial chip count.
+                // So, if they bet, this starts as -betAmount.
+                chipChanges[playerId] = -betAmount;
+            }
+
+            // Recalculate totalPot strictly from playersData to ensure consistency
+            totalPot = playersData.reduce((sum, p) => sum + p.betAmount, 0);
+
+            console.log("--- Phase 1 Complete ---");
+            console.log("Calculated Total Pot (sum of player bets in hand):", totalPot);
+            console.log("Players Data (after bets debited):", JSON.parse(JSON.stringify(playersData)));
+            console.log("Initial Chip Changes (bets debited):", JSON.parse(JSON.stringify(chipChanges)));
+
+            // --- Step 2: Calculate Maximum Possible Winnings per Player ---
+            const activePlayersForMaxWinnings = playersData.filter(p => !p.isFolded && p.betAmount > 0);
+
+            playersData.forEach(player => {
+                if (player.isFolded || player.betAmount <= 0) {
+                    player.maxWinnings = 0;
+                    return;
+                }
+                let calculatedMaxWinnings = player.betAmount; // Start with own bet back
+                activePlayersForMaxWinnings.forEach(otherPlayer => {
+                    if (player.uid !== otherPlayer.uid) {
+                        calculatedMaxWinnings += Math.min(player.betAmount, otherPlayer.betAmount);
+                    }
+                });
+                player.maxWinnings = calculatedMaxWinnings;
             });
+            console.log("Players Data (with Max Winnings calculated):", JSON.parse(JSON.stringify(playersData)));
+
+            // --- Step 3 & 4: Implement Ranked Distribution Logic (Iterating Ranks 1, 2, 3) ---
+            for (let rank = 1; rank <= 3; rank++) {
+                if (totalPot < 0.01) { // Use a small threshold for floating point comparisons, effectively zero
+                    console.log(`Rank ${rank} processing skipped: totalPot is negligible or zero.`);
+                    break;
+                }
+
+                // Get winners for the current rank from the overall playersData list
+                const currentRankWinnersInput = playersData.filter(p => p.rank === rank && !p.isFolded && p.betAmount > 0);
+
+                // Further filter to only those who can still win something
+                const currentRankWinners = currentRankWinnersInput.filter(w => w.winningsReceived < w.maxWinnings);
+
+
+                if (currentRankWinners.length === 0) {
+                    console.log(`No eligible winners found for Rank ${rank} (either no winners, or they've already won their max).`);
+                    continue;
+                }
+
+                console.log(`Processing Rank ${rank}. Initial totalPot for this rank: ${totalPot}. Eligible Winners:`,
+                    currentRankWinners.map(w => ({name: w.name, maxCanStillWin: w.maxWinnings - w.winningsReceived}) ));
+
+                // Calculate total "claim" this rank has on the current pot, capped by individual maxWinnings remaining.
+                let totalClaimFromPotByThisRank = 0;
+                currentRankWinners.forEach(winner => {
+                    totalClaimFromPotByThisRank += Math.max(0, winner.maxWinnings - winner.winningsReceived);
+                });
+                // Round to avoid precision issues with sum of proportions later
+                totalClaimFromPotByThisRank = Math.round(totalClaimFromPotByThisRank * 100) / 100;
+
+
+                // The actual amount this rank can take from the pot is limited by the pot itself.
+                let actualPotSliceForThisRank = Math.min(totalPot, totalClaimFromPotByThisRank);
+                actualPotSliceForThisRank = Math.round(actualPotSliceForThisRank * 100) / 100;
+
+                console.log(`Rank ${rank}: Total claim by current rank winners is ${totalClaimFromPotByThisRank}. Actual pot slice for this rank (min of totalPot, totalClaim): ${actualPotSliceForThisRank}`);
+
+                let sumAwardedThisRank = 0; // How much is actually given out from actualPotSliceForThisRank
+                let awardsList = []; // Store {uid, amount} to handle rounding later
+
+                if (actualPotSliceForThisRank > 0) {
+                    if (totalClaimFromPotByThisRank === 0) {
+                        console.warn(`Rank ${rank}: actualPotSliceForThisRank > 0 but totalClaimFromPotByThisRank is 0. Skipping distribution for this rank.`);
+                    } else if (totalClaimFromPotByThisRank <= actualPotSliceForThisRank) {
+                        // Enough in the pot slice for everyone in this rank to get what they still can win.
+                        currentRankWinners.forEach(winner => {
+                            let awardAmount = Math.max(0, winner.maxWinnings - winner.winningsReceived);
+                            // Ensure we don't try to award more than what's available in the slice for this rank
+                            awardAmount = Math.min(awardAmount, actualPotSliceForThisRank - sumAwardedThisRank);
+                            awardAmount = Math.max(0, awardAmount); // Final check
+                            awardsList.push({uid: winner.uid, amount: awardAmount});
+                            sumAwardedThisRank += awardAmount;
+                        });
+                    } else {
+                        // Not enough in actualPotSliceForThisRank to satisfy all claims. Distribute proportionally.
+                        currentRankWinners.forEach(winner => {
+                            let individualRemainingMaxWin = Math.max(0, winner.maxWinnings - winner.winningsReceived);
+                            let proportion = individualRemainingMaxWin / totalClaimFromPotByThisRank;
+                            let awardAmount = actualPotSliceForThisRank * proportion; // Keep precision for now
+                            awardsList.push({uid: winner.uid, amount: awardAmount});
+                            // sumAwardedThisRank is calculated after rounding
+                        });
+
+                        // Round and sum awards, then adjust for any discrepancy with actualPotSliceForThisRank
+                        let roundedSum = 0;
+                        awardsList.forEach(award => {
+                            award.amount = Math.round(award.amount * 100) / 100; // Round to 2 decimal places (cents)
+                            roundedSum += award.amount;
+                        });
+                        sumAwardedThisRank = roundedSum;
+
+                        let diff = Math.round((actualPotSliceForThisRank - sumAwardedThisRank) * 100) / 100;
+                        if (Math.abs(diff) >= 0.01 && awardsList.length > 0) {
+                           console.log(`Rank ${rank}: Adjusting for rounding difference of ${diff} from proportional distribution.`);
+                           awardsList.sort((a,b) => b.amount - a.amount); // Give to largest award first
+
+                           for (let i = 0; i < awardsList.length; i++) {
+                               const winnerToAdjust = playersData.find(p=>p.uid === awardsList[i].uid);
+                               const currentAwardForWinner = awardsList[i].amount;
+                               const canReceiveMore = (winnerToAdjust.maxWinnings - winnerToAdjust.winningsReceived) - currentAwardForWinner;
+
+                               if (diff > 0) { // Need to award more
+                                   let adjustment = Math.min(diff, canReceiveMore);
+                                   awardsList[i].amount += adjustment;
+                                   sumAwardedThisRank += adjustment;
+                                   diff -= adjustment;
+                                    if (Math.abs(diff) < 0.01) break;
+                               } else { // Need to award less (diff is negative)
+                                   let adjustment = Math.max(diff, -currentAwardForWinner); // Don't make award negative
+                                   awardsList[i].amount += adjustment;
+                                   sumAwardedThisRank += adjustment;
+                                   diff -= adjustment;
+                                   if (Math.abs(diff) < 0.01) break;
+                               }
+                           }
+                        }
+                    }
+                }
+
+                // Apply the final calculated awards
+                awardsList.forEach(awardEntry => {
+                    const winner = playersData.find(p => p.uid === awardEntry.uid);
+                    if (winner && awardEntry.amount > 0) {
+                        chipChanges[winner.uid] += awardEntry.amount;
+                        winner.winningsReceived += awardEntry.amount;
+                        console.log(`Rank ${rank} Winner ${winner.name} awarded: ${awardEntry.amount}. Total received now: ${winner.winningsReceived}. ChipChange now: ${chipChanges[winner.uid]}`);
+                    }
+                });
+
+                totalPot -= sumAwardedThisRank; // Reduce actual total pot by sum awarded
+                totalPot = Math.round(totalPot * 100) / 100; // Keep totalPot tidy
+                console.log(`End of Rank ${rank}. Sum awarded this rank: ${sumAwardedThisRank}. Remaining totalPot: ${totalPot}`);
+            }
+            console.log("--- Ranked Distribution Complete ---");
+
+            // --- Step 5: Final Validation Checks ---
+            // 5.1: Remaining Pot Check
+            if (totalPot > 0.01) { // Using a small threshold for floating point residuals
+                const errorMessage = `Error: Pot has ${totalPot} remaining after distribution. This should be zero. Changes will not be saved.`;
+                console.error(errorMessage);
+                showMessage(errorMessage, "error");
+                // Do not proceed with Firestore updates. UI will remain, admin can cancel or re-evaluate.
+                // No explicit "revert" of in-memory changes is needed if we simply don't save.
+                return;
+            } else {
+                // Ensure totalPot is exactly 0 if it's very close, to prevent tiny negative values if logic was imperfect.
+                totalPot = 0;
+            }
+            console.log("Validation: Remaining pot check passed (pot is ~0).");
+
+            // 5.2: Chip Conservation Check
+            let finalTotalRoomChips = 0;
+            playersData.forEach(player => {
+                // chipChanges[player.uid] is the NET change.
+                // So, final chips = initialChipCount + chipChanges[player.uid]
+                finalTotalRoomChips += (player.initialChipCount + (chipChanges[player.uid] || 0));
+            });
+            finalTotalRoomChips = Math.round(finalTotalRoomChips * 100) / 100; // Round for comparison
+
+            console.log("Validation: Initial Total Room Chips:", initialTotalRoomChips);
+            console.log("Validation: Final Total Room Chips calculated:", finalTotalRoomChips);
+
+            if (Math.abs(initialTotalRoomChips - finalTotalRoomChips) > 0.01) { // Allow for small rounding diffs
+                const conservationErrorMessage = `Error: Chip conservation failed! Initial: ${initialTotalRoomChips}, Final: ${finalTotalRoomChips}. Changes will not be saved.`;
+                console.error(conservationErrorMessage);
+                showMessage(conservationErrorMessage, "error");
+                return; // Do not proceed
+            }
+            console.log("Validation: Chip conservation check passed.");
+
+            // ---Firestore Update moved to a separate block for clarity after validation---
+            // Update Firestore
+            showMessage("Updating chip counts in Firestore...", "info");
+            const updates = [];
+            for (const playerId in chipChanges) {
+                const change = chipChanges[playerId];
+                const playerProfileRef = doc(userProfilesCollectionRef, playerId);
+
+                // It's safer to fetch the current chip count before updating,
+                // but for this exercise, we'll assume `allFirebaseUsersData` is reasonably fresh.
+                // A transaction would be ideal here.
+                const profile = allFirebaseUsersData.find(p => p.uid === playerId);
+                if (profile) {
+                    const newChipCount = Math.round((profile.chip_count || 0) + change);
+                    updates.push(updateDoc(playerProfileRef, { chip_count: Math.max(0, newChipCount) })); // Ensure chips don't go negative
+                    console.log(`Updating ${profile.displayName}'s chips from ${profile.chip_count} by ${change} to ${newChipCount}`);
+                } else {
+                    console.error(`Could not find profile for player UID ${playerId} to update chips.`);
+                }
+            }
+
+            try {
+                await Promise.all(updates);
+                showMessage("Chip counts updated successfully!", "success");
+
+                // --- Process Investments after chip updates ---
+                console.log("Processing investments after chip updates...");
+                const activeInvestments = firestoreInvestments.filter(inv => inv.status === 'active');
+                const investmentUpdates = [];
+
+                for (const investment of activeInvestments) {
+                    let newHandsRemaining = (investment.handsRemaining || 0) - 1;
+                    let investmentUpdateData = {
+                        handsRemaining: newHandsRemaining,
+                        lastUpdated: serverTimestamp()
+                    };
+
+                    if (newHandsRemaining <= 0) {
+                        console.log(`Investment ID ${investment.id} payout triggered.`);
+                        investmentUpdateData.status = 'completed';
+                        investmentUpdateData.completedDate = serverTimestamp();
+                        investmentUpdateData.payoutDate = serverTimestamp(); // Assuming payout happens immediately on completion
+
+                        const investeeProfileRef = doc(userProfilesCollectionRef, investment.investeeUid);
+                        const investorProfileRef = doc(userProfilesCollectionRef, investment.investorUid);
+
+                        try {
+                            // It's critical to get the LATEST chip counts for investee for payout calculation
+                            const investeeSnap = await getDoc(investeeProfileRef);
+                            const investorSnap = await getDoc(investorProfileRef);
+
+                            if (!investeeSnap.exists() || !investorSnap.exists()) {
+                                console.error(`Cannot process payout for investment ${investment.id}: Investor or Investee profile not found.`);
+                                investmentUpdateData.status = 'payout_error_profile_missing'; // Mark error
+                            } else {
+                                const investeeData = investeeSnap.data();
+                                const investorData = investorSnap.data();
+                                const investeeTotalChips = investeeData.chip_count || 0;
+
+                                const payoutPercent = investment.requestedPayoutPercent || 0;
+                                // payoutAmount is floored, so it's an integer.
+                                const payoutAmount = Math.floor((investeeTotalChips * payoutPercent) / 100);
+
+                                if (payoutAmount > 0) {
+                                    // Chip counts should already be integers from previous roundings.
+                                    // Applying Math.round() here is for robustness and explicitness.
+                                    const newInvesteeChips = Math.round(investeeTotalChips - payoutAmount);
+                                    const newInvestorChips = Math.round((investorData.chip_count || 0) + payoutAmount);
+
+                                    // Update investee profile (subtract payout)
+                                    investmentUpdates.push(updateDoc(investeeProfileRef, { chip_count: Math.max(0, newInvesteeChips) }));
+                                    // Update investor profile (add payout)
+                                    investmentUpdates.push(updateDoc(investorProfileRef, { chip_count: Math.max(0, newInvestorChips) }));
+
+                                    investmentUpdateData.actualPayoutAmount = payoutAmount; // Record actual payout (which is an integer)
+                                    console.log(`Investment ${investment.id}: Payout of ${payoutAmount} from ${investment.investeeName} to ${investment.investorName}.`);
+                                    showMessage(`Investment Payout: ${payoutAmount} from ${investment.investeeName} to ${investment.investorName}.`, "info");
+                                } else {
+                                    console.log(`Investment ${investment.id}: Payout amount is 0 or less. No chips transferred.`);
+                                    investmentUpdateData.actualPayoutAmount = 0;
+                                }
+                            }
+                        } catch (payoutError) {
+                            console.error(`Error during payout calculation/profile fetch for investment ${investment.id}:`, payoutError);
+                            investmentUpdateData.status = 'payout_error_calculation'; // Mark error
+                        }
+                    }
+                    investmentUpdates.push(updateDoc(doc(investmentsCollectionRef, investment.id), investmentUpdateData));
+                }
+
+                if (investmentUpdates.length > 0) {
+                    await Promise.all(investmentUpdates);
+                    console.log("Investment processing complete.");
+                    showMessage("Active investments processed.", "success");
+                }
+                // --- End Investment Processing ---
+
+
+                // Finally, reset the room
+                await adminRoomReset(roomId); // This will set bets to 0 and statuses to pending
+            } catch (error) {
+                console.error("Error updating chip counts, processing investments, or resetting room:", error);
+                showMessage(`Failed during post-hand processing: ${error.message}`, "error");
+            }
+
+            toggleUpdateChipsPanel(roomId, false); // Hide panel after submission
         }
 
         // --- Bulk User Management Functions ---
@@ -4475,7 +4430,7 @@
             myInvestmentsAsInvesteeList.innerHTML = '';
 
             if (acceptedInvestments.length === 0) {
-                myInvestmentsAsInvesteeList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have not accepted any investments.</p>';
+                myInvestmentsAsInvesteeList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have no active or completed investments as an investee.</p>';
                 return;
             }
 
