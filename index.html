@@ -987,12 +987,12 @@
 //                return;
 //            }
 
-            const currentUid = auth.currentUser.uid;
+//            const currentUid = auth.currentUser.uid;
 //            messagesPlayerList.innerHTML = '';
 
-            const filteredPlayers = allFirebaseUsersData
-                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled' && formatDisplayName(user).toLowerCase().includes(filter.toLowerCase()))
-                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
+//            const filteredPlayers = allFirebaseUsersData
+//                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled' && formatDisplayName(user).toLowerCase().includes(filter.toLowerCase()))
+//                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
 
 //            const filteredGroups = firestoreMessages.filter(msg => msg.isGroup && msg.members.includes(currentUid) && msg.name.toLowerCase().includes(filter.toLowerCase()));
 
@@ -1018,176 +1018,176 @@
 //            });
 //        }
 
-        messagesButton.addEventListener('click', () => {
-            console.log("Messages button clicked.");
-            if (auth.currentUser) {
-                showPanel(messagesPanel);
-                renderMessagesPlayerList();
-            } else {
-                showMessage("Please log in to access messages.", "info");
-                showPanel(loginButtonsContainer);
-            }
-        });
+//        messagesButton.addEventListener('click', () => {
+//            console.log("Messages button clicked.");
+//            if (auth.currentUser) {
+//                showPanel(messagesPanel);
+//                renderMessagesPlayerList();
+//            } else {
+//                showMessage("Please log in to access messages.", "info");
+//                showPanel(loginButtonsContainer);
+//            }
+//        });
 
-        playerSearchInput.addEventListener('input', (e) => {
-            renderMessagesPlayerList(e.target.value);
-        });
+//        playerSearchInput.addEventListener('input', (e) => {
+//            renderMessagesPlayerList(e.target.value);
+//        });
 
-        let currentChatId = null;
-        let unsubscribeMessagesListener = null;
+//        let currentChatId = null;
+//        let unsubscribeMessagesListener = null;
 
-        onSnapshot(query(messagesCollectionRef), (snapshot) => {
-            console.log("Messages collection snapshot received.");
-            firestoreMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log("Firestore messages:", firestoreMessages);
-            renderMessagesPlayerList(playerSearchInput.value);
-        });
+//        onSnapshot(query(messagesCollectionRef), (snapshot) => {
+//            console.log("Messages collection snapshot received.");
+//            firestoreMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+//            console.log("Firestore messages:", firestoreMessages);
+//            renderMessagesPlayerList(playerSearchInput.value);
+//        });
 
-        messagesPlayerList.addEventListener('click', (e) => {
-            console.log("Player list clicked.");
-            if (e.target.matches('[data-uid]')) {
-                const otherPlayerId = e.target.getAttribute('data-uid');
-                const otherPlayerName = e.target.textContent;
-                const currentUid = auth.currentUser.uid;
+//        messagesPlayerList.addEventListener('click', (e) => {
+//            console.log("Player list clicked.");
+//            if (e.target.matches('[data-uid]')) {
+//                const otherPlayerId = e.target.getAttribute('data-uid');
+//                const otherPlayerName = e.target.textContent;
+//                const currentUid = auth.currentUser.uid;
 
-                currentChatId = [currentUid, otherPlayerId].sort().join('_');
+//                currentChatId = [currentUid, otherPlayerId].sort().join('_');
 
-                chatHeader.innerHTML = `<h4 class="text-lg font-semibold text-gray-800">${otherPlayerName}</h4>`;
+//                chatHeader.innerHTML = `<h4 class="text-lg font-semibold text-gray-800">${otherPlayerName}</h4>`;
 
-                if (unsubscribeMessagesListener) {
-                    unsubscribeMessagesListener();
-                }
+//                if (unsubscribeMessagesListener) {
+//                    unsubscribeMessagesListener();
+//                }
 
-                const q = query(collection(db, `messages/${currentChatId}/messages`), orderBy("timestamp"));
-                unsubscribeMessagesListener = onSnapshot(q, (snapshot) => {
-                    chatMessages.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const message = doc.data();
-                        const messageDiv = document.createElement('div');
-                        messageDiv.textContent = message.text;
-                        const isSender = message.senderId === currentUid;
-                        messageDiv.className = `p-2 my-1 rounded-lg ${isSender ? 'bg-blue-500 text-white self-end' : 'bg-gray-200 text-gray-800 self-start'}`;
-                        chatMessages.appendChild(messageDiv);
-                    });
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                });
-            } else if (e.target.matches('[data-gid]')) {
-                const groupId = e.target.getAttribute('data-gid');
-                const groupName = e.target.textContent;
-                const currentUid = auth.currentUser.uid;
+//                const q = query(collection(db, `messages/${currentChatId}/messages`), orderBy("timestamp"));
+//                unsubscribeMessagesListener = onSnapshot(q, (snapshot) => {
+//                    chatMessages.innerHTML = '';
+//                    snapshot.forEach(doc => {
+//                        const message = doc.data();
+//                        const messageDiv = document.createElement('div');
+//                        messageDiv.textContent = message.text;
+//                        const isSender = message.senderId === currentUid;
+//                        messageDiv.className = `p-2 my-1 rounded-lg ${isSender ? 'bg-blue-500 text-white self-end' : 'bg-gray-200 text-gray-800 self-start'}`;
+//                        chatMessages.appendChild(messageDiv);
+//                    });
+//                    chatMessages.scrollTop = chatMessages.scrollHeight;
+//                });
+//            } else if (e.target.matches('[data-gid]')) {
+//                const groupId = e.target.getAttribute('data-gid');
+//                const groupName = e.target.textContent;
+//                const currentUid = auth.currentUser.uid;
 
-                currentChatId = groupId;
+//                currentChatId = groupId;
 
-                chatHeader.innerHTML = `<h4 class="text-lg font-semibold text-gray-800">${groupName}</h4>`;
+//                chatHeader.innerHTML = `<h4 class="text-lg font-semibold text-gray-800">${groupName}</h4>`;
 
-                if (unsubscribeMessagesListener) {
-                    unsubscribeMessagesListener();
-                }
+//                if (unsubscribeMessagesListener) {
+//                    unsubscribeMessagesListener();
+//                }
 
-                const q = query(collection(db, `messages/${currentChatId}/messages`), orderBy("timestamp"));
-                unsubscribeMessagesListener = onSnapshot(q, (snapshot) => {
-                    chatMessages.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const message = doc.data();
-                        const messageDiv = document.createElement('div');
-                        const senderName = allFirebaseUsersData.find(p => p.uid === message.senderId)?.displayName || 'Unknown';
-                        messageDiv.textContent = `${senderName}: ${message.text}`;
-                        const isSender = message.senderId === currentUid;
-                        messageDiv.className = `p-2 my-1 rounded-lg ${isSender ? 'bg-blue-500 text-white self-end' : 'bg-gray-200 text-gray-800 self-start'}`;
-                        chatMessages.appendChild(messageDiv);
-                    });
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                });
-            }
-        });
+//                const q = query(collection(db, `messages/${currentChatId}/messages`), orderBy("timestamp"));
+//                unsubscribeMessagesListener = onSnapshot(q, (snapshot) => {
+//                    chatMessages.innerHTML = '';
+//                    snapshot.forEach(doc => {
+//                        const message = doc.data();
+//                        const messageDiv = document.createElement('div');
+//                        const senderName = allFirebaseUsersData.find(p => p.uid === message.senderId)?.displayName || 'Unknown';
+//                        messageDiv.textContent = `${senderName}: ${message.text}`;
+//                        const isSender = message.senderId === currentUid;
+//                        messageDiv.className = `p-2 my-1 rounded-lg ${isSender ? 'bg-blue-500 text-white self-end' : 'bg-gray-200 text-gray-800 self-start'}`;
+//                        chatMessages.appendChild(messageDiv);
+//                    });
+//                    chatMessages.scrollTop = chatMessages.scrollHeight;
+//                });
+//            }
+//        });
 
-        sendMessageButton.addEventListener('click', async () => {
-            const text = messageInput.value.trim();
-            if (text && currentChatId) {
-                await addDoc(collection(db, `messages/${currentChatId}/messages`), {
-                    text,
-                    senderId: auth.currentUser.uid,
-                    timestamp: serverTimestamp()
-                });
-                messageInput.value = '';
-            }
-        });
+//        sendMessageButton.addEventListener('click', async () => {
+//            const text = messageInput.value.trim();
+//            if (text && currentChatId) {
+//                await addDoc(collection(db, `messages/${currentChatId}/messages`), {
+//                    text,
+//                    senderId: auth.currentUser.uid,
+//                    timestamp: serverTimestamp()
+//                });
+//                messageInput.value = '';
+//            }
+//        });
 
-        createGroupChatButton.addEventListener('click', () => {
-            createGroupChatModal.classList.remove('hidden');
-            renderGroupPlayerList();
-        });
+//        createGroupChatButton.addEventListener('click', () => {
+//            createGroupChatModal.classList.remove('hidden');
+//            renderGroupPlayerList();
+//        });
 
-        cancelGroupButton.addEventListener('click', () => {
-            createGroupChatModal.classList.add('hidden');
-        });
+//        cancelGroupButton.addEventListener('click', () => {
+//            createGroupChatModal.classList.add('hidden');
+//        });
 
-        function renderGroupPlayerList() {
-            if (!groupPlayerList || !auth.currentUser) return;
+//        function renderGroupPlayerList() {
+//            if (!groupPlayerList || !auth.currentUser) return;
 
-            const currentUid = auth.currentUser.uid;
-            groupPlayerList.innerHTML = '';
+//            const currentUid = auth.currentUser.uid;
+//            groupPlayerList.innerHTML = '';
 
-            const availablePlayers = allFirebaseUsersData
-                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled')
-                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
+//            const availablePlayers = allFirebaseUsersData
+//                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled')
+//                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
 
-            if (availablePlayers.length === 0) {
-                groupPlayerList.innerHTML = '<p class="text-gray-500 p-3 text-center">No other players available.</p>';
-                return;
-            }
+//            if (availablePlayers.length === 0) {
+//                groupPlayerList.innerHTML = '<p class="text-gray-500 p-3 text-center">No other players available.</p>';
+//                return;
+//            }
 
-            availablePlayers.forEach(user => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'flex items-center p-2 hover:bg-gray-100 rounded-md';
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = user.uid;
-                checkbox.className = 'mr-2';
-                playerDiv.appendChild(checkbox);
-                const label = document.createElement('label');
-                label.textContent = formatDisplayName(user);
-                playerDiv.appendChild(label);
-                groupPlayerList.appendChild(playerDiv);
-            });
-        }
+//            availablePlayers.forEach(user => {
+//                const playerDiv = document.createElement('div');
+//                playerDiv.className = 'flex items-center p-2 hover:bg-gray-100 rounded-md';
+//                const checkbox = document.createElement('input');
+//                checkbox.type = 'checkbox';
+//                checkbox.value = user.uid;
+//                checkbox.className = 'mr-2';
+//                playerDiv.appendChild(checkbox);
+//                const label = document.createElement('label');
+//                label.textContent = formatDisplayName(user);
+//                playerDiv.appendChild(label);
+//                groupPlayerList.appendChild(playerDiv);
+//            });
+//        }
 
-        createGroupButton.addEventListener('click', async () => {
-            const groupName = groupNameInput.value.trim();
-            if (!groupName) {
-                showMessage("Please enter a group name.", "error");
-                return;
-            }
+//        createGroupButton.addEventListener('click', async () => {
+//            const groupName = groupNameInput.value.trim();
+//            if (!groupName) {
+//                showMessage("Please enter a group name.", "error");
+//                return;
+//            }
 
-            const selectedPlayers = Array.from(groupPlayerList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-            if (selectedPlayers.length === 0) {
-                showMessage("Please select at least one player.", "error");
-                return;
-            }
+//            const selectedPlayers = Array.from(groupPlayerList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+//            if (selectedPlayers.length === 0) {
+//                showMessage("Please select at least one player.", "error");
+//                return;
+//            }
+//
+//            const members = [auth.currentUser.uid, ...selectedPlayers];
+//            const groupChatId = `group_${new Date().getTime()}`;
 
-            const members = [auth.currentUser.uid, ...selectedPlayers];
-            const groupChatId = `group_${new Date().getTime()}`;
+//            await setDoc(doc(db, "messages", groupChatId), {
+//                name: groupName,
+//                members: members,
+//                isGroup: true
+//            });
 
-            await setDoc(doc(db, "messages", groupChatId), {
-                name: groupName,
-                members: members,
-                isGroup: true
-            });
+//            createGroupChatModal.classList.add('hidden');
+//            groupNameInput.value = '';
+//        });
 
-            createGroupChatModal.classList.add('hidden');
-            groupNameInput.value = '';
-        });
+//        function showMessage(message, type = 'error') {
+//            messageBox.textContent = message;
+//            messageBox.className = `message-box ${type} w-full`;
+//            messageBox.classList.remove('hidden');
+//            setTimeout(hideMessage, 5000); // Auto-hide messages after 5 seconds
+//        }
 
-        function showMessage(message, type = 'error') {
-            messageBox.textContent = message;
-            messageBox.className = `message-box ${type} w-full`;
-            messageBox.classList.remove('hidden');
-            setTimeout(hideMessage, 5000); // Auto-hide messages after 5 seconds
-        }
-
-        function hideMessage() {
-            messageBox.classList.add('hidden');
-        }
+//        function hideMessage() {
+//            messageBox.classList.add('hidden');
+//        }
 
         // --- Helper function to format display names ---
         function formatDisplayName(user) {
