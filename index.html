@@ -949,7 +949,7 @@
                 {el: playerJoinRoomPanel, name: "playerJoinRoomPanel"},
                 {el: gameRoomViewPanel, name: "gameRoomViewPanel"},
                 {el: investmentsPanel, name: "investmentsPanel"}, // Added Investments Panel
-                {el: messagesPanel, name: "messagesPanel"},
+//                {el: messagesPanel, name: "messagesPanel"},
                 {el: loadingIndicator, name: "loadingIndicator"}
             ];
 
@@ -2353,7 +2353,7 @@
             openAccountManagementButton.classList.remove('hidden');
             joinGameButton.classList.remove('hidden'); // Show for all logged-in users
             investmentsButton.classList.remove('hidden'); // Show Investments button for all logged-in users
-            messagesButton.classList.remove('hidden');
+//            messagesButton.classList.remove('hidden');
 
             if (userHasAdminAccess) {
                 openAdminPanelButton.classList.remove('hidden');
@@ -2447,7 +2447,7 @@
             openAdminPanelButton.classList.add('hidden');
             joinGameButton.classList.add('hidden'); // Hide on logout
             investmentsButton.classList.add('hidden'); // Hide Investments button on logout
-            messagesButton.classList.add('hidden');
+//            messagesButton.classList.add('hidden');
 
             // Hide other content panels that might have been open
             adminPanel.classList.add('hidden');
