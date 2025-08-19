@@ -1178,16 +1178,16 @@
 //            groupNameInput.value = '';
 //        });
 
-//        function showMessage(message, type = 'error') {
-//            messageBox.textContent = message;
-//            messageBox.className = `message-box ${type} w-full`;
-//            messageBox.classList.remove('hidden');
-//            setTimeout(hideMessage, 5000); // Auto-hide messages after 5 seconds
-//        }
+        function showMessage(message, type = 'error') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type} w-full`;
+            messageBox.classList.remove('hidden');
+            setTimeout(hideMessage, 5000); // Auto-hide messages after 5 seconds
+        }
 
-//        function hideMessage() {
-//            messageBox.classList.add('hidden');
-//        }
+        function hideMessage() {
+            messageBox.classList.add('hidden');
+        }
 
         // --- Helper function to format display names ---
         function formatDisplayName(user) {
