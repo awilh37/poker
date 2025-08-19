@@ -656,7 +656,7 @@
             </div>
         </div>
 
-        <!-- Messages Panel (Initially hidden) -->
+        <!-- Messages Panel (Initially hidden)
         <div id="messagesPanel" class="hidden mt-8 p-6 bg-gray-50 rounded-xl shadow-inner w-full max-w-2xl lg:max-w-4xl">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl md:text-3xl font-bold text-gray-700">Messages</h3>
@@ -664,7 +664,7 @@
                     Close
                 </button>
             </div>
-        </div>
+        </div>-->
 
     </div>
 
@@ -793,7 +793,7 @@
 
         // Investments Panel Elements
         const investmentsButton = document.getElementById('investmentsButton');
-        const messagesButton = document.getElementById('messagesButton');
+        //const messagesButton = document.getElementById('messagesButton');
         const investmentsPanel = document.getElementById('investmentsPanel');
         const closeInvestmentsPanelButton = document.getElementById('closeInvestmentsPanelButton');
         const sharesTab = document.getElementById('shares-tab');
@@ -823,14 +823,14 @@
         const myInvestmentsAsInvesteeList = document.getElementById('myInvestmentsAsInvesteeList');
 
         // Messages Panel Elements
-        const messagesPanel = document.getElementById('messagesPanel');
-        const closeMessagesPanelButton = document.getElementById('closeMessagesPanelButton');
-        const playerSearchInput = document.getElementById('playerSearchInput');
-        const messagesPlayerList = document.getElementById('messagesPlayerList');
-        const chatHeader = document.getElementById('chatHeader');
-        const chatMessages = document.getElementById('chatMessages');
-        const messageInput = document.getElementById('messageInput');
-        const sendMessageButton = document.getElementById('sendMessageButton');
+//        const messagesPanel = document.getElementById('messagesPanel');
+//        const closeMessagesPanelButton = document.getElementById('closeMessagesPanelButton');
+//        const playerSearchInput = document.getElementById('playerSearchInput');
+//        const messagesPlayerList = document.getElementById('messagesPlayerList');
+//        const chatHeader = document.getElementById('chatHeader');
+//        const chatMessages = document.getElementById('chatMessages');
+//        const messageInput = document.getElementById('messageInput');
+//        const sendMessageButton = document.getElementById('sendMessageButton');
 
         // Group Chat Modal Elements
         const createGroupChatModal = document.getElementById('createGroupChatModal');
@@ -967,56 +967,56 @@
         }
 
         // --- Messages Panel Event Listeners ---
-        messagesButton.addEventListener('click', () => {
-            if (auth.currentUser) {
-                showPanel(messagesPanel);
-            } else {
-                showMessage("Please log in to access messages.", "info");
-                showPanel(loginButtonsContainer);
-            }
-        });
+//        messagesButton.addEventListener('click', () => {
+//            if (auth.currentUser) {
+//                showPanel(messagesPanel);
+//            } else {
+//                showMessage("Please log in to access messages.", "info");
+//                showPanel(loginButtonsContainer);
+//            }
+//        });
 
-        closeMessagesPanelButton.addEventListener('click', () => {
-            showPanel(null); // Return to neutral view
-        });
+//        closeMessagesPanelButton.addEventListener('click', () => {
+//            showPanel(null); // Return to neutral view
+//        });
 
-        function renderMessagesPlayerList(filter = '') {
-            console.log("Rendering messages player list with filter:", filter);
-            if (!messagesPlayerList || !auth.currentUser) {
-                console.log("Cannot render player list: list element or user not available.");
-                return;
-            }
+//        function renderMessagesPlayerList(filter = '') {
+//            console.log("Rendering messages player list with filter:", filter);
+//            if (!messagesPlayerList || !auth.currentUser) {
+//                console.log("Cannot render player list: list element or user not available.");
+//                return;
+//            }
 
             const currentUid = auth.currentUser.uid;
-            messagesPlayerList.innerHTML = '';
+//            messagesPlayerList.innerHTML = '';
 
             const filteredPlayers = allFirebaseUsersData
                 .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled' && formatDisplayName(user).toLowerCase().includes(filter.toLowerCase()))
                 .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
 
-            const filteredGroups = firestoreMessages.filter(msg => msg.isGroup && msg.members.includes(currentUid) && msg.name.toLowerCase().includes(filter.toLowerCase()));
+//            const filteredGroups = firestoreMessages.filter(msg => msg.isGroup && msg.members.includes(currentUid) && msg.name.toLowerCase().includes(filter.toLowerCase()));
 
-            if (filteredPlayers.length === 0 && filteredGroups.length === 0) {
-                messagesPlayerList.innerHTML = '<p class="text-gray-500 p-3 text-center">No players or groups found.</p>';
-                return;
-            }
+//            if (filteredPlayers.length === 0 && filteredGroups.length === 0) {
+//                messagesPlayerList.innerHTML = '<p class="text-gray-500 p-3 text-center">No players or groups found.</p>';
+//                return;
+//            }
 
-            filteredGroups.forEach(group => {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold';
-                groupDiv.textContent = group.name;
-                groupDiv.setAttribute('data-gid', group.id);
-                messagesPlayerList.appendChild(groupDiv);
-            });
+//            filteredGroups.forEach(group => {
+//                const groupDiv = document.createElement('div');
+//                groupDiv.className = 'p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold';
+//                groupDiv.textContent = group.name;
+//                groupDiv.setAttribute('data-gid', group.id);
+//                messagesPlayerList.appendChild(groupDiv);
+//            });
 
-            filteredPlayers.forEach(user => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'p-2 hover:bg-gray-100 cursor-pointer rounded-md';
-                playerDiv.textContent = formatDisplayName(user);
-                playerDiv.setAttribute('data-uid', user.uid);
-                messagesPlayerList.appendChild(playerDiv);
-            });
-        }
+//            filteredPlayers.forEach(user => {
+//                const playerDiv = document.createElement('div');
+//                playerDiv.className = 'p-2 hover:bg-gray-100 cursor-pointer rounded-md';
+//                playerDiv.textContent = formatDisplayName(user);
+//                playerDiv.setAttribute('data-uid', user.uid);
+//                messagesPlayerList.appendChild(playerDiv);
+//            });
+//        }
 
         messagesButton.addEventListener('click', () => {
             console.log("Messages button clicked.");
