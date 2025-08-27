@@ -87,7 +87,7 @@
 
     <!-- Main Login Container -->
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl flex flex-col items-center">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">WPS Login</h2>
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">WPS 3.0</h2>
 
         <!-- Loading Indicator -->
         <div id="loadingIndicator" class="hidden flex items-center justify-center p-4">
@@ -692,7 +692,7 @@
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp, 'wps-database'); // Using named database 'wps-database'
+        const db = getFirestore(firebaseApp, '(default)'); // Using named database 'wps-database'
         const auth = getAuth(firebaseApp);
         const googleProvider = new GoogleAuthProvider();
 
