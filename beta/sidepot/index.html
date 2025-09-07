@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WPS 3.0</title>
+    <title>WPS SidePot</title>
     <!-- Tailwind CSS CDN for easy styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -87,7 +87,7 @@
 
     <!-- Main Login Container -->
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl flex flex-col items-center">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">WPS 3.0</h2>
+        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">WPS SidePot</h2>
 
         <!-- Loading Indicator -->
         <div id="loadingIndicator" class="hidden flex items-center justify-center p-4">
@@ -235,7 +235,7 @@
             <div class="mt-6 border-t pt-4 space-y-3">
                 <h4 class="text-lg font-semibold text-gray-700 text-center mb-2">Bulk User Actions</h4>
                 <button id="setAllPlayerChipsButton" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
-                    Set All Player Chips
+                    Set All Player Chips to 5
                 </button>
                 <button id="forceLogoutAllUsersButton" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
                     Force Logout All Users (Except Self)
@@ -4035,7 +4035,7 @@
                 return;
             }
 
-            const newChipAmountString = prompt("Enter the chip amount to set for ALL users (including admins/owners):");
+            const newChipAmountString = 5;
             if (newChipAmountString === null) return; // User cancelled
 
             let newChipAmount = parseInt(newChipAmountString, 10);
