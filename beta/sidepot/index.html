@@ -82,6 +82,13 @@
             border: 1px solid #cbd5e1;
         }
     </style>
+
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <script>
+        function onSubmit(token) {
+        document.getElementById("demo-form").submit();
+        }
+    </script>
 </head>
 <body class="bg-gray-100 font-inter">
 
@@ -670,6 +677,12 @@
         </div>-->
 
     </div>
+
+    <button class="g-recaptcha" 
+        data-sitekey="6LdLLMIrAAAAABxuLcLCsaPMzLoihwb-Zt8F3A_O" 
+        data-callback='onSubmit' 
+        data-action='submit'>Submit
+    </button>
 
     <script type="module">
         // Import Firebase SDKs
