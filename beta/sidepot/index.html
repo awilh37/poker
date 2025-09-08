@@ -237,6 +237,9 @@
                 <button id="setAllPlayerChipsButton" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
                     Set All Player Chips to 5
                 </button>
+                <button id="setAllPlayerChipsButton0" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
+                    Set All Player Chips to 0
+                </button>
                 <button id="forceLogoutAllUsersButton" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
                     Force Logout All Users (Except Self)
                 </button>
@@ -786,6 +789,8 @@
 
         // Bulk User Action Buttons
         const setAllPlayerChipsButton = document.getElementById('setAllPlayerChipsButton');
+        const setAllPlayerChipsButton0 = document.getElementById('setAllPlayerChipsButton0');
+
         const forceLogoutAllUsersButton = document.getElementById('forceLogoutAllUsersButton');
 
         // Bulk Game Room Action Button
@@ -2878,6 +2883,8 @@
 
         // Event listeners for Bulk User Actions
         setAllPlayerChipsButton.addEventListener('click', handleSetAllPlayerChips); // Re-enabled
+        setAllPlayerChipsButton0.addEventListener('click', handleSetAllPlayerChips); // Re-enabled
+
         forceLogoutAllUsersButton.addEventListener('click', handleForceLogoutAllUsers); // Re-enabled
 
         // Event listener for Bulk Game Room Actions
@@ -4036,6 +4043,53 @@
             }
 
             const newChipAmountString = 5;
+            if (newChipAmountString === null) return; // User cancelled
+
+            let newChipAmount = parseInt(newChipAmountString, 10);
+            if (isNaN(newChipAmount) || newChipAmount < 0) {
+                showMessage("Invalid chip amount. Please enter a non-negative number.", 'error');
+                return;
+            }
+            newChipAmount = Math.round(newChipAmount); // Round the input amount
+
+            if (!confirm(`Are you sure you want to set the chip count of ALL USERS (INCLUDING ADMINS/OWNERS) to ${newChipAmount}? This cannot be undone.`)) {
+                return;
+            }
+
+            showMessage("Updating chip counts for all users...", 'info');
+            try {
+                const querySnapshot = await getDocs(userProfilesCollectionRef);
+                const updates = [];
+                let usersUpdatedCount = 0;
+
+                querySnapshot.forEach(docSnap => {
+                    const userProfile = docSnap.data();
+                    // No exclusion based on role, update all users.
+                    updates.push(updateDoc(doc(userProfilesCollectionRef, userProfile.uid), { chip_count: newChipAmount }));
+                    usersUpdatedCount++;
+                });
+
+                await Promise.all(updates);
+                if (usersUpdatedCount > 0) {
+                    showMessage(`Successfully set chip count to ${newChipAmount} for ${usersUpdatedCount} users.`, 'success');
+                } else {
+                    showMessage(`No users found to update (this should ideally not happen if there are users).`, 'info');
+                }
+                // The user roles table will update via Firestore listener if visible.
+            } catch (error) {
+                console.error("Error setting all player chips:", error);
+                showMessage(`Failed to update all chip counts: ${error.message}`, 'error');
+            }
+        }
+
+
+        async function handleSetAllPlayerChips0() {
+            if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) {
+                showMessage("You do not have permission for this action.", 'error');
+                return;
+            }
+
+            const newChipAmountString = 0;
             if (newChipAmountString === null) return; // User cancelled
 
             let newChipAmount = parseInt(newChipAmountString, 10);
