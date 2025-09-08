@@ -89,6 +89,14 @@
         document.getElementById("demo-form").submit();
         }
     </script>
+
+    <button 
+        class="g-recaptcha" 
+        data-sitekey="6LdLLMIrAAAAABxuLcLCsaPMzLoihwb-Zt8F3A_O" 
+        data-callback='onSubmit' 
+        data-action='submit'>
+    Submit
+    </button>
 </head>
 <body class="bg-gray-100 font-inter">
 
@@ -110,13 +118,8 @@
             <button
                 type="button"
                 id="googleLoginButton"
-                class="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-                class="g-recaptcha" 
-                data-sitekey="6LdLLMIrAAAAABxuLcLCsaPMzLoihwb-Zt8F3A_O" 
-                data-callback='onSubmit' 
-                data-action='submit'>
-    
-                >
+                class="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
+
                 <!-- Google Icon SVG -->
                 <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12.0001 4.5V7.5L17.2501 7.5C17.0279 8.65312 16.3989 9.69736 15.4883 10.4514C14.5776 11.2054 13.4357 11.6212 12.2501 11.6212C9.40006 11.6212 6.99999 9.40871 6.99999 6.55871C6.99999 3.70871 9.40006 1.49621 12.2501 1.49621C13.6874 1.49621 14.9754 2.05267 15.9388 2.92305L18.1565 0.705359C16.5912 -0.80332 14.4754 -1.54716e-07 12.2501 -1.54716e-07C7.26627 -1.54716e-07 3.00006 4.26627 3.00006 9.25006C3.00006 14.2338 7.26627 18.5 12.2501 18.5C14.6738 18.5 16.6346 17.6534 18.0626 16.1436C19.5398 14.6338 19.9999 12.3501 19.9999 9.94006C19.9999 9.25006 19.9312 8.57506 19.8001 7.92506L12.0001 7.92506V4.5Z" fill="#fff"/>
