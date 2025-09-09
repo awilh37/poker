@@ -709,7 +709,7 @@
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp, '(default)'); // Using named database 'wps-database'
+        const db = getFirestore(firebaseApp, 'sidepot'); // Using named database 'sidepot'
         const auth = getAuth(firebaseApp);
         const googleProvider = new GoogleAuthProvider();
 
