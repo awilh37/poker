@@ -805,7 +805,7 @@
         const deleteAllGameRoomsButton = document.getElementById('deleteAllGameRoomsButton');
 
         // Investments Panel Elements
-        const investmentsButton = document.getElementById('investmentsButton');
+        // const investmentsButton = document.getElementById('investmentsButton');
         //const messagesButton = document.getElementById('messagesButton');
         const investmentsPanel = document.getElementById('investmentsPanel');
         const closeInvestmentsPanelButton = document.getElementById('closeInvestmentsPanelButton');
@@ -2365,7 +2365,7 @@
             logoutButton.classList.remove('hidden');
             openAccountManagementButton.classList.remove('hidden');
             joinGameButton.classList.remove('hidden'); // Show for all logged-in users
-            investmentsButton.classList.remove('hidden'); // Show Investments button for all logged-in users
+            // investmentsButton.classList.remove('hidden'); // Show Investments button for all logged-in users
 //            messagesButton.classList.remove('hidden');
 
             if (userHasAdminAccess) {
@@ -2459,7 +2459,7 @@
             openAccountManagementButton.classList.add('hidden');
             openAdminPanelButton.classList.add('hidden');
             joinGameButton.classList.add('hidden'); // Hide on logout
-            investmentsButton.classList.add('hidden'); // Hide Investments button on logout
+            // investmentsButton.classList.add('hidden'); // Hide Investments button on logout
 //            messagesButton.classList.add('hidden');
 
             // Hide other content panels that might have been open
@@ -4183,23 +4183,23 @@
         }
 
         // --- Investments Panel Event Listeners ---
-        investmentsButton.addEventListener('click', () => {
-            if (auth.currentUser) {
-                showPanel(investmentsPanel);
-                // Default to showing the 'Shares' tab
-                activateInvestmentsTab(sharesTab, sharesContent);
-            } else {
-                showMessage("Please log in to access investments.", "info");
-                showPanel(loginButtonsContainer);
-            }
-        });
+//        investmentsButton.addEventListener('click', () => {
+//            if (auth.currentUser) {
+//                showPanel(investmentsPanel);
+//                // Default to showing the 'Shares' tab
+//                activateInvestmentsTab(sharesTab, sharesContent);
+//            } else {
+//                showMessage("Please log in to access investments.", "info");
+//                showPanel(loginButtonsContainer);
+//            }
+//        });
 
-        closeInvestmentsPanelButton.addEventListener('click', () => {
-            showPanel(null); // Return to neutral view
-        });
+//        closeInvestmentsPanelButton.addEventListener('click', () => {
+//            showPanel(null); // Return to neutral view
+//        });
 
-        sharesTab.addEventListener('click', () => activateInvestmentsTab(sharesTab, sharesContent));
-        offersTab.addEventListener('click', () => activateInvestmentsTab(offersTab, offersContent));
+//        sharesTab.addEventListener('click', () => activateInvestmentsTab(sharesTab, sharesContent));
+//        offersTab.addEventListener('click', () => activateInvestmentsTab(offersTab, offersContent));
 
         function activateInvestmentsTab(activeTabButton, activeTabContent) {
             // Ensure elements exist before manipulating them
@@ -4538,183 +4538,183 @@
         }
         
         // Update investmentsButton listener to call populateInvestmentPlayerSelect
-        if (investmentsButton) {
-            investmentsButton.addEventListener('click', () => {
-                if (auth.currentUser) {
-                    showPanel(investmentsPanel);
-                    // Default to showing the 'Shares' tab and populate its specific content
-                    activateInvestmentsTab(sharesTab, sharesContent);
-                    populateInvestmentPlayerSelect(); 
-                } else {
-                    showMessage("Please log in to access investments.", "info");
-                    showPanel(loginButtonsContainer);
-                }
-            });
-        }
+//        if (investmentsButton) {
+//            investmentsButton.addEventListener('click', () => {
+//                if (auth.currentUser) {
+//                    showPanel(investmentsPanel);
+//                    // Default to showing the 'Shares' tab and populate its specific content
+//                    activateInvestmentsTab(sharesTab, sharesContent);
+//                    populateInvestmentPlayerSelect(); 
+//                } else {
+//                    showMessage("Please log in to access investments.", "info");
+//                    showPanel(loginButtonsContainer);
+//                }
+//            });
+//        }
 
         // Update tab click listeners to also populate necessary data
-        if (sharesTab) {
-            sharesTab.addEventListener('click', () => {
-                activateInvestmentsTab(sharesTab, sharesContent);
-                if (auth.currentUser) {
-                    populateInvestmentPlayerSelect(); // For the offer form on Shares tab
-                    renderMySharesList(); // Re-render to ensure buttons are fresh if data changed
-                }
-            });
-        }
-        if (offersTab) {
-            offersTab.addEventListener('click', () => {
-                activateInvestmentsTab(offersTab, offersContent);
-                if (auth.currentUser) {
-                    renderIncomingOffersList(); // Re-render to ensure buttons are fresh
-                    renderMyInvestmentsAsInvesteeList();
-                }
-            });
-        }
+//        if (sharesTab) {
+//            sharesTab.addEventListener('click', () => {
+//                activateInvestmentsTab(sharesTab, sharesContent);
+//                if (auth.currentUser) {
+//                    populateInvestmentPlayerSelect(); // For the offer form on Shares tab
+//                    renderMySharesList(); // Re-render to ensure buttons are fresh if data changed
+//                }
+//            });
+//        }
+//        if (offersTab) {
+//            offersTab.addEventListener('click', () => {
+//                activateInvestmentsTab(offersTab, offersContent);
+//                if (auth.currentUser) {
+//                    renderIncomingOffersList(); // Re-render to ensure buttons are fresh
+//                    renderMyInvestmentsAsInvesteeList();
+//                }
+//            });
+//        }
 
         // Event Delegation for Investment Action Buttons
-        if (mySharesList) {
-            mySharesList.addEventListener('click', (event) => {
-                const target = event.target;
-                const investmentId = target.dataset.id;
+//        if (mySharesList) {
+//            mySharesList.addEventListener('click', (event) => {
+//                const target = event.target;
+//                const investmentId = target.dataset.id;
+//
+//                if (!investmentId) return; // Click was not on a button with data-id
+//
+//                if (target.classList.contains('cancel-share-offer-btn')) {
+//                    cancelPendingOffer(investmentId);
+//                } else if (target.classList.contains('edit-share-offer-btn')) {
+//                    editPendingOffer(investmentId);
+//                }
+//                // Removed logic for accept-amendment-btn and reject-amendment-btn
+//            });
+//        }
 
-                if (!investmentId) return; // Click was not on a button with data-id
+//        if (incomingOffersList) {
+//            incomingOffersList.addEventListener('click', (event) => {
+//                const target = event.target;
+//                const investmentId = target.dataset.id;
+//
+//                if (!investmentId) return; // Click was not on a button with data-id
+//
+//                if (target.classList.contains('accept-investment-btn')) {
+//                    acceptInvestment(investmentId);
+//                } else if (target.classList.contains('decline-investment-btn')) {
+//                    declineInvestment(investmentId);
+//                } else if (target.classList.contains('amend-investment-btn')) { // Added this condition
+//                    amendInvestment(investmentId);
+//                }
+//            });
+//        }
 
-                if (target.classList.contains('cancel-share-offer-btn')) {
-                    cancelPendingOffer(investmentId);
-                } else if (target.classList.contains('edit-share-offer-btn')) {
-                    editPendingOffer(investmentId);
-                }
-                // Removed logic for accept-amendment-btn and reject-amendment-btn
-            });
-        }
+//        async function acceptInvestment(investmentId) {
+//            if (!auth.currentUser) {
+//                showMessage("You must be logged in to accept an investment.", "error");
+//                return;
+//            }
+//            const currentUid = auth.currentUser.uid;
+//            const investment = firestoreInvestments.find(inv => inv.id === investmentId);
+//
+//            if (!investment) {
+//                showMessage("Investment offer not found.", "error");
+//                return;
+//            }
+//
+//            if (investment.investeeUid !== currentUid) {
+//                showMessage("You are not authorized to accept this investment.", "error");
+//                return;
+//            }
+//
+//            if (investment.status !== 'pending_investee_action') {
+//                showMessage(`This investment is no longer pending your action (Status: ${investment.status}).`, "info");
+//                return;
+//            }
+//
+//            showMessage("Accepting investment offer...", "info");
 
-        if (incomingOffersList) {
-            incomingOffersList.addEventListener('click', (event) => {
-                const target = event.target;
-                const investmentId = target.dataset.id;
+//            const investorProfileRef = doc(userProfilesCollectionRef, investment.investorUid);
+//            const investeeProfileRef = doc(userProfilesCollectionRef, currentUid); // currentUid is investeeUid
+//            const investmentDocRef = doc(investmentsCollectionRef, investmentId);
+//
+//            try {
+//                const investorSnap = await getDoc(investorProfileRef);
+//                const investeeSnap = await getDoc(investeeProfileRef);
+//
+//                if (!investorSnap.exists()) {
+//                    showMessage("Investor profile not found. Cannot complete acceptance.", "error");
+//                    // Optionally, update investment status to an error state here
+//                    await updateDoc(investmentDocRef, { status: 'error_investor_profile_missing', lastUpdated: serverTimestamp() });
+//                    return;
+ //               }
+ //               if (!investeeSnap.exists()) {
+ //                   // Should not happen if current user is the investee and logged in
+ //                   showMessage("Your profile not found. Cannot complete acceptance.", "error");
+ //                   return;
+ //               }
+//
+//                const investorData = investorSnap.data();
+//                const investeeData = investeeSnap.data();
+//                const investorCurrentChips = investorData.chip_count || 0;
+//                const offerAmount = investment.offerAmount;
+//
+//                if (investorCurrentChips < offerAmount) {
+//                    showMessage("Investor does not have sufficient chips to fund this investment. The offer may be void.", "error");
+//                    // Update investment status to reflect this issue
+//                    await updateDoc(investmentDocRef, { status: 'cancelled_insufficient_funds', lastUpdated: serverTimestamp() });
+//                    return;
+//                }
+//
+//                const batch = writeBatch(db);
+//
+//                const investorInitialChips = investorData.chip_count || 0;
+//                const investeeInitialChips = investeeData.chip_count || 0;
+//
+//                let potentialInvestorNewChips = investorInitialChips - offerAmount;
+//                let potentialInvesteeNewChips = investeeInitialChips + offerAmount;
+//
+//                let finalInvestorChips = Math.round(potentialInvestorNewChips);
+//                let finalInvesteeChips = Math.round(potentialInvesteeNewChips);
+//
+//                const investorHadHalf = Math.abs(potentialInvestorNewChips % 1) === 0.5;
+//                const investeeHadHalf = Math.abs(potentialInvesteeNewChips % 1) === 0.5;
 
-                if (!investmentId) return; // Click was not on a button with data-id
-
-                if (target.classList.contains('accept-investment-btn')) {
-                    acceptInvestment(investmentId);
-                } else if (target.classList.contains('decline-investment-btn')) {
-                    declineInvestment(investmentId);
-                } else if (target.classList.contains('amend-investment-btn')) { // Added this condition
-                    amendInvestment(investmentId);
-                }
-            });
-        }
-
-        async function acceptInvestment(investmentId) {
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to accept an investment.", "error");
-                return;
-            }
-            const currentUid = auth.currentUser.uid;
-            const investment = firestoreInvestments.find(inv => inv.id === investmentId);
-
-            if (!investment) {
-                showMessage("Investment offer not found.", "error");
-                return;
-            }
-
-            if (investment.investeeUid !== currentUid) {
-                showMessage("You are not authorized to accept this investment.", "error");
-                return;
-            }
-
-            if (investment.status !== 'pending_investee_action') {
-                showMessage(`This investment is no longer pending your action (Status: ${investment.status}).`, "info");
-                return;
-            }
-
-            showMessage("Accepting investment offer...", "info");
-
-            const investorProfileRef = doc(userProfilesCollectionRef, investment.investorUid);
-            const investeeProfileRef = doc(userProfilesCollectionRef, currentUid); // currentUid is investeeUid
-            const investmentDocRef = doc(investmentsCollectionRef, investmentId);
-
-            try {
-                const investorSnap = await getDoc(investorProfileRef);
-                const investeeSnap = await getDoc(investeeProfileRef);
-
-                if (!investorSnap.exists()) {
-                    showMessage("Investor profile not found. Cannot complete acceptance.", "error");
-                    // Optionally, update investment status to an error state here
-                    await updateDoc(investmentDocRef, { status: 'error_investor_profile_missing', lastUpdated: serverTimestamp() });
-                    return;
-                }
-                if (!investeeSnap.exists()) {
-                    // Should not happen if current user is the investee and logged in
-                    showMessage("Your profile not found. Cannot complete acceptance.", "error");
-                    return;
-                }
-
-                const investorData = investorSnap.data();
-                const investeeData = investeeSnap.data();
-                const investorCurrentChips = investorData.chip_count || 0;
-                const offerAmount = investment.offerAmount;
-
-                if (investorCurrentChips < offerAmount) {
-                    showMessage("Investor does not have sufficient chips to fund this investment. The offer may be void.", "error");
-                    // Update investment status to reflect this issue
-                    await updateDoc(investmentDocRef, { status: 'cancelled_insufficient_funds', lastUpdated: serverTimestamp() });
-                    return;
-                }
-
-                const batch = writeBatch(db);
-
-                const investorInitialChips = investorData.chip_count || 0;
-                const investeeInitialChips = investeeData.chip_count || 0;
-
-                let potentialInvestorNewChips = investorInitialChips - offerAmount;
-                let potentialInvesteeNewChips = investeeInitialChips + offerAmount;
-
-                let finalInvestorChips = Math.round(potentialInvestorNewChips);
-                let finalInvesteeChips = Math.round(potentialInvesteeNewChips);
-
-                const investorHadHalf = Math.abs(potentialInvestorNewChips % 1) === 0.5;
-                const investeeHadHalf = Math.abs(potentialInvesteeNewChips % 1) === 0.5;
-
-                if (investorHadHalf && investeeHadHalf) {
-                    console.log("Applying .5 random rounding for investment acceptance.");
-                    if (Math.random() < 0.5) { // Investor rounds towards zero, Investee rounds away from zero
-                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.floor(potentialInvestorNewChips) : Math.ceil(potentialInvestorNewChips);
-                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.ceil(potentialInvesteeNewChips) : Math.floor(potentialInvesteeNewChips);
-                    } else { // Investor rounds away from zero, Investee rounds towards zero
-                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.ceil(potentialInvestorNewChips) : Math.floor(potentialInvestorNewChips);
-                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.floor(potentialInvesteeNewChips) : Math.ceil(potentialInvesteeNewChips);
-                    }
-                }
-
+//                if (investorHadHalf && investeeHadHalf) {
+//                    console.log("Applying .5 random rounding for investment acceptance.");
+//                    if (Math.random() < 0.5) { // Investor rounds towards zero, Investee rounds away from zero
+//                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.floor(potentialInvestorNewChips) : Math.ceil(potentialInvestorNewChips);
+//                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.ceil(potentialInvesteeNewChips) : Math.floor(potentialInvesteeNewChips);
+//                    } else { // Investor rounds away from zero, Investee rounds towards zero
+//                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.ceil(potentialInvestorNewChips) : Math.floor(potentialInvestorNewChips);
+//                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.floor(potentialInvesteeNewChips) : Math.ceil(potentialInvesteeNewChips);
+//                    }
+//                }
+//
                 // Ensure chip counts are not negative after rounding
-                finalInvestorChips = Math.max(0, finalInvestorChips);
-                finalInvesteeChips = Math.max(0, finalInvesteeChips);
+//                finalInvestorChips = Math.max(0, finalInvestorChips);
+//                finalInvesteeChips = Math.max(0, finalInvesteeChips);
 
                 // 1. Update investor's chips
-                batch.update(investorProfileRef, { chip_count: finalInvestorChips });
+ //               batch.update(investorProfileRef, { chip_count: finalInvestorChips });
 
                 // 2. Update investee's chips
-                batch.update(investeeProfileRef, { chip_count: finalInvesteeChips });
+//                batch.update(investeeProfileRef, { chip_count: finalInvesteeChips });
 
                 // 3. Update investment document
-                batch.update(investmentDocRef, {
-                    status: 'active',
-                    acceptedDate: serverTimestamp(),
-                    handsRemaining: investment.handsForPayout, // Initialize handsRemaining
-                    lastUpdated: serverTimestamp()
-                });
+//                batch.update(investmentDocRef, {
+//                    status: 'active',
+//                    acceptedDate: serverTimestamp(),
+//                    handsRemaining: investment.handsForPayout, // Initialize handsRemaining
+//                    lastUpdated: serverTimestamp()
+//                });
 
-                await batch.commit();
-                showMessage("Investment accepted successfully! Chips transferred.", "success");
-                // UI will update via Firestore listener automatically.
+//                await batch.commit();
+//                showMessage("Investment accepted successfully! Chips transferred.", "success");
+//                // UI will update via Firestore listener automatically.
 
-            } catch (error) {
-                console.error("Error accepting investment:", error);
-                showMessage(`Failed to accept investment: ${error.message}`, "error");
-            }
-        }
+//            } catch (error) {
+//                console.error("Error accepting investment:", error);
+//                showMessage(`Failed to accept investment: ${error.message}`, "error");
+//            }
+//        }
 
     </script>
 </body>
