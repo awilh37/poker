@@ -2371,7 +2371,7 @@
             logoutButton.classList.remove('hidden');
             openAccountManagementButton.classList.remove('hidden');
             joinGameButton.classList.remove('hidden'); // Show for all logged-in users
-            investmentsButton.classList.remove('hidden'); // Show Investments button for all logged-in users
+            // investmentsButton.classList.remove('hidden'); // Show Investments button for all logged-in users
 //            messagesButton.classList.remove('hidden');
 
             if (userHasAdminAccess) {
@@ -2465,7 +2465,7 @@
             openAccountManagementButton.classList.add('hidden');
             openAdminPanelButton.classList.add('hidden');
             joinGameButton.classList.add('hidden'); // Hide on logout
-            investmentsButton.classList.add('hidden'); // Hide Investments button on logout
+            // investmentsButton.classList.add('hidden'); // Hide Investments button on logout
 //            messagesButton.classList.add('hidden');
 
             // Hide other content panels that might have been open
@@ -4237,539 +4237,184 @@
             }
         }
 
-        // --- Investments Panel Event Listeners ---
-        investmentsButton.addEventListener('click', () => {
-            if (auth.currentUser) {
-                showPanel(investmentsPanel);
-                // Default to showing the 'Shares' tab
-                activateInvestmentsTab(sharesTab, sharesContent);
-            } else {
-                showMessage("Please log in to access investments.", "info");
-                showPanel(loginButtonsContainer);
-            }
-        });
-
-        closeInvestmentsPanelButton.addEventListener('click', () => {
-            showPanel(null); // Return to neutral view
-        });
-
-        sharesTab.addEventListener('click', () => activateInvestmentsTab(sharesTab, sharesContent));
-        offersTab.addEventListener('click', () => activateInvestmentsTab(offersTab, offersContent));
-
-        function activateInvestmentsTab(activeTabButton, activeTabContent) {
-            // Ensure elements exist before manipulating them
-            const tabs = [sharesTab, offersTab].filter(Boolean);
-            const contents = [sharesContent, offersContent].filter(Boolean);
-
-            tabs.forEach(tab => {
-                tab.classList.remove('border-blue-500', 'text-blue-600', 'text-gray-800', 'font-semibold'); // Active classes
-                tab.classList.add('hover:text-gray-600', 'hover:border-gray-300', 'text-gray-500'); // Inactive classes
-                tab.setAttribute('aria-selected', 'false');
-            });
-            contents.forEach(content => {
-                content.classList.add('hidden');
-            });
-
-            if (activeTabButton) {
-                activeTabButton.classList.add('border-blue-500', 'text-blue-600', 'text-gray-800', 'font-semibold');
-                activeTabButton.classList.remove('hover:text-gray-600', 'hover:border-gray-300', 'text-gray-500');
-                activeTabButton.setAttribute('aria-selected', 'true');
-            }
-
-            if (activeTabContent) {
-                activeTabContent.classList.remove('hidden');
-            }
-        }
-
-        // --- Investment Logic Functions ---
-
-        function populateInvestmentPlayerSelect() {
-            if (!investPlayerSelect || !auth.currentUser) {
-                if (investPlayerSelect) investPlayerSelect.innerHTML = '<option value="">Login to see players</option>';
-                return;
-            }
-
-            const currentUid = auth.currentUser.uid;
-            investPlayerSelect.innerHTML = '<option value="">Select a player to invest in...</option>'; 
-
-            const availablePlayers = allFirebaseUsersData
-                .filter(user => user.uid !== currentUid && getCurrentUserRole(user.uid) !== 'disabled')
-                .sort((a, b) => (formatDisplayName(a) || '').localeCompare(formatDisplayName(b) || ''));
-
-            if (availablePlayers.length === 0) {
-                investPlayerSelect.innerHTML = '<option value="">No other players available</option>';
-            } else {
-                availablePlayers.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.uid;
-                    option.textContent = formatDisplayName(user);
-                    investPlayerSelect.appendChild(option);
-                });
-            }
-            
-            const currentUserProfile = allFirebaseUsersData.find(p => p.uid === currentUid);
-            if (currentUserProfile && maxInvestableChips) {
-                const userChipCount = currentUserProfile.chip_count || 0;
-                maxInvestableChips.textContent = userChipCount;
-                if (investChipAmount) {
-                    investChipAmount.max = userChipCount;
-                    investChipAmount.placeholder = `e.g., ${Math.min(100, Math.floor(userChipCount / 2) || 1 )}`; // Dynamic placeholder
-                }
-            } else if (maxInvestableChips) {
-                maxInvestableChips.textContent = 'N/A';
-                 if (investChipAmount) {
-                    investChipAmount.removeAttribute('max');
-                    investChipAmount.placeholder = 'e.g., 100';
-                }
-            }
-        }
-
-        async function handleOfferInvestment(event) {
-            event.preventDefault();
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to offer an investment.", "error");
-                return;
-            }
-
-            const investorUid = auth.currentUser.uid;
-            const investorProfile = allFirebaseUsersData.find(p => p.uid === investorUid);
-            if (!investorProfile) {
-                showMessage("Could not find your user profile.", "error");
-                return;
-            }
-            const investorName = formatDisplayName(investorProfile);
-            const investorChips = investorProfile.chip_count || 0;
-
-            const investeeUid = investPlayerSelect.value;
-            const offerAmount = parseInt(investChipAmount.value, 10);
-            const requestedPayoutPercent = parseInt(investPayoutPercent.value, 10);
-            const handsForPayout = parseInt(investHandsPayout.value, 10);
-
-            if (!investeeUid) {
-                showMessage("Please select a player to invest in.", "error");
-                return;
-            }
-            if (isNaN(offerAmount) || offerAmount <= 0) {
-                showMessage("Please enter a valid, positive chip amount to send.", "error");
-                return;
-            }
-            if (offerAmount > investorChips) {
-                showMessage("You do not have enough chips to make this offer.", "error");
-                return;
-            }
-            if (isNaN(requestedPayoutPercent) || requestedPayoutPercent <= 0 || requestedPayoutPercent > 100) {
-                showMessage("Requested payout percentage must be between 1 and 100.", "error");
-                return;
-            }
-            if (isNaN(handsForPayout) || handsForPayout <= 0) {
-                showMessage("Please enter a valid, positive number of hands for payout.", "error");
-                return;
-            }
-
-            const investeeProfile = allFirebaseUsersData.find(p => p.uid === investeeUid);
-            if (!investeeProfile) {
-                showMessage("Could not find the selected player's profile. They may have logged out.", "error");
-                populateInvestmentPlayerSelect(); // Refresh player list
-                return;
-            }
-            const investeeName = formatDisplayName(investeeProfile);
-
-            const investmentData = {
-                investorUid,
-                investorName,
-                investeeUid,
-                investeeName,
-                offerAmount,
-                requestedPayoutPercent,
-                handsForPayout,
-                status: "pending_investee_action", // Initial status
-                offerDate: serverTimestamp(),
-                acceptedDate: null,
-                completedDate: null,
-                payoutDate: null,
-                handsRemaining: handsForPayout, 
-                investorMessage: "",
-                investeeMessage: "",
-                originalOfferId: null,
-                lastUpdated: serverTimestamp()
-            };
-
-            showMessage("Submitting investment offer...", "info");
-            try {
-                await addDoc(investmentsCollectionRef, investmentData);
-                showMessage("Investment offer submitted successfully!", "success");
-                offerInvestmentForm.reset(); // Clear the form
-                populateInvestmentPlayerSelect(); // Refresh chip count and potentially placeholder
-                // The list of 'My Shares' will update via a Firestore listener (to be added).
-            } catch (error) {
-                console.error("Error submitting investment offer:", error);
-                showMessage(`Failed to submit offer: ${error.message}`, "error");
-            }
-        }
-        
-        // Add event listener for the investment offer form submission
-        if (offerInvestmentForm) {
-            offerInvestmentForm.addEventListener('submit', handleOfferInvestment);
-        }
-
-        function formatDate(timestamp) {
-            if (!timestamp || !timestamp.seconds) return 'N/A';
-            return new Date(timestamp.seconds * 1000).toLocaleDateString();
-        }
-        
-        function renderMySharesList() {
-            if (!mySharesList || !auth.currentUser) return;
-            const currentUid = auth.currentUser.uid;
-        
-            const userShares = firestoreInvestments.filter(inv => inv.investorUid === currentUid);
-            mySharesList.innerHTML = ''; // Clear previous list
-        
-            if (userShares.length === 0) {
-                mySharesList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have not offered any shares.</p>';
-                return;
-            }
-        
-            userShares.sort((a, b) => (b.offerDate?.seconds || 0) - (a.offerDate?.seconds || 0)); // Newest first
-        
-            userShares.forEach(share => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'p-3 border rounded-md bg-gray-50 shadow-sm';
-                
-                let statusText = share.status.replace(/_/g, ' '); // Prettify status
-                statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1);
-                let statusColor = 'bg-gray-200 text-gray-800'; // Default
-                if (share.status === 'pending_investee_action' || share.status === 'pending_investor_action') statusColor = 'bg-yellow-200 text-yellow-800';
-                else if (share.status === 'active') statusColor = 'bg-green-200 text-green-800';
-                else if (share.status === 'declined' || share.status === 'cancelled') statusColor = 'bg-red-200 text-red-800';
-                else if (share.status === 'completed') statusColor = 'bg-blue-200 text-blue-800';
-
-                // Placeholder for ROI calculation
-                let roiText = "N/A";
-                if (share.status === 'active') {
-                    const investeeProfile = allFirebaseUsersData.find(p => p.uid === share.investeeUid);
-                    if (investeeProfile && typeof investeeProfile.chip_count === 'number') {
-                        const investeeChips = investeeProfile.chip_count;
-                        const estimatedReturn = (investeeChips * (share.requestedPayoutPercent || 0)) / 100;
-                        roiText = `${Math.round(estimatedReturn)} chips (Est.)`;
-                    } else {
-                        roiText = "Calculating (Investee data pending)...";
-                    }
-                } else if (share.status === 'completed') {
-                    roiText = `${Math.round(share.actualPayoutAmount || 0)} chips (Paid)`;
-                }
-
-                itemDiv.innerHTML = `
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="font-semibold text-gray-800">Investment in: <span class="font-normal">${share.investeeName || 'N/A'}</span></p>
-                        <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${statusText}</span>
-                    </div>
-                    <p class="text-sm text-gray-600">Offered: <span class="font-medium">${share.offerAmount} chips</span></p>
-                    <p class="text-sm text-gray-600">Requested Payout: <span class="font-medium">${share.requestedPayoutPercent}%</span></p>
-                    <p class="text-sm text-gray-600">Target Hands: <span class="font-medium">${share.handsForPayout}</span></p>
-                    <p class="text-sm text-gray-600">Offered Date: <span class="font-medium">${formatDate(share.offerDate)}</span></p>
-                    ${share.status === 'active' ? `<p class="text-sm text-gray-600">Hands Remaining: <span class="font-medium">${share.handsRemaining}</span></p>` : ''}
-                    ${share.status === 'active' || share.status === 'completed' ? `<p class="text-sm text-gray-600">Return on Investment (ROI): <span class="font-medium">${roiText}</span></p>` : ''}
-                    ${share.investeeMessage && (share.status === 'pending_investor_action' || share.status === 'declined_by_investee' || statusText.toLowerCase().includes('rejected')) ? `<div class="mt-2 p-2 bg-orange-100 border-l-4 border-orange-500 text-orange-700 text-xs"><p><strong>Investee Message:</strong> ${share.investeeMessage}</p></div>` : ''}
-                    ${share.investorMessage && (share.status === 'pending_investee_action') ? `<div class="mt-2 p-2 bg-blue-100 border-l-4 border-blue-500 text-blue-700 text-xs"><p><strong>Your Last Message (cleared on edit):</strong> ${share.investorMessage}</p></div>` : ''}
-                    ${share.investeeMessage && (share.status === 'pending_investee_action') ? `<div class="mt-2 p-2 bg-orange-100 border-l-4 border-orange-500 text-orange-700 text-xs"><p><strong>Investee Feedback:</strong> ${share.investeeMessage}</p></div>` : ''}
-                    <div class="mt-2 space-x-2">
-                        ${(share.status === 'pending_investee_action') ? `
-                            <button data-id="${share.id}" class="edit-share-offer-btn text-xs bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded">Edit Offer</button>
-                            <button data-id="${share.id}" class="cancel-share-offer-btn text-xs bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded">Cancel Offer</button>
-                        ` : ''}
-                         <!-- No more pending_investor_action specific buttons here for simplified flow -->
-                    </div>
-                `;
-                mySharesList.appendChild(itemDiv);
-            });
-            // Add event listeners for new buttons (edit, cancel, view message) after rendering
-            // This will be done in a separate step or when wiring up specific actions.
-        }
-
-        function renderIncomingOffersList() {
-            if (!incomingOffersList || !auth.currentUser) return;
-            const currentUid = auth.currentUser.uid;
-
-            const receivedOffers = firestoreInvestments.filter(inv => inv.investeeUid === currentUid && (inv.status === 'pending_investee_action' || inv.status === 'pending_investor_action'));
-            incomingOffersList.innerHTML = ''; 
-        
-            if (receivedOffers.length === 0) {
-                incomingOffersList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have no incoming investment offers.</p>';
-                return;
-            }
-        
-            receivedOffers.sort((a, b) => (b.offerDate?.seconds || 0) - (a.offerDate?.seconds || 0));
-        
-            receivedOffers.forEach(offer => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'p-3 border rounded-md bg-gray-50 shadow-sm';
-
-                let statusText = offer.status.replace(/_/g, ' ');
-                statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1);
-                 let statusColor = 'bg-yellow-200 text-yellow-800'; // Default for pending
-
-                itemDiv.innerHTML = `
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="font-semibold text-gray-800">Offer from: <span class="font-normal">${offer.investorName || 'N/A'}</span></p>
-                        <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${statusText}</span>
-                    </div>
-                    <p class="text-sm text-gray-600">Offering: <span class="font-medium">${offer.offerAmount} chips</span></p>
-                    <p class="text-sm text-gray-600">For Payout: <span class="font-medium">${offer.requestedPayoutPercent}%</span> of your total chips</p>
-                    <p class="text-sm text-gray-600">Payout in: <span class="font-medium">${offer.handsForPayout} hands</span></p>
-                    <p class="text-sm text-gray-600">Date Offered: <span class="font-medium">${formatDate(offer.offerDate)}</span></p>
-                    ${offer.investorMessage && offer.status === 'pending_investee_action' ? `<div class="mt-2 p-2 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 text-xs"><p><strong>Investor Message:</strong> ${offer.investorMessage}</p></div>` : ''}
-                    ${offer.status === 'pending_investee_action' ? `
-                        <div class="mt-3 space-x-2">
-                            <button data-id="${offer.id}" class="accept-investment-btn text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded">Accept</button>
-                            <button data-id="${offer.id}" class="decline-investment-btn text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded">Decline</button>
-                            <button data-id="${offer.id}" class="amend-investment-btn text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded">Amend</button>
-                        </div>
-                    ` : ''}
-                     ${offer.status === 'pending_investor_action' ? `
-                        <div class="mt-2 text-sm text-gray-600">You sent back an amendment. Waiting for investor response.</div>
-                        <div class="mt-1 p-2 bg-blue-100 border-l-4 border-blue-500 text-blue-700 text-xs"><p><strong>Your Message:</strong> ${offer.investeeMessage}</p></div>
-                    ` : ''}
-                `;
-                incomingOffersList.appendChild(itemDiv);
-            });
-            // Add event listeners for accept, decline, amend buttons later.
-        }
-
-        function renderMyInvestmentsAsInvesteeList() {
-            if (!myInvestmentsAsInvesteeList || !auth.currentUser) return;
-            const currentUid = auth.currentUser.uid;
-        
-            const acceptedInvestments = firestoreInvestments.filter(inv => inv.investeeUid === currentUid && (inv.status === 'active' || inv.status === 'completed'));
-            myInvestmentsAsInvesteeList.innerHTML = ''; 
-        
-            if (acceptedInvestments.length === 0) {
-                myInvestmentsAsInvesteeList.innerHTML = '<p class="text-gray-500 p-3 text-center">You have no active or completed investments as an investee.</p>';
-                return;
-            }
-        
-            acceptedInvestments.sort((a, b) => (b.acceptedDate?.seconds || b.offerDate?.seconds || 0) - (a.acceptedDate?.seconds || a.offerDate?.seconds || 0));
-        
-            acceptedInvestments.forEach(inv => {
-                const itemDiv = document.createElement('div');
-                let statusText = inv.status.replace(/_/g, ' ');
-                statusText = statusText.charAt(0).toUpperCase() + statusText.slice(1);
-                let itemClasses = 'p-3 border rounded-md shadow-sm';
-                let statusColor = '';
-                 let roiText = "N/A";
-
-                if (inv.status === 'active') {
-                    itemClasses += ' bg-blue-50';
-                    statusColor = 'bg-blue-200 text-blue-800';
-                    // User is the investee, so use their own chip count
-                    const currentUserProfile = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
-                    if (currentUserProfile && typeof currentUserProfile.chip_count === 'number') {
-                        const currentUserChips = currentUserProfile.chip_count;
-                        const estimatedPayout = (currentUserChips * (inv.requestedPayoutPercent || 0)) / 100;
-                        roiText = `${Math.round(estimatedPayout)} chips (Est. Payout)`;
-                    } else {
-                        roiText = "Calculating (Your data pending)...";
-                    }
-                } else if (inv.status === 'completed') {
-                    itemClasses += ' bg-gray-200 opacity-80';
-                    statusColor = 'bg-gray-300 text-gray-700';
-                    roiText = `${Math.round(inv.actualPayoutAmount || 0)} chips (Paid)`;
-                }
-                itemDiv.className = itemClasses;
-        
-                itemDiv.innerHTML = `
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="font-semibold text-gray-800">Investment from: <span class="font-normal">${inv.investorName || 'N/A'}</span></p>
-                        <span class="text-xs px-2 py-0.5 rounded-full ${statusColor}">${statusText}</span>
-                    </div>
-                    <p class="text-sm text-gray-600">Received: <span class="font-medium">${inv.offerAmount} chips</span></p>
-                    <p class="text-sm text-gray-600">Agreed Payout: <span class="font-medium">${inv.requestedPayoutPercent}%</span> of your total chips</p>
-                    ${inv.status === 'active' ? `<p class="text-sm text-gray-600">Hands Remaining for Payout: <span class="font-medium">${inv.handsRemaining}</span></p>` : ''}
-                    <p class="text-sm text-gray-600">Date Accepted: <span class="font-medium">${formatDate(inv.acceptedDate || inv.offerDate)}</span></p>
-                    ${inv.status === 'completed' ? `<p class="text-sm text-gray-600">Date Completed: <span class="font-medium">${formatDate(inv.completedDate)}</span></p>` : ''}
-                    <p class="text-sm text-gray-600">Est. Return / Payout: <span class="font-medium">${roiText}</span></p>
-                `;
-                myInvestmentsAsInvesteeList.appendChild(itemDiv);
-            });
-        }
-        
         // Update investmentsButton listener to call populateInvestmentPlayerSelect
-        if (investmentsButton) {
-            investmentsButton.addEventListener('click', () => {
-                if (auth.currentUser) {
-                    showPanel(investmentsPanel);
-                    // Default to showing the 'Shares' tab and populate its specific content
-                    activateInvestmentsTab(sharesTab, sharesContent);
-                    populateInvestmentPlayerSelect(); 
-                } else {
-                    showMessage("Please log in to access investments.", "info");
-                    showPanel(loginButtonsContainer);
-                }
-            });
-        }
+//        if (investmentsButton) {
+//            investmentsButton.addEventListener('click', () => {
+//                if (auth.currentUser) {
+//                    showPanel(investmentsPanel);
+//                    // Default to showing the 'Shares' tab and populate its specific content
+//                    activateInvestmentsTab(sharesTab, sharesContent);
+//                    populateInvestmentPlayerSelect(); 
+//                } else {
+//                    showMessage("Please log in to access investments.", "info");
+//                    showPanel(loginButtonsContainer);
+//                }
+//            });
+//        }
 
         // Update tab click listeners to also populate necessary data
-        if (sharesTab) {
-            sharesTab.addEventListener('click', () => {
-                activateInvestmentsTab(sharesTab, sharesContent);
-                if (auth.currentUser) {
-                    populateInvestmentPlayerSelect(); // For the offer form on Shares tab
-                    renderMySharesList(); // Re-render to ensure buttons are fresh if data changed
-                }
-            });
-        }
-        if (offersTab) {
-            offersTab.addEventListener('click', () => {
-                activateInvestmentsTab(offersTab, offersContent);
-                if (auth.currentUser) {
-                    renderIncomingOffersList(); // Re-render to ensure buttons are fresh
-                    renderMyInvestmentsAsInvesteeList();
-                }
-            });
-        }
+//        if (sharesTab) {
+//            sharesTab.addEventListener('click', () => {
+//                activateInvestmentsTab(sharesTab, sharesContent);
+//                if (auth.currentUser) {
+//                    populateInvestmentPlayerSelect(); // For the offer form on Shares tab
+//                    renderMySharesList(); // Re-render to ensure buttons are fresh if data changed
+//                }
+//            });
+//        }
+//        if (offersTab) {
+//            offersTab.addEventListener('click', () => {
+//                activateInvestmentsTab(offersTab, offersContent);
+//                if (auth.currentUser) {
+//                    renderIncomingOffersList(); // Re-render to ensure buttons are fresh
+//                    renderMyInvestmentsAsInvesteeList();
+//                }
+//            });
+//        }
 
         // Event Delegation for Investment Action Buttons
-        if (mySharesList) {
-            mySharesList.addEventListener('click', (event) => {
-                const target = event.target;
-                const investmentId = target.dataset.id;
+//        if (mySharesList) {
+//            mySharesList.addEventListener('click', (event) => {
+//                const target = event.target;
+//                const investmentId = target.dataset.id;
+//
+//                if (!investmentId) return; // Click was not on a button with data-id
+//
+//                if (target.classList.contains('cancel-share-offer-btn')) {
+//                    cancelPendingOffer(investmentId);
+//                } else if (target.classList.contains('edit-share-offer-btn')) {
+//                    editPendingOffer(investmentId);
+//                }
+//                // Removed logic for accept-amendment-btn and reject-amendment-btn
+//            });
+//        }
 
-                if (!investmentId) return; // Click was not on a button with data-id
+//        if (incomingOffersList) {
+//            incomingOffersList.addEventListener('click', (event) => {
+//                const target = event.target;
+//                const investmentId = target.dataset.id;
+//
+//                if (!investmentId) return; // Click was not on a button with data-id
+//
+//                if (target.classList.contains('accept-investment-btn')) {
+//                    acceptInvestment(investmentId);
+//                } else if (target.classList.contains('decline-investment-btn')) {
+//                    declineInvestment(investmentId);
+//                } else if (target.classList.contains('amend-investment-btn')) { // Added this condition
+//                    amendInvestment(investmentId);
+//                }
+//            });
+//        }
 
-                if (target.classList.contains('cancel-share-offer-btn')) {
-                    cancelPendingOffer(investmentId);
-                } else if (target.classList.contains('edit-share-offer-btn')) {
-                    editPendingOffer(investmentId);
-                }
-                // Removed logic for accept-amendment-btn and reject-amendment-btn
-            });
-        }
+//        async function acceptInvestment(investmentId) {
+//            if (!auth.currentUser) {
+//                showMessage("You must be logged in to accept an investment.", "error");
+//                return;
+//            }
+//            const currentUid = auth.currentUser.uid;
+//            const investment = firestoreInvestments.find(inv => inv.id === investmentId);
+//
+//            if (!investment) {
+//                showMessage("Investment offer not found.", "error");
+//                return;
+//            }
+//
+//            if (investment.investeeUid !== currentUid) {
+//                showMessage("You are not authorized to accept this investment.", "error");
+//                return;
+//            }
+//
+//            if (investment.status !== 'pending_investee_action') {
+//                showMessage(`This investment is no longer pending your action (Status: ${investment.status}).`, "info");
+//                return;
+//            }
+//
+//            showMessage("Accepting investment offer...", "info");
 
-        if (incomingOffersList) {
-            incomingOffersList.addEventListener('click', (event) => {
-                const target = event.target;
-                const investmentId = target.dataset.id;
+//            const investorProfileRef = doc(userProfilesCollectionRef, investment.investorUid);
+//            const investeeProfileRef = doc(userProfilesCollectionRef, currentUid); // currentUid is investeeUid
+//            const investmentDocRef = doc(investmentsCollectionRef, investmentId);
+//
+//            try {
+//                const investorSnap = await getDoc(investorProfileRef);
+//                const investeeSnap = await getDoc(investeeProfileRef);
+//
+//                if (!investorSnap.exists()) {
+//                    showMessage("Investor profile not found. Cannot complete acceptance.", "error");
+//                    // Optionally, update investment status to an error state here
+//                    await updateDoc(investmentDocRef, { status: 'error_investor_profile_missing', lastUpdated: serverTimestamp() });
+//                    return;
+ //               }
+ //               if (!investeeSnap.exists()) {
+ //                   // Should not happen if current user is the investee and logged in
+ //                   showMessage("Your profile not found. Cannot complete acceptance.", "error");
+ //                   return;
+ //               }
+//
+//                const investorData = investorSnap.data();
+//                const investeeData = investeeSnap.data();
+//                const investorCurrentChips = investorData.chip_count || 0;
+//                const offerAmount = investment.offerAmount;
+//
+//                if (investorCurrentChips < offerAmount) {
+//                    showMessage("Investor does not have sufficient chips to fund this investment. The offer may be void.", "error");
+//                    // Update investment status to reflect this issue
+//                    await updateDoc(investmentDocRef, { status: 'cancelled_insufficient_funds', lastUpdated: serverTimestamp() });
+//                    return;
+//                }
+//
+//                const batch = writeBatch(db);
+//
+//                const investorInitialChips = investorData.chip_count || 0;
+//                const investeeInitialChips = investeeData.chip_count || 0;
+//
+//                let potentialInvestorNewChips = investorInitialChips - offerAmount;
+//                let potentialInvesteeNewChips = investeeInitialChips + offerAmount;
+//
+//                let finalInvestorChips = Math.round(potentialInvestorNewChips);
+//                let finalInvesteeChips = Math.round(potentialInvesteeNewChips);
+//
+//                const investorHadHalf = Math.abs(potentialInvestorNewChips % 1) === 0.5;
+//                const investeeHadHalf = Math.abs(potentialInvesteeNewChips % 1) === 0.5;
 
-                if (!investmentId) return; // Click was not on a button with data-id
-
-                if (target.classList.contains('accept-investment-btn')) {
-                    acceptInvestment(investmentId);
-                } else if (target.classList.contains('decline-investment-btn')) {
-                    declineInvestment(investmentId);
-                } else if (target.classList.contains('amend-investment-btn')) { // Added this condition
-                    amendInvestment(investmentId);
-                }
-            });
-        }
-
-        async function acceptInvestment(investmentId) {
-            if (!auth.currentUser) {
-                showMessage("You must be logged in to accept an investment.", "error");
-                return;
-            }
-            const currentUid = auth.currentUser.uid;
-            const investment = firestoreInvestments.find(inv => inv.id === investmentId);
-
-            if (!investment) {
-                showMessage("Investment offer not found.", "error");
-                return;
-            }
-
-            if (investment.investeeUid !== currentUid) {
-                showMessage("You are not authorized to accept this investment.", "error");
-                return;
-            }
-
-            if (investment.status !== 'pending_investee_action') {
-                showMessage(`This investment is no longer pending your action (Status: ${investment.status}).`, "info");
-                return;
-            }
-
-            showMessage("Accepting investment offer...", "info");
-
-            const investorProfileRef = doc(userProfilesCollectionRef, investment.investorUid);
-            const investeeProfileRef = doc(userProfilesCollectionRef, currentUid); // currentUid is investeeUid
-            const investmentDocRef = doc(investmentsCollectionRef, investmentId);
-
-            try {
-                const investorSnap = await getDoc(investorProfileRef);
-                const investeeSnap = await getDoc(investeeProfileRef);
-
-                if (!investorSnap.exists()) {
-                    showMessage("Investor profile not found. Cannot complete acceptance.", "error");
-                    // Optionally, update investment status to an error state here
-                    await updateDoc(investmentDocRef, { status: 'error_investor_profile_missing', lastUpdated: serverTimestamp() });
-                    return;
-                }
-                if (!investeeSnap.exists()) {
-                    // Should not happen if current user is the investee and logged in
-                    showMessage("Your profile not found. Cannot complete acceptance.", "error");
-                    return;
-                }
-
-                const investorData = investorSnap.data();
-                const investeeData = investeeSnap.data();
-                const investorCurrentChips = investorData.chip_count || 0;
-                const offerAmount = investment.offerAmount;
-
-                if (investorCurrentChips < offerAmount) {
-                    showMessage("Investor does not have sufficient chips to fund this investment. The offer may be void.", "error");
-                    // Update investment status to reflect this issue
-                    await updateDoc(investmentDocRef, { status: 'cancelled_insufficient_funds', lastUpdated: serverTimestamp() });
-                    return;
-                }
-
-                const batch = writeBatch(db);
-
-                const investorInitialChips = investorData.chip_count || 0;
-                const investeeInitialChips = investeeData.chip_count || 0;
-
-                let potentialInvestorNewChips = investorInitialChips - offerAmount;
-                let potentialInvesteeNewChips = investeeInitialChips + offerAmount;
-
-                let finalInvestorChips = Math.round(potentialInvestorNewChips);
-                let finalInvesteeChips = Math.round(potentialInvesteeNewChips);
-
-                const investorHadHalf = Math.abs(potentialInvestorNewChips % 1) === 0.5;
-                const investeeHadHalf = Math.abs(potentialInvesteeNewChips % 1) === 0.5;
-
-                if (investorHadHalf && investeeHadHalf) {
-                    console.log("Applying .5 random rounding for investment acceptance.");
-                    if (Math.random() < 0.5) { // Investor rounds towards zero, Investee rounds away from zero
-                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.floor(potentialInvestorNewChips) : Math.ceil(potentialInvestorNewChips);
-                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.ceil(potentialInvesteeNewChips) : Math.floor(potentialInvesteeNewChips);
-                    } else { // Investor rounds away from zero, Investee rounds towards zero
-                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.ceil(potentialInvestorNewChips) : Math.floor(potentialInvestorNewChips);
-                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.floor(potentialInvesteeNewChips) : Math.ceil(potentialInvesteeNewChips);
-                    }
-                }
-
+//                if (investorHadHalf && investeeHadHalf) {
+//                    console.log("Applying .5 random rounding for investment acceptance.");
+//                    if (Math.random() < 0.5) { // Investor rounds towards zero, Investee rounds away from zero
+//                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.floor(potentialInvestorNewChips) : Math.ceil(potentialInvestorNewChips);
+//                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.ceil(potentialInvesteeNewChips) : Math.floor(potentialInvesteeNewChips);
+//                    } else { // Investor rounds away from zero, Investee rounds towards zero
+//                        finalInvestorChips = (potentialInvestorNewChips > 0) ? Math.ceil(potentialInvestorNewChips) : Math.floor(potentialInvestorNewChips);
+//                        finalInvesteeChips = (potentialInvesteeNewChips > 0) ? Math.floor(potentialInvesteeNewChips) : Math.ceil(potentialInvesteeNewChips);
+//                    }
+//                }
+//
                 // Ensure chip counts are not negative after rounding
-                finalInvestorChips = Math.max(0, finalInvestorChips);
-                finalInvesteeChips = Math.max(0, finalInvesteeChips);
+//                finalInvestorChips = Math.max(0, finalInvestorChips);
+//                finalInvesteeChips = Math.max(0, finalInvesteeChips);
 
                 // 1. Update investor's chips
-                batch.update(investorProfileRef, { chip_count: finalInvestorChips });
+ //               batch.update(investorProfileRef, { chip_count: finalInvestorChips });
 
                 // 2. Update investee's chips
-                batch.update(investeeProfileRef, { chip_count: finalInvesteeChips });
+//                batch.update(investeeProfileRef, { chip_count: finalInvesteeChips });
 
                 // 3. Update investment document
-                batch.update(investmentDocRef, {
-                    status: 'active',
-                    acceptedDate: serverTimestamp(),
-                    handsRemaining: investment.handsForPayout, // Initialize handsRemaining
-                    lastUpdated: serverTimestamp()
-                });
+//                batch.update(investmentDocRef, {
+//                    status: 'active',
+//                    acceptedDate: serverTimestamp(),
+//                    handsRemaining: investment.handsForPayout, // Initialize handsRemaining
+//                    lastUpdated: serverTimestamp()
+//                });
 
-                await batch.commit();
-                showMessage("Investment accepted successfully! Chips transferred.", "success");
-                // UI will update via Firestore listener automatically.
+//                await batch.commit();
+//                showMessage("Investment accepted successfully! Chips transferred.", "success");
+//                // UI will update via Firestore listener automatically.
 
-            } catch (error) {
-                console.error("Error accepting investment:", error);
-                showMessage(`Failed to accept investment: ${error.message}`, "error");
-            }
-        }
+//            } catch (error) {
+//                console.error("Error accepting investment:", error);
+//                showMessage(`Failed to accept investment: ${error.message}`, "error");
+//            }
+//        }
 
     </script>
 </body>
