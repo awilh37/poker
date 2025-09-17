@@ -2284,7 +2284,7 @@
                     email: user.email || null,
                     displayName: user.displayName || user.email || 'Anonymous', // Ensure displayName has a fallback
                     photoURL: user.photoURL || null,
-                    lastLogin: new Date().toISOString(),
+                    lastLogin: new Date().toISOString().slice(0,10),
                     role: userRole // Ensure profile reflects the determined role
                 };
 
