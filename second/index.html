@@ -709,7 +709,7 @@
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
         const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp, '(default)'); // Using named database '(default)'
+        const db = getFirestore(firebaseApp, 'second'); // Using named database 'second'
         const auth = getAuth(firebaseApp);
         const googleProvider = new GoogleAuthProvider();
 
