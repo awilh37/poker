@@ -477,6 +477,7 @@
                     <thead>
                         <tr>
                             <th>Display Name</th>
+                            <th>Role</th>
                             <th>Chip Count</th>
                             <th>Status</th>
                         </tr>
@@ -2120,11 +2121,13 @@
                 users.forEach(user => {
                     const row = userDirectoryTableBody.insertRow(); // Corrected variable name
                     const displayNameCell = row.insertCell();
+                    const roleCell = row.insertCell();
                     const chipCountCell = row.insertCell();
                     const statusCell = row.insertCell();
 
                     displayNameCell.textContent = formatDisplayName(user);
                     chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0';
+                    roleCell.textContent = (typeof user.role === 'text') ? user.role : 'Player';
 
                     // Determine status: In-Game > Online > Offline
                     let userStatus = "Offline";
