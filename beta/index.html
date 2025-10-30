@@ -2127,7 +2127,7 @@
 
                     displayNameCell.textContent = formatDisplayName(user);
                     chipCountCell.textContent = (typeof user.chip_count === 'number') ? user.chip_count : '0';
-                    roleCell.textContent = (typeof user.role === 'text') ? user.role : 'Player';
+                    roleCell.textContent = (typeof user.role === 'string') ? user.role : 'Player';
 
                     // Determine status: In-Game > Online > Offline
                     let userStatus = "Offline";
