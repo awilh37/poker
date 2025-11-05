@@ -1,0 +1,223 @@
+/*
+ * Inter Font (from Google Fonts)
+ * We'll import it here to ensure it's always available.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/*
+ * --- Base Styles ---
+ * Redefining the base look and feel.
+ */
+body {
+    font-family: 'Inter', sans-serif;
+    /* A subtle gradient background for a more modern feel */
+    background-color: #f7faff;
+    background-image: linear-gradient(170deg, #f7faff 0%, #e6f0ff 100%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top */
+    min-height: 100vh;
+    margin: 0;
+    padding: 2rem 1rem; /* More padding for spacing on all screens */
+    box-sizing: border-box;
+    color: #334155; /* Default text color (slate-700) */
+}
+
+/*
+ * --- Main Content Card ---
+ * This is the primary container for all content.
+ * We apply this via the #mainContainer ID in the HTML.
+ */
+#mainContainer {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 1.5rem; /* Larger, softer border radius */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), 0 10px 15px -3px rgba(0, 0, 0, 0.05); /* Softer, deeper shadow */
+    width: 100%;
+    max-width: 48rem; /* Increased max-width (lg) for a more substantial feel */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease-in-out;
+}
+
+/*
+ * --- General Button Styling (Enhanced) ---
+ * We'll use Tailwind for most buttons, but these styles
+ * will refine the panels.
+ */
+
+/*
+ * --- Message Boxes ---
+ * For showing success, error, or info messages.
+ */
+.message-box {
+    padding: 1rem; /* More padding */
+    border-radius: 0.75rem; /* Softer radius */
+    margin-top: 1.5rem;
+    text-align: center;
+    font-weight: 500; /* Medium weight */
+    border-width: 1px;
+    border-style: solid;
+    width: 100%;
+}
+.message-box.error {
+    background-color: #fff1f2; /* (rose-50) */
+    color: #be123c; /* (rose-700) */
+    border-color: #fda4af; /* (rose-300) */
+}
+.message-box.success {
+    background-color: #f0fdf4; /* (green-50) */
+    color: #15803d; /* (green-700) */
+    border-color: #a7f3d0; /* (green-300) */
+}
+.message-box.info {
+    background-color: #f0f9ff; /* (sky-50) */
+    color: #0369a1; /* (sky-700) */
+    border-color: #bae6fd; /* (sky-300) */
+}
+
+/*
+ * --- Panels (Admin, User, Game, etc.) ---
+ * Styling for the collapsible content sections.
+ * We apply this via the .content-panel class.
+ */
+.content-panel {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f8fafc; /* (slate-50) */
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0; /* (slate-200) */
+    width: 100%;
+    text-align: center;
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+
+/*
+ * --- User Management Table ---
+ */
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+}
+.user-table th, .user-table td {
+    border: 1px solid #e2e8f0; /* (slate-200) */
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+}
+.user-table th {
+    background-color: #f1f5f9; /* (slate-100) */
+    color: #0284c7; /* (sky-600) */
+    font-weight: 600; /* Semibold */
+}
+.user-table tr:nth-child(even) {
+    background-color: #ffffff; /* White for even rows */
+}
+.user-table tr:nth-child(odd) {
+    background-color: #f8fafc; /* (slate-50) for odd rows */
+}
+.user-table select, .user-table input[type="number"] {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1; /* (slate-300) */
+    background-color: #fff;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.user-table select:focus, .user-table input[type="number"]:focus {
+    outline: none;
+    border-color: #3b82f6; /* (blue-500) */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+.user-table button {
+    /* Basic styles for buttons inside the table */
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.375rem;
+}
+
+/*
+ * --- Game Room Panel (Dark Theme) ---
+ * Specific overrides for the game room view.
+ */
+#gameRoomViewPanel {
+    background-color: #1f2937; /* (gray-800) */
+    border-radius: 1.5rem; /* Match main container */
+    border: 1px solid #4b5563; /* (gray-600) */
+}
+#gameRoomViewPanel h3, #gameRoomViewPanel h4, #gameRoomViewPanel p, #gameRoomViewPanel label {
+    color: #f3f4f6; /* (gray-100) */
+}
+#gameRoomViewPanel .text-gray-300 { color: #d1d5db; }
+#gameRoomViewPanel .text-gray-400 { color: #9ca3af; }
+
+/* Game Room Player Cards */
+.player-card { /* Base class for player cards */
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+    color: #ffffff;
+    position: relative; /* For admin menu positioning */
+}
+/* Player Card Status Colors (applied from JavaScript) */
+.player-card-ready    { background-color: #047857; border-color: #06b6d4; } /* (emerald-700) (cyan-500) */
+.player-card-pending  { background-color: #ca8a04; border-color: #facc15; } /* (yellow-600) (yellow-400) */
+.player-card-folded   { background-color: #b91c1c; border-color: #f87171; } /* (red-700) (red-400) */
+.player-card-all-in   { background-color: #7e22ce; border-color: #c084fc; } /* (purple-700) (purple-400) */
+.player-card-default  { background-color: #374151; border-color: #6b7280; } /* (gray-700) (gray-500) */
+
+/* Lighter text for card details */
+.player-card .text-sm { color: #d1d5db; }
+.player-card .text-xs { color: #9ca3af; }
+
+/* Game Room Input */
+#playerBetInput {
+    background-color: #374151; /* (gray-700) */
+    border-color: #4b5563; /* (gray-600) */
+    color: #ffffff;
+}
+#playerBetInput:focus {
+     background-color: #4b5563; /* (gray-600) */
+     border-color: #3b82f6; /* (blue-500) */
+     outline: none;
+     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+/*
+ * --- Log Entry Styling (Deprecated) ---
+ * Kept from original file just in case.
+ */
+.log-entry {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #4b5563;
+    text-align: left;
+}
+.log-entry strong {
+    color: #1f2937;
+}
+
+/*
+ * =========================================
+ * =      TAILWIND REPLACEMENT STYLES      =
+ * =========================================
+ *
+ * This is where we will manually add styles
+ * to replace the old Tailwind classes.
+ * We will need to add a LOT more here.
+ *
+ */
+
+/* Example: Re-create the .hidden class */
+.hidden {
+    display: none !important;
+}
