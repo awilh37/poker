@@ -188,6 +188,129 @@ body {
 }
 
 /*
+ * --- Main Title ---
+ */
+.main-title {
+    font-size: 2rem; /* 3xl */
+    line-height: 2.5rem;
+    font-weight: 800; /* extra-bold */
+    color: #f1f5f9; /* slate-100 */
+    margin-bottom: 1.5rem; /* mb-6 */
+    text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+
+@media (min-width: 768px) {
+    .main-title {
+        font-size: 2.5rem; /* 4xl */
+        line-height: 1;
+    }
+}
+
+/*
+ * --- Loading Indicator ---
+ */
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: #9ca3af; /* gray-400 */
+}
+.loading-indicator svg {
+    /* The 'animate-spin' class in the HTML will use the @keyframes rule */
+    margin-right: 0.75rem; /* mr-3 */
+    height: 1.25rem; /* h-5 */
+    width: 1.25rem; /* w-5 */
+    color: #3b82f6; /* blue-500 */
+}
+/* Keyframes for spin animation (was in Tailwind) */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* * --- Main Navigation Buttons ---
+ * (These are the buttons NOT inside a panel)
+ */
+.btn-nav {
+    width: 100%;
+    max-width: 48rem; /* Match the old max-width of the panels for consistency */
+    font-weight: 700; /* bold */
+    padding-top: 0.75rem; /* py-3 */
+    padding-bottom: 0.75rem;
+    padding-left: 1rem; /* px-4 */
+    padding-right: 1rem;
+    border-radius: 0.75rem; /* rounded-lg */
+    font-size: 1rem; /* text-base */
+    line-height: 1.5rem;
+    color: #ffffff; /* text-white */
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem; /* Replaces mt-4 */
+}
+.btn-nav:hover {
+    transform: translateY(-2px); /* Lift effect */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.15);
+}
+.btn-nav:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.5); /* blue-300/50 focus ring */
+}
+.btn-nav svg {
+    width: 1.25rem; /* w-5 */
+    height: 1.25rem; /* h-5 */
+    margin-right: 0.5rem; /* mr-2 */
+}
+
+/* Button Color Modifiers */
+.btn-google {
+    background-color: #dc2626; /* red-600 */
+}
+.btn-google:hover {
+    background-color: #b91c1c; /* red-700 */
+}
+
+.btn-red {
+    background-color: #e11d48; /* rose-600 */
+}
+.btn-red:hover {
+    background-color: #be123c; /* rose-700 */
+}
+
+.btn-green {
+    background-color: #16a34a; /* green-600 */
+}
+.btn-green:hover {
+    background-color: #15803d; /* green-700 */
+}
+
+.btn-blue {
+    background-color: #2563eb; /* blue-600 */
+}
+.btn-blue:hover {
+    background-color: #1d4ed8; /* blue-700 */
+}
+
+.btn-purple {
+    background-color: #9333ea; /* purple-600 */
+}
+.btn-purple:hover {
+    background-color: #7e22ce; /* purple-700 */
+}
+
+.btn-orange {
+    background-color: #f97316; /* orange-600 */
+}
+.btn-orange:hover {
+    background-color: #ea580c; /* orange-700 */
+}
+
+/*
  * --- Log Entry Styling (Deprecated) ---
  * Kept from original file just in case.
  */

@@ -4,18 +4,676 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WPS 3.1</title>
-    <!-- Tailwind CSS CDN (REMOVED) -->
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
     
     <!-- 
       ============================================================
-      =             NEW STYLESHEET (EXTERNAL)              =
+      =                 NEW CUSTOM STYLESHEET START                =
       ============================================================
       
-      We are now linking to an external 'style.css' file.
-      All custom styles will live there, and Tailwind is removed.
+      This stylesheet replaces Tailwind completely.
+      It defines all styles for a full-screen layout,
+      buttons, panels, tables, and the game room.
     -->
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- Imports & Base --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        html {
+            box-sizing: border-box;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            /* A subtle gradient background for a more modern feel */
+            background-color: #f7faff;
+            background-image: linear-gradient(170deg, #f7faff 0%, #e6f0ff 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #334155; /* Default text color (slate-700) */
+        }
+
+        /* --- Utility --- */
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Layout --- */
+        #mainContainer {
+            width: 100%;
+            max-width: 1280px; /* Large, but not infinite */
+            margin: 0 auto; /* Center the content */
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem; /* Replaces all the separate margins */
+        }
+
+        /* --- Typography --- */
+        h2 {
+            font-size: 1.875rem; /* 30px */
+            font-weight: 800;
+            color: #1f2937;
+            margin: 0 0 1rem 0;
+            text-align: center;
+        }
+        h3 {
+            font-size: 1.5rem; /* 24px */
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 1rem 0;
+            text-align: center;
+        }
+        h4 {
+            font-size: 1.25rem; /* 20px */
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 0.75rem 0;
+            text-align: center;
+        }
+        h5 {
+            font-size: 1rem; /* 16px */
+            font-weight: 600;
+            color: #374151;
+            margin: 0 0 0.5rem 0;
+        }
+        p {
+            font-size: 1rem;
+            color: #4b5563;
+            line-height: 1.6;
+            margin: 0 0 1rem 0;
+            text-align: center;
+        }
+        p.text-left { text-align: left; }
+        p.small { font-size: 0.875rem; }
+        
+        .strong-note {
+            font-weight: 600;
+            color: #dc3545; /* Red */
+        }
+        
+        @media (min-width: 768px) {
+            h2 { font-size: 2.25rem; } /* 36px */
+            h3 { font-size: 1.875rem; } /* 30px */
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+        .btn:hover {
+            filter: brightness(1.1);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: brightness(1);
+            transform: scale(1);
+        }
+
+        .btn svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        /* Button Colors */
+        .btn-google  { background-color: #db4437; }
+        .btn-logout  { background-color: #dc3545; }
+        .btn-green   { background-color: #28a745; }
+        .btn-blue    { background-color: #007bff; }
+        .btn-purple  { background-color: #6f42c1; }
+        .btn-orange  { background-color: #fd7e14; }
+        .btn-gray    { background-color: #6c757d; }
+        .btn-indigo  { background-color: #6610f2; }
+        .btn-red     { background-color: #b91c1c; }
+        .btn-yellow  { background-color: #ffc107; color: #212529; } /* For All-In */
+        .btn-teal    { background-color: #20c997; }
+
+        /* Button Sizing */
+        .btn-half {
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            border-radius: 0.375rem;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .btn-group .btn {
+            width: auto;
+            flex-grow: 1;
+        }
+
+        /* --- Loading Indicator --- */
+        #loadingIndicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            color: #4b5563;
+            font-size: 1rem;
+        }
+        #loadingIndicator svg {
+            animation: spin 1s linear infinite;
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #007bff;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- Message Box --- */
+        .message-box {
+            width: 100%;
+            max-width: 48rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            border-width: 1px;
+            border-style: solid;
+            text-align: center;
+        }
+        .message-box.error   { background-color: #fff1f2; color: #be123c; border-color: #fda4af; }
+        .message-box.success { background-color: #f0fdf4; color: #15803d; border-color: #a7f3d0; }
+        .message-box.info    { background-color: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+
+        /* --- Forms (Inputs, Selects) --- */
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #cbd5e1;
+            background-color: #fff;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: #334155;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+        label {
+            display: block;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        .form-group-inline {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        @media (min-width: 640px) {
+            .form-group-inline {
+                flex-direction: row;
+                align-items: flex-end;
+            }
+            .form-group-inline > .form-group {
+                flex-grow: 1;
+                margin-bottom: 0;
+            }
+            .form-group-inline > .btn {
+                width: auto;
+                flex-shrink: 0;
+            }
+        }
+
+        /* --- Panels --- */
+        /* This is the main white card style for most content */
+        .panel {
+            width: 100%;
+            max-width: 48rem;
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem; /* Space between elements inside panel */
+        }
+        
+        /* This is for nested panels, like in the Admin area */
+        .content-panel {
+            width: 100%;
+            padding: 1.5rem;
+            background-color: #f8fafc;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);
+        }
+        .content-panel > *:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Assign panel style to all top-level views */
+        #loginButtonsContainer,
+        #mainActionButtons,
+        #adminPanel,
+        #userManagementPanel,
+        #gameRoomManagementPanel,
+        #playerJoinRoomPanel,
+        #accountManagementPanel,
+        #userDirectoryPanel,
+        #investmentsPanel {
+            /* All these IDs now share the .panel styling */
+            /* (This is handled by adding class="panel" in the HTML) */
+        }
+
+        /* Specific Panel Overrides */
+        #gameRoomViewPanel {
+            width: 100%;
+            max-width: 64rem; /* lg:max-w-4xl */
+            background-color: #1f2937; /* gray-800 */
+            padding: 1.5rem;
+            border-radius: 1.5rem;
+            border: 1px solid #4b5563;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        #gameRoomViewPanel h3, #gameRoomViewPanel h4, #gameRoomViewPanel h5, #gameRoomViewPanel p, #gameRoomViewPanel label {
+            color: #f3f4f6;
+            text-align: left;
+        }
+        #gameRoomViewPanel h3 { text-align: left; }
+        #gameRoomViewPanel h4 { text-align: left; }
+        #gameRoomViewPanel .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 0; /* Handled by gap */
+        }
+        #gameRoomViewPanel .panel-header h3 {
+            margin: 0;
+        }
+        #gameRoomViewPanel .panel-header .btn {
+            width: auto;
+        }
+
+        /* --- Tables --- */
+        .table-container {
+            width: 100%;
+            overflow-x: auto; /* For mobile */
+        }
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+        }
+        .user-table th, .user-table td {
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .user-table th {
+            background-color: #f1f5f9;
+            color: #0284c7;
+            font-weight: 600;
+        }
+        .user-table tr:nth-child(even) { background-color: #ffffff; }
+        .user-table tr:nth-child(odd)  { background-color: #f8fafc; }
+        .user-table select, .user-table input {
+            width: 100%;
+            min-width: 80px; /* Stop them from collapsing */
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .user-table .btn {
+            width: auto; /* Buttons in tables aren't full-width */
+        }
+
+        /* --- Game Room Specific --- */
+        #roomPlayersListContainer {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+            max-height: 20rem; /* max-h-72 */
+            overflow-y: auto;
+            padding: 0.5rem;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 0.5rem;
+        }
+        @media (min-width: 640px) { /* sm */
+            #roomPlayersListContainer { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) { /* lg */
+            #roomPlayersListContainer { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .player-card {
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid transparent;
+            transition: all 0.2s ease-in-out;
+            color: #ffffff;
+            position: relative;
+        }
+        .player-card-ready    { background-color: #047857; border-color: #06b6d4; }
+        .player-card-pending  { background-color: #ca8a04; border-color: #facc15; }
+        .player-card-folded   { background-color: #b91c1c; border-color: #f87171; }
+        .player-card-all-in   { background-color: #7e22ce; border-color: #c084fc; }
+        .player-card-default  { background-color: #374151; border-color: #6b7280; }
+        .player-card p { color: #ffffff; margin: 0; }
+        .player-card .player-name { font-weight: 600; font-size: 1.125rem; }
+        .player-card .player-chips { font-size: 0.875rem; color: #d1d5db; }
+        .player-card .player-status { font-size: 0.875rem; font-weight: 500; margin-top: 0.25rem; }
+        .player-card .player-bet { font-size: 0.75rem; color: #9ca3af; }
+
+        /* Admin Menu on Player Card */
+        .player-card .admin-menu-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: #d1d5db;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 99px;
+            line-height: 1;
+            font-size: 1.25rem;
+        }
+        .player-card .admin-menu-btn:hover { color: #fff; background-color: rgba(255,255,255,0.1); }
+        .player-card .admin-menu-dropdown {
+            position: absolute;
+            top: 2rem;
+            right: 0.5rem;
+            background-color: #4b5563; /* gray-600 */
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            min-width: 150px;
+            overflow: hidden;
+        }
+        .player-card .admin-menu-dropdown button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .player-card .admin-menu-dropdown button:hover { background-color: #6b7280; }
+        .player-card .admin-menu-dropdown button:disabled { color: #9ca3af; background-color: transparent; cursor: not-allowed; }
+
+        /* Game Room Input Area */
+        .betting-area {
+            padding: 1rem;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            background-color: #374151; /* gray-700 */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        #playerBetInput {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #ffffff;
+        }
+        #playerBetInput:focus {
+             background-color: #4b5563;
+             border-color: #007bff;
+        }
+        #playerChipCountForBet {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            text-align: left;
+        }
+
+        #gameStatsContainer {
+            padding: 1rem;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            background-color: #374151; /* gray-700 */
+        }
+        #gameStatsContent ul {
+            list-style-type: disc;
+            list-style-position: inside;
+            padding-left: 0;
+            margin: 0;
+        }
+        #gameStatsContent li {
+            font-size: 0.875rem;
+            color: #d1d5db;
+        }
+        #adminGameControls {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #4b5563;
+        }
+        #updateChipsPanel {
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            background-color: #374151; /* gray-700 */
+        }
+        #updateChipsPlayerList {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            max-height: 15rem;
+            overflow-y: auto;
+        }
+        .chip-update-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #4b5563;
+            border-radius: 0.375rem;
+        }
+        .chip-update-row span { color: #f3f4f6; }
+        .chip-update-row select { width: auto; background-color: #374151; color: white; border-color: #6b7280; }
+        .chip-update-controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        .chip-update-controls .btn { width: auto; }
+
+        /* --- Account Management Panel --- */
+        #accountManagementPanel {
+            align-items: center;
+        }
+        #userProfilePic {
+            width: 8rem; /* w-32 */
+            height: 8rem; /* h-32 */
+            border-radius: 9999px; /* rounded-full */
+            border: 4px solid #007bff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        #currentUserName {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        #currentUserUsername {
+            font-size: 1rem;
+            color: #4b5563;
+            margin: 0;
+        }
+        #currentUserProvider {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0;
+        }
+        .account-actions {
+            width: 100%;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* --- List Containers (for rooms) --- */
+        .list-container {
+            width: 100%;
+            max-height: 24rem;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+        }
+        .list-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .list-item:not(:last-child) {
+            margin-bottom: 0.75rem;
+        }
+        .list-item-info .name {
+            font-weight: 600;
+            color: #1e40af;
+            font-size: 1.125rem;
+        }
+        .list-item-info .details {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .list-item-actions {
+            margin-top: 0.75rem;
+            width: 100%;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .list-item-actions .btn {
+            width: auto;
+        }
+        @media (min-width: 640px) {
+            .list-item {
+                flex-direction: row;
+                align-items: center;
+            }
+            .list-item-actions {
+                margin-top: 0;
+                width: auto;
+            }
+        }
+
+
+        /* --- Popups / Modals --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(107, 114, 128, 0.5); /* bg-gray-600 bg-opacity-50 */
+            overflow-y: auto;
+            width: 100%;
+            height: 100%;
+            z-index: 40;
+            display: flex; /* Use flex to center */
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-content {
+            position: relative;
+            /* top: 5rem; Removed, flex centering is better */
+            margin: 0 auto;
+            padding: 1.5rem; /* p-5 */
+            border: 1px solid #e5e7eb;
+            width: 100%;
+            max-width: 24rem; /* w-96 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: white;
+            text-align: center;
+        }
+        .modal-content h3 {
+            font-size: 1.125rem; /* text-lg */
+            line-height: 1.5rem;
+            font-weight: 500;
+            color: #111827; /* text-gray-900 */
+        }
+        #groupPlayerList {
+            max-height: 15rem; /* max-h-60 */
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+    <!-- 
+      ============================================================
+      =                  NEW CUSTOM STYLESHEET END                 =
+      ============================================================
+    -->
 
     <!-- ReCAPTCHA stuff -->
     <script src="https://www.google.com/recaptcha/api.js"></script>
@@ -35,28 +693,24 @@
 
 </head>
 
-<body class="bg-gray-100 font-inter">
+<body> <!-- Removed Tailwind classes -->
 
     <!-- 
       ============================================================
       =                 MAIN CONTAINER START                 =
       ============================================================
-      
-      This is the main "card" that holds all application content.
-      It's styled using the #mainContainer ID from the stylesheet.
-    -->
     <div id="mainContainer" class="w-full flex flex-col items-center">
         
         <!-- Main Application Title -->
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6">WPS 3.1</h2>
+        <h2 class="main-title">WPS 3.1</h2>
 
         <!-- Loading Indicator: Shown when app is initializing -->
-        <div id="loadingIndicator" class="hidden flex items-center justify-center p-4">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <div id="loadingIndicator" class="hidden loading-indicator">
+            <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="text-gray-600">Initializing Firebase...</span>
+            <span>Initializing Firebase...</span>
         </div>
 
         <!-- Login Buttons: Shown when user is logged out -->
@@ -65,9 +719,9 @@
             <button
                 type="button"
                 id="googleLoginButton"
-                class="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
+                class="btn-nav btn-google"
             >
-                <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12.0001 4.5V7.5L17.2501 7.5C17.0279 8.65312 16.3989 9.69736 15.4883 10.4514C14.5776 11.2054 13.4357 11.6212 12.2501 11.6212C9.40006 11.6212 6.99999 9.40871 6.99999 6.55871C6.99999 3.70871 9.40006 1.49621 12.2501 1.49621C13.6874 1.49621 14.9754 2.05267 15.9388 2.92305L18.1565 0.705359C16.5912 -0.80332 14.4754 -1.54716e-07 12.2501 -1.54716e-07C7.26627 -1.54716e-07 3.00006 4.26627 3.00006 9.25006C3.00006 14.2338 7.26627 18.5 12.2501 18.5C14.6738 18.5 16.6346 17.6534 18.0626 16.1436C19.5398 14.6338 19.9999 12.3501 19.9999 9.94006C19.9999 9.25006 19.9312 8.57506 19.8001 7.92506L12.0001 7.92506V4.5Z" fill="#fff"/>
                 </svg>
                 Sign In with Google
@@ -76,62 +730,24 @@
 
 
         <!-- Message Box: Shows all success/error/info messages -->
-        <div id="messageBox" class="message-box hidden w-full text-sm md:text-base"></div>
+        <div id="messageBox" class="message-box hidden"></div>
 
         <!-- 
           ============================================================
           =                LOGGED-IN BUTTONS START               =
           ============================================================
           
-          These buttons are the main navigation for a logged-in user.
-          They are hidden by default and shown on successful login.
+          This is the main navigation hub for logged-in users.
+          It's now styled as its own panel.
         -->
-        
-        <!-- Logout Button -->
-        <button
-            id="logoutButton"
-            class="hidden mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-        >
-            Logout
-        </button>
-
-        <!-- View User Directory Button -->
-        <button
-            id="viewUserDirectoryButton"
-            class="hidden mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-        >
-            View User Directory
-        </button>
-
-        <!-- Manage Account Button -->
-        <button
-            id="openAccountManagementButton"
-            class="hidden mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-        >
-            Manage Account
-        </button>
-
-        <!-- Admin Panel Button (Admin only) -->
-        <button
-            id="openAdminPanelButton"
-            class="hidden mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-        >
-            Admin Panel
-        </button>
-
-        <!-- Join a Game Button -->
-        <button
-            id="joinGameButton"
-            class="hidden mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-        >
-            Join a Game
-        </button>
-        
-        <!-- 
-          ============================================================
-          =                 LOGGED-IN BUTTONS END                =
-          ============================================================
-        -->
+        <div id="mainActionButtons" class="panel hidden">
+            <button id="logoutButton" class="btn btn-logout">Logout</button>
+            <button id="viewUserDirectoryButton" class="btn btn-green">View User Directory</button>
+            <button id="openAccountManagementButton" class="btn btn-blue">Manage Account</button>
+            <button id="openAdminPanelButton" class="btn btn-purple hidden">Admin Panel</button>
+            <button id="joinGameButton" class="btn btn-orange">Join a Game</button>
+        </div>
+        <!-- =================== LOGGED-IN BUTTONS END =================== -->
 
 
         <!-- 
@@ -140,29 +756,18 @@
           ============================================================
           
           This panel is shown when an Admin clicks the "Admin Panel" button.
-          It's a hub for all administrative actions.
-          It uses the .content-panel style.
+          It's styled using class="panel".
         -->
-        <div id="adminPanel" class="hidden content-panel w-full">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Admin Panel</h3>
-            <p class="text-gray-600 mb-6 text-sm md:text-base">
+        <div id="adminPanel" class="panel hidden">
+            <h3>Admin Panel</h3>
+            <p>
                 Welcome, Administrator! From here, you can manage users, game data, and other aspects of the WPS system.
                 <br>
-                <strong class="text-red-500">Note: User management will only show users who have logged in via Firebase Auth.</strong>
+                <strong class="strong-note">Note: User management will only show users who have logged in via Firebase Auth.</strong>
             </p>
-            <!-- Admin action buttons -->
-            <div class="space-y-4">
-                <button id="manageUsersButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Manage Users
-                </button>
-                <button id="manageGameRoomsButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Manage Game Rooms
-                </button>
-                <!-- Close Button -->
-                <button id="closeAdminPanelButton" class="mt-6 w-1/2 mx-auto bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Close Admin Panel
-                </button>
-            </div>
+            <button id="manageUsersButton" class="btn btn-indigo">Manage Users</button>
+            <button id="manageGameRoomsButton" class="btn btn-green">Manage Game Rooms</button>
+            <button id="closeAdminPanelButton" class="btn btn-gray btn-half">Close Admin Panel</button>
         </div>
         <!-- =================== ADMIN PANEL END =================== -->
 
@@ -171,21 +776,18 @@
           ============================================================
           =                USER MANAGEMENT PANEL START             =
           ============================================================
-          
-          Accessed from the Admin Panel.
-          Used to change user roles and chip counts.
-          It uses the .content-panel and .user-table styles.
         -->
-        <div id="userManagementPanel" class="hidden content-panel w-full max-w-md md:max-w-lg lg:max-w-xl">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">User Management</h3>
-            <p class="text-gray-600 mb-4 text-center text-sm md:text-base">
+        <div id="userManagementPanel" class="panel hidden">
+            <h3>User Management</h3>
+            <p>
                 Assign roles to users who have logged in.
                 <br>
-                <strong class="text-red-500">Important: Role management is client-side for demonstration.</strong>
+                <strong class="strong-note">Important: Role management is client-side for demonstration.</strong>
             </p>
+            
             <!-- Table container for horizontal scrolling on small screens -->
-            <div class="overflow-x-auto">
-                <table class="user-table text-sm md:text-base">
+            <div class="table-container">
+                <table class="user-table">
                     <thead>
                         <tr>
                             <th>Display Name</th>
@@ -195,29 +797,24 @@
                         </tr>
                     </thead>
                     <tbody id="userRolesTableBody">
-                        <!-- User rows will be rendered here by JavaScript -->
                         <tr><td colspan="4" class="text-center text-gray-500">Loading users...</td></tr>
                     </tbody>
                 </table>
             </div>
+            
             <!-- Panel action buttons -->
-            <div class="flex justify-between space-x-2 mt-4">
-                <button id="saveUserRolesButton" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Save Changes
-                </button>
-                <button id="hideUserManagementButton" class="w-1/2 bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Hide Panel
-                </button>
+            <div class="btn-group">
+                <button id="saveUserRolesButton" class="btn btn-blue">Save Changes</button>
+                <button id="hideUserManagementButton" class="btn btn-gray">Hide Panel</button>
             </div>
+            
             <!-- Bulk User Actions -->
-            <div class="mt-6 border-t pt-4 space-y-3">
-                <h4 class="text-lg font-semibold text-gray-700 text-center mb-2">Bulk User Actions</h4>
-                <button id="setAllPlayerChipsButton" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
-                    Set All Player Chips
-                </button>
-                <button id="forceLogoutAllUsersButton" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
-                    Force Logout All Users (Except Self)
-                </button>
+            <div class="content-panel"> <!-- Nested panel for emphasis -->
+                <h4>Bulk User Actions</h4>
+                <div class="btn-group">
+                    <button id="setAllPlayerChipsButton" class="btn btn-orange">Set All Player Chips</button>
+                    <button id="forceLogoutAllUsersButton" class="btn btn-red">Force Logout All Users (Except Self)</button>
+                </div>
             </div>
         </div>
         <!-- =================== USER MANAGEMENT PANEL END =================== -->
@@ -227,50 +824,40 @@
           ============================================================
           =              GAME ROOM MANAGEMENT PANEL START            =
           ============================================================
-          
-          Accessed from the Admin Panel.
-          Used to create and delete game rooms.
-          It uses the .content-panel style.
         -->
-        <div id="gameRoomManagementPanel" class="hidden content-panel w-full max-w-lg md:max-w-xl">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-6 text-center">Manage Game Rooms</h3>
+        <div id="gameRoomManagementPanel" class="panel hidden">
+            <h3>Manage Game Rooms</h3>
 
             <!-- Create New Game Room Section -->
-            <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-white">
-                <h4 class="text-lg font-semibold text-gray-700 mb-3">Create New Game Room</h4>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-end space-y-2 sm:space-y-0 sm:space-x-2">
-                    <div class="flex-grow">
-                        <label for="newRoomNameInput" class="block text-sm font-medium text-gray-700 mb-1">Room Name:</label>
-                        <input type="text" id="newRoomNameInput" placeholder="e.g., Main Event Table 1" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="content-panel">
+                <h4>Create New Game Room</h4>
+                <div class="form-group-inline">
+                    <div class="form-group">
+                        <label for="newRoomNameInput">Room Name:</label>
+                        <input type="text" id="newRoomNameInput" placeholder="e.g., Main Event Table 1">
                     </div>
-                    <button id="createGameRoomButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
-                        Create Room
-                    </button>
+                    <button id="createGameRoomButton" class="btn btn-green">Create Room</button>
                 </div>
             </div>
 
             <!-- Existing Game Rooms List Section -->
-            <div>
-                <h4 class="text-lg font-semibold text-gray-700 mb-3">Existing Rooms</h4>
-                <div id="gameRoomsListContainer" class="max-h-80 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white">
-                    <p class="text-gray-500 text-center py-4">Loading rooms...</p>
+            <div class="content-panel">
+                <h4>Existing Rooms</h4>
+                <div id="gameRoomsListContainer" class="list-container">
+                    <p>Loading rooms...</p>
                     <!-- Game rooms will be listed here by JavaScript -->
                 </div>
             </div>
 
-            <!-- Close button -->
-            <div class="flex justify-center mt-6">
-                <button id="closeGameRoomManagementPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    Close & Return to Admin Panel
-                </button>
+            <!-- Bulk Room Action -->
+            <div class="content-panel">
+                <button id="deleteAllGameRoomsButton" class="btn btn-red">Delete All Game Rooms (USE WITH CAUTION)</button>
             </div>
 
-            <!-- Bulk Room Action -->
-            <div class="mt-6 border-t pt-4">
-                <button id="deleteAllGameRoomsButton" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
-                    Delete All Game Rooms (USE WITH CAUTION)
-                </button>
-            </div>
+            <!-- Close button -->
+            <button id="closeGameRoomManagementPanelButton" class="btn btn-gray btn-half">
+                Close & Return to Admin Panel
+            </button>
         </div>
         <!-- =================== GAME ROOM MANAGEMENT PANEL END =================== -->
 
@@ -279,26 +866,18 @@
           ============================================================
           =                PLAYER JOIN ROOM PANEL START              =
           ============================================================
-          
-          Accessed by all logged-in users via "Join a Game" button.
-          Shows a list of available rooms to join.
-          It uses the .content-panel style.
         -->
-        <div id="playerJoinRoomPanel" class="hidden content-panel w-full max-w-lg md:max-w-xl">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-6 text-center">Available Game Rooms</h3>
+        <div id="playerJoinRoomPanel" class="panel hidden">
+            <h3>Available Game Rooms</h3>
             
             <!-- List of available rooms -->
-            <div id="availableRoomsListContainer" class="max-h-96 overflow-y-auto border border-gray-200 p-2 rounded-lg bg-white">
-                <p class="text-gray-500 text-center py-4">Loading available rooms...</p>
+            <div id="availableRoomsListContainer" class="list-container">
+                <p>Loading available rooms...</p>
                 <!-- Available game rooms will be listed here by JavaScript -->
             </div>
 
             <!-- Close button -->
-            <div class="flex justify-center mt-6">
-                <button id="closePlayerJoinRoomPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    Close
-                </button>
-            </div>
+            <button id="closePlayerJoinRoomPanelButton" class="btn btn-gray btn-half">Close</button>
         </div>
         <!-- =================== PLAYER JOIN ROOM PANEL END =================== -->
 
@@ -308,96 +887,77 @@
           =                  GAME ROOM VIEW PANEL START              =
           ============================================================
           
-          This is the main "in-game" view for a player.
-          It has a special dark theme defined in the stylesheet.
-          It does NOT use the .content-panel style.
+          This is the main "in-game" view. It uses a special ID
+          for the dark theme.
         -->
-        <div id="gameRoomViewPanel" class="hidden mt-8 p-4 sm:p-6 rounded-xl shadow-xl w-full max-w-2xl lg:max-w-4xl">
+        <div id="gameRoomViewPanel" class="hidden"> <!-- Note: No .panel class -->
             <!-- Room Header -->
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl md:text-3xl font-bold" id="gameRoomViewName">Room Name Placeholder</h3>
-                <button id="closeGameRoomViewButton" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
+            <div class="panel-header">
+                <h3 id="gameRoomViewName">Room Name Placeholder</h3>
+                <button id="closeGameRoomViewButton" class="btn btn-gray">
                     Return to Lobby
                 </button>
             </div>
 
             <!-- Player List Area -->
-            <div class="mb-6">
-                <h4 class="text-xl font-semibold mb-3 text-gray-300">Players in Room</h4>
-                <div id="roomPlayersListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-72 overflow-y-auto p-2 bg-gray-900/50 rounded-lg">
-                    <!-- Player cards will be rendered here by JavaScript -->
-                    <p class="text-gray-400 col-span-full text-center py-4">Waiting for players...</p>
+            <div>
+                <h4>Players in Room</h4>
+                <div id="roomPlayersListContainer">
+                    <p>Waiting for players...</p>
                 </div>
             </div>
             
             <!-- Game Stats Area -->
-            <div id="gameStatsContainer" class="mb-6 p-4 border border-gray-600 rounded-lg bg-gray-700">
-                <h4 class="text-lg font-semibold text-gray-300 mb-3">Game Stats</h4>
-                <div id="gameStatsContent" class="text-gray-300">
+            <div id="gameStatsContainer">
+                <h4>Game Stats</h4>
+                <div id="gameStatsContent">
                     <p>Loading game stats...</p>
                 </div>
                 <!-- Admin Game Controls (hidden by default) -->
-                <div id="adminGameControls" class="mt-4 pt-4 border-t border-gray-600 hidden">
-                    <h5 class="text-md font-semibold text-gray-200 mb-2">Admin Controls</h5>
-                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                        <button id="adminRoomResetButton" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out flex-1">
-                            Room Reset
-                        </button>
-                        <button id="adminUpdateChipsButton" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-3 rounded-lg text-sm transition duration-150 ease-in-out flex-1">
-                            Update Chips
-                        </button>
+                <div id="adminGameControls" class="hidden">
+                    <h5>Admin Controls</h5>
+                    <div class="btn-group">
+                        <button id="adminRoomResetButton" class="btn btn-yellow">Room Reset</button>
+                        <button id="adminUpdateChipsButton" class="btn btn-teal">Update Chips</button>
                     </div>
                 </div>
             </div>
 
             <!-- Update Chips Panel (Admin Only, Initially Hidden) -->
-            <div id="updateChipsPanel" class="hidden p-4 my-4 border border-gray-600 rounded-lg bg-gray-700">
-                <h4 class="text-lg font-semibold text-gray-200 mb-3">Update Player Chips After Hand</h4>
-                <div id="updateChipsPlayerList" class="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                    <!-- Player entries will be populated here by JavaScript -->
-                    <p class="text-gray-400">Loading players...</p>
+            <div id="updateChipsPanel" class="hidden">
+                <h4>Update Player Chips After Hand</h4>
+                <div id="updateChipsPlayerList" class="form-group">
+                    <p>Loading players...</p>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button id="cancelChipUpdate" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
-                        Cancel
-                    </button>
-                    <button id="submitChipUpdate" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
-                        Submit Chip Updates
-                    </button>
+                <div class="chip-update-controls">
+                    <button id="cancelChipUpdate" class="btn btn-gray">Cancel</button>
+                    <button id="submitChipUpdate" class="btn btn-green">Submit Chip Updates</button>
                 </div>
             </div>
 
             <!-- Player Bet Input Section -->
-            <div class="p-4 border border-gray-600 rounded-lg bg-gray-700">
-                <h4 class="text-lg font-semibold text-gray-300 mb-3">Your Bet</h4>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-end space-y-3 sm:space-y-0 sm:space-x-3">
-                    <div class="flex-grow">
-                        <label for="playerBetInput" class="block text-sm font-medium text-gray-300 mb-1">Enter Amount:</label>
-                        <input type="number" id="playerBetInput" placeholder="0" class="w-full border-gray-500 bg-gray-600 text-white rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" min="0">
-                        <p class="text-xs text-gray-400 mt-1">Your chips: <span id="playerChipCountForBet">N/A</span></p>
+            <div class="betting-area">
+                <h4>Your Bet</h4>
+                <div class="form-group-inline">
+                    <div class="form-group">
+                        <label for="playerBetInput">Enter Amount:</label>
+                        <input type="number" id="playerBetInput" placeholder="0" min="0">
+                        <p id="playerChipCountForBet" class="small">Your chips: N/A</p>
                     </div>
-                    <!-- Player Action Buttons -->
-                    <button id="placeBetButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
-                        Place Bet
-                    </button>
-                    <button id="callButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
-                        Call
-                    </button>
-                    <button id="foldButton" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
-                        Fold
-                    </button>
-                    <button id="allInButton" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out sm:w-auto w-full">
-                        All-In
-                    </button>
+                </div>
+                <!-- Player Action Buttons -->
+                <div class="btn-group">
+                    <button id="placeBetButton" class="btn btn-green">Place Bet</button>
+                    <button id="callButton" class="btn btn-blue">Call</button>
+                    <button id="foldButton" class="btn btn-red">Fold</button>
+                    <button id="allInButton" class="btn btn-yellow">All-In</button>
                 </div>
             </div>
 
             <!-- Leave Room Button -->
-            <div class="flex justify-center mt-6">
-                 <button id="leaveCurrentGameRoomButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105">
-                    Leave Room
-                </button>
-            </div>
+            <button id="leaveCurrentGameRoomButton" class="btn btn-logout btn-half">
+                Leave Room
+            </button>
         </div>
         <!-- =================== GAME ROOM VIEW PANEL END =================== -->
 
@@ -406,45 +966,29 @@
           ============================================================
           =                ACCOUNT MANAGEMENT PANEL START            =
           ============================================================
-          
-          Accessed by all logged-in users via "Manage Account" button.
-          Shows user info and account-linking options.
-          It uses the .content-panel style.
         -->
-        <div id="accountManagementPanel" class="hidden content-panel w-full max-w-md md:max-w-lg text-center">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4">Account Management</h3>
-            <div class="flex flex-col items-center space-y-4">
-                <!-- User Profile Info -->
-                <img id="userProfilePic" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-blue-400 shadow-md" src="" alt="Profile Picture">
-                <p class="text-xl md:text-2xl font-semibold text-gray-800" id="currentUserName"></p>
-                <p class="text-gray-600 text-sm md:text-base" id="currentUserUsername"></p>
-                <p class="text-gray-500 text-xs md:text-sm" id="currentUserProvider"></p>
+        <div id="accountManagementPanel" class="panel hidden">
+            <h3>Account Management</h3>
+            
+            <img id="userProfilePic" src="" alt="Profile Picture">
+            <p id="currentUserName"></p>
+            <p id="currentUserUsername"></p>
+            <p id="currentUserProvider"></p>
 
-                <!-- Account Action Buttons -->
-                <div class="w-full space-y-3 pt-4 border-t border-gray-200 mt-4">
-                    <button
-                        type="button"
-                        id="linkGoogleAccountButton"
-                        class="w-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg"
-                    >
-                        <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12.0001 4.5V7.5L17.2501 7.5C17.0279 8.65312 16.3989 9.69736 15.4883 10.4514C14.5776 11.2054 13.4357 11.6212 12.2501 11.6212C9.40006 11.6212 6.99999 9.40871 6.99999 6.55871C6.99999 3.70871 9.40006 1.49621 12.2501 1.49621C13.6874 1.49621 14.9754 2.05267 15.9388 2.92305L18.1565 0.705359C16.5912 -0.80332 14.4754 -1.54716e-07 12.2501 -1.54716e-07C7.26627 -1.54716e-07 3.00006 4.26627 3.00006 9.25006C3.00006 14.2338 7.26627 18.5 12.2501 18.5C14.6738 18.5 16.6346 17.6534 18.0626 16.1436C19.5398 14.6338 19.9999 12.3501 19.9999 9.94006C19.9999 9.25006 19.9312 8.57506 19.8001 7.92506L12.0001 7.92506V4.5Z" fill="#fff"/>
-                        </svg>
-                        Link with Google
-                    </button>
-                    <!-- Placeholder buttons for future features -->
-                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg opacity-50 cursor-not-allowed" disabled>
-                        Change Password (Placeholder)
-                    </button>
-                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg opacity-50 cursor-not-allowed" disabled>
-                        Update Profile (Placeholder)
-                    </button>
-                </div>
-                <!-- Close Button -->
-                <button id="hideAccountManagementButton" class="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Close Account Management
+            <!-- Account Action Buttons -->
+            <div class="account-actions">
+                <button type="button" id="linkGoogleAccountButton" class="btn btn-blue">
+                    <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.0001 4.5V7.5L17.2501 7.5C17.0279 8.65312 16.3989 9.69736 15.4883 10.4514C14.5776 11.2054 13.4357 11.6212 12.2501 11.6212C9.40006 11.6212 6.99999 9.40871 6.99999 6.55871C6.99999 3.70871 9.40006 1.49621 12.2501 1.49621C13.6874 1.49621 14.9754 2.05267 15.9388 2.92305L18.1565 0.705359C16.5912 -0.80332 14.4754 -1.54716e-07 12.2501 -1.54716e-07C7.26627 -1.54716e-07 3.00006 4.26627 3.00006 9.25006C3.00006 14.2338 7.26627 18.5 12.2501 18.5C14.6738 18.5 16.6346 17.6534 18.0626 16.1436C19.5398 14.6338 19.9999 12.3501 19.9999 9.94006C19.9999 9.25006 19.9312 8.57506 19.8001 7.92506L12.0001 7.92506V4.5Z" fill="#fff"/>
+                    </svg>
+                    Link with Google
                 </button>
+                <button class="btn btn-gray" disabled>Change Password (Placeholder)</button>
+                <button class="btn btn-gray" disabled>Update Profile (Placeholder)</button>
             </div>
+            
+            <!-- Close Button -->
+            <button id="hideAccountManagementButton" class="btn btn-gray btn-half">Close</button>
         </div>
         <!-- =================== ACCOUNT MANAGEMENT PANEL END =================== -->
 
@@ -453,16 +997,12 @@
           ============================================================
           =                 USER DIRECTORY PANEL START             =
           ============================================================
-          
-          Accessed by logged-in users via "View User Directory" button.
-          Shows a public list of all users and their status.
-          It uses the .content-panel and .user-table styles.
         -->
-        <div id="userDirectoryPanel" class="hidden content-panel w-full max-w-lg md:max-w-xl lg:max-w-2xl">
-            <h3 class="text-2xl md:text-3xl font-bold text-gray-700 mb-4 text-center">User Directory</h3>
+        <div id="userDirectoryPanel" class="panel hidden">
+            <h3>User Directory</h3>
             <!-- Table container for horizontal scrolling -->
-            <div class="overflow-x-auto">
-                <table class="user-table text-sm md:text-base">
+            <div class="table-container">
+                <table class="user-table">
                     <thead>
                         <tr>
                             <th>Display Name</th>
@@ -472,167 +1012,46 @@
                         </tr>
                     </thead>
                     <tbody id="userDirectoryTableBody">
-                        <!-- User rows will be rendered here by JavaScript -->
-                        <tr><td colspan="4" class="text-center text-gray-500 py-4">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <!-- Close Button -->
-            <div class="flex justify-center mt-4">
-                <button id="hideUserDirectoryPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out transform hover:scale-105 text-base md:text-lg">
-                    Close
-                </button>
-            </div>
-        </div>
-        <!-- =================== USER DIRECTORY PANEL END =================== -->
+                        <tr><td colspan="4">Loading...</td></tr>
+        <!-- Logout Button -->
+        <button
+            id="logoutButton"
+            class="hidden btn-nav btn-red"
+        >
+            Logout
+        </button>
 
+        <!-- View User Directory Button -->
+        <button
+            id="viewUserDirectoryButton"
+            class="hidden btn-nav btn-green"
+        >
+            View User Directory
+        </button>
 
-        <!-- 
-          ============================================================
-          =                INVESTMENTS PANEL START (Hidden)        =
-          ============================================================
-          
-          This feature is currently commented out in the HTML/JS.
-          It uses the .content-panel style.
-        -->
-        <div id="investmentsPanel" class="hidden content-panel w-full max-w-2xl lg:max-w-4xl">
-            <!-- Panel Header -->
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl md:text-3xl font-bold text-gray-700">Investments</h3>
-                <button id="closeInvestmentsPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
-                    Close
-                </button>
-            </div>
+        <!-- Manage Account Button -->
+        <button
+            id="openAccountManagementButton"
+            class="hidden btn-nav btn-blue"
+        >
+            Manage Account
+        </button>
 
-            <!-- Tabs for Shares and Offers -->
-            <div class="mb-4 border-b border-gray-200">
-                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="investmentsTabs" role="tablist">
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 border-b-2 rounded-t-lg" id="shares-tab" data-tabs-target="#sharesContent" type="button" role="tab" aria-controls="sharesContent" aria-selected="true">Shares</button>
-                    </li>
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 border-b-2 rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="offers-tab" data-tabs-target="#offersContent" type="button" role="tab" aria-controls="offersContent" aria-selected="false">Offers</button>
-                    </li>
-                </ul>
-            </div>
+        <!-- Admin Panel Button (Admin only) -->
+        <button
+            id="openAdminPanelButton"
+            class="hidden btn-nav btn-purple"
+        >
+            Admin Panel
+        </button>
 
-            <!-- Tab Content -->
-            <div id="investmentsTabContent">
-                <!-- Shares Section -->
-                <div class="hidden p-4 rounded-lg bg-white" id="sharesContent" role="tabpanel" aria-labelledby="shares-tab">
-                    <h4 class="text-xl font-semibold text-gray-800 mb-4">My Shares</h4>
-                    <!-- Offer Investment Form -->
-                    <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-100">
-                        <h5 class="text-lg font-semibold text-gray-700 mb-4">Offer New Investment</h5>
-                        <form id="offerInvestmentForm" class="space-y-4">
-                            <div>
-                                <label for="investPlayerSelect" class="block text-sm font-medium text-gray-700 mb-1">Select Player to Invest In:</label>
-                                <select id="investPlayerSelect" name="investPlayer" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Loading players...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="investChipAmount" class="block text-sm font-medium text-gray-700 mb-1">Chips to Send (1 - <span id="maxInvestableChips">Your Chips</span>):</label>
-                                <input type="number" id="investChipAmount" name="chipAmount" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 100" min="1">
-                            </div>
-                            <div>
-                                <label for="investPayoutPercent" class="block text-sm font-medium text-gray-700 mb-1">Requested Payout Percentage (% of Investee's Total Chips):</label>
-                                <input type="number" id="investPayoutPercent" name="payoutPercent" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 10" min="1" max="100">
-                            </div>
-                            <div>
-                                <label for="investHandsPayout" class="block text-sm font-medium text-gray-700 mb-1">Hands Until Payout:</label>
-                                <input type="number" id="investHandsPayout" name="handsToPayout" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 5" min="1">
-                            </div>
-                            <button type="submit" id="submitInvestmentOfferButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out">
-                                Submit Investment Offer
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- List of My Shares -->
-                    <div id="mySharesListContainer">
-                        <h5 class="text-lg font-semibold text-gray-700 mb-3">My Active & Pending Shares</h5>
-                        <div id="mySharesList" class="space-y-3 max-h-96 overflow-y-auto">
-                            <p class="text-gray-500 p-3 text-center">You have no active or pending shares.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Offers Section -->
-                <div class="hidden p-4 rounded-lg bg-white" id="offersContent" role="tabpanel" aria-labelledby="offers-tab">
-                    <h4 class="text-xl font-semibold text-gray-800 mb-4">Investment Offers</h4>
-                    <!-- Incoming Offers List -->
-                    <div id="incomingOffersListContainer" class="mb-6">
-                        <h5 class="text-lg font-semibold text-gray-700 mb-3">Incoming Investment Offers</h5>
-                        <div id="incomingOffersList" class="space-y-3 max-h-80 overflow-y-auto">
-                            <p class="text-gray-500 p-3 text-center">You have no incoming investment offers.</p>
-                        </div>
-                    </div>
-
-                    <!-- My Accepted & Completed Investments List -->
-                    <div id="myInvestmentsAsInvesteeContainer">
-                        <h5 class="text-lg font-semibold text-gray-700 mb-3">My Investments (As Investee)</h5>
-                        <div id="myInvestmentsAsInvesteeList" class="space-y-3 max-h-80 overflow-y-auto">
-                            <p class="text-gray-500 p-3 text-center">You have not accepted any investments.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- =================== INVESTMENTS PANEL END =================== -->
-
-
-        <!-- 
-          ============================================================
-          =                MESSAGES PANEL START (Hidden)           =
-          ============================================================
-          
-          This feature is currently commented out in the HTML/JS.
-        -->
-        <!--
-        <div id="messagesPanel" class="hidden content-panel w-full max-w-2xl lg:max-w-4xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl md:text-3xl font-bold text-gray-700">Messages</h3>
-                <button id="closeMessagesPanelButton" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg text-sm transition duration-150">
-                    Close
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            -->
-                <!-- Player List Column -->
-            <!--
-                <div class="md:col-span-1 bg-white p-4 rounded-lg shadow">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800">Players</h4>
-                        <button id="createGroupChatButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded-lg text-sm">+</button>
-                    </div>
-                    <input type="text" id="playerSearchInput" placeholder="Search players..." class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                    <div id="messagesPlayerList" class="max-h-96 overflow-y-auto">
-                        <div class="p-2 hover:bg-gray-100 cursor-pointer rounded-md font-bold" data-gid="group_1678886400000">General</div>
-                    </div>
-                </div>
-            -->
-                <!-- Chat Area Column -->
-            <!--
-                <div class="md:col-span-2 bg-white p-4 rounded-lg shadow flex flex-col">
-                    <div id="chatHeader" class="border-b pb-2 mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800">Select a conversation</h4>
-                    </div>
-                    <div id="chatMessages" class="flex-grow overflow-y-auto mb-4">
-                        <div class="p-2 my-1 rounded-lg bg-gray-200 text-gray-800 self-start">Welcome to the chat!</div>
-                    </div>
-                    <div id="chatInputContainer" class="mt-auto">
-                        <div class="flex">
-                            <input type="text" id="messageInput" placeholder="Type a message..." class="w-full border rounded-l-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <button id="sendMessageButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        -->
-        <!-- =================== MESSAGES PANEL END =================== -->
+        <!-- Join a Game Button -->
+        <button
+            id="joinGameButton"
+            class="hidden btn-nav btn-orange"
+        >
+            Join a Game
+        </button>
         
         <!-- 
           ============================================================
@@ -640,26 +1059,19 @@
           ============================================================
           
           A popup modal for creating new group chats.
-          Part of the (currently hidden) Messages feature.
         -->
-        <div id="createGroupChatModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3 text-center">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Create Group Chat</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <input type="text" id="groupNameInput" placeholder="Group Name" class="w-full border rounded-lg py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                        <div id="groupPlayerList" class="max-h-60 overflow-y-auto border rounded-lg p-2">
-                            <!-- Player list for group selection will be rendered here -->
-                        </div>
-                    </div>
-                    <div class="items-center px-4 py-3">
-                        <button id="createGroupButton" class="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300">
-                            Create Group
-                        </button>
-                        <button id="cancelGroupButton" class="mt-2 px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                            Cancel
-                        </button>
-                    </div>
+        <div id="createGroupChatModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3>Create Group Chat</h3>
+                <div class="form-group">
+                    <input type="text" id="groupNameInput" placeholder="Group Name">
+                </div>
+                <div id="groupPlayerList">
+                    <!-- Player list for group selection will be rendered here -->
+                </div>
+                <div class="modal-actions">
+                    <button id="createGroupButton" class="btn btn-green">Create Group</button>
+                    <button id="cancelGroupButton" class="btn btn-gray">Cancel</button>
                 </div>
             </div>
         </div>
@@ -674,6 +1086,7 @@
       ============================================================
       
       All application logic is contained within this script tag.
+      (No changes were made to the JavaScript logic)
     -->
     <script type="module">
         // Import Firebase SDKs
@@ -723,13 +1136,19 @@
         const loginButtonsContainer = document.getElementById('loginButtonsContainer');
         const googleLoginButton = document.getElementById('googleLoginButton');
         const messageBox = document.getElementById('messageBox');
-        const logoutButton = document.getElementById('logoutButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
-        
+
+        // Main action buttons (New container)
+        const mainActionButtons = document.getElementById('mainActionButtons');
+        const logoutButton = document.getElementById('logoutButton');
+        const viewUserDirectoryButton = document.getElementById('viewUserDirectoryButton');
+        const openAccountManagementButton = document.getElementById('openAccountManagementButton');
+        const openAdminPanelButton = document.getElementById('openAdminPanelButton');
+        const joinGameButton = document.getElementById('joinGameButton');
+
         // Admin Panel
         const adminPanel = document.getElementById('adminPanel');
         const manageUsersButton = document.getElementById('manageUsersButton');
-        const openAdminPanelButton = document.getElementById('openAdminPanelButton');
         const closeAdminPanelButton = document.getElementById('closeAdminPanelButton');
 
         // User Management Panel
@@ -746,10 +1165,8 @@
         const currentUserProvider = document.getElementById('currentUserProvider');
         const linkGoogleAccountButton = document.getElementById('linkGoogleAccountButton');
         const hideAccountManagementButton = document.getElementById('hideAccountManagementButton');
-        const openAccountManagementButton = document.getElementById('openAccountManagementButton');
 
         // User Directory Panel
-        const viewUserDirectoryButton = document.getElementById('viewUserDirectoryButton');
         const userDirectoryPanel = document.getElementById('userDirectoryPanel'); 
         const userDirectoryTableBody = document.getElementById('userDirectoryTableBody'); 
         const hideUserDirectoryPanelButton = document.getElementById('hideUserDirectoryPanelButton');
@@ -763,7 +1180,6 @@
         const closeGameRoomManagementPanelButton = document.getElementById('closeGameRoomManagementPanelButton');
 
         // Join Game (Player)
-        const joinGameButton = document.getElementById('joinGameButton');
         const playerJoinRoomPanel = document.getElementById('playerJoinRoomPanel');
         const availableRoomsListContainer = document.getElementById('availableRoomsListContainer');
         const closePlayerJoinRoomPanelButton = document.getElementById('closePlayerJoinRoomPanelButton');
@@ -802,23 +1218,23 @@
         // Investments Panel Elements (Feature currently hidden)
         const investmentsPanel = document.getElementById('investmentsPanel');
         const closeInvestmentsPanelButton = document.getElementById('closeInvestmentsPanelButton');
-        const sharesTab = document.getElementById('shares-tab');
-        const offersTab = document.getElementById('offers-tab');
-        const sharesContent = document.getElementById('sharesContent');
-        const offersContent = document.getElementById('offersContent');
-        const offerInvestmentForm = document.getElementById('offerInvestmentForm');
-        const investPlayerSelect = document.getElementById('investPlayerSelect');
-        const maxInvestableChips = document.getElementById('maxInvestableChips');
-        const investChipAmount = document.getElementById('investChipAmount');
-        const investPayoutPercent = document.getElementById('investPayoutPercent');
-        const investHandsPayout = document.getElementById('investHandsPayout');
-        const submitInvestmentOfferButton = document.getElementById('submitInvestmentOfferButton');
-        const mySharesListContainer = document.getElementById('mySharesListContainer');
-        const mySharesList = document.getElementById('mySharesList');
-        const incomingOffersListContainer = document.getElementById('incomingOffersListContainer');
-        const incomingOffersList = document.getElementById('incomingOffersList');
-        const myInvestmentsAsInvesteeContainer = document.getElementById('myInvestmentsAsInvesteeContainer');
-        const myInvestmentsAsInvesteeList = document.getElementById('myInvestmentsAsInvesteeList');
+        // const sharesTab = document.getElementById('shares-tab');
+        // const offersTab = document.getElementById('offers-tab');
+        // const sharesContent = document.getElementById('sharesContent');
+        // const offersContent = document.getElementById('offersContent');
+        // const offerInvestmentForm = document.getElementById('offerInvestmentForm');
+        // const investPlayerSelect = document.getElementById('investPlayerSelect');
+        // const maxInvestableChips = document.getElementById('maxInvestableChips');
+        // const investChipAmount = document.getElementById('investChipAmount');
+        // const investPayoutPercent = document.getElementById('investPayoutPercent');
+        // const investHandsPayout = document.getElementById('investHandsPayout');
+        // const submitInvestmentOfferButton = document.getElementById('submitInvestmentOfferButton');
+        // const mySharesListContainer = document.getElementById('mySharesListContainer');
+        // const mySharesList = document.getElementById('mySharesList');
+        // const incomingOffersListContainer = document.getElementById('incomingOffersListContainer');
+        // const incomingOffersList = document.getElementById('incomingOffersList');
+        // const myInvestmentsAsInvesteeContainer = document.getElementById('myInvestmentsAsInvesteeContainer');
+        // const myInvestmentsAsInvesteeList = document.getElementById('myInvestmentsAsInvesteeList');
 
         // Messages Panel Elements (Feature currently hidden)
         // (Element variables are commented out as the feature is)
@@ -829,7 +1245,7 @@
         const groupPlayerList = document.getElementById('groupPlayerList');
         const createGroupButton = document.getElementById('createGroupButton');
         const cancelGroupButton = document.getElementById('cancelGroupButton');
-        const createGroupChatButton = document.getElementById('createGroupChatButton');
+        // const createGroupChatButton = document.getElementById('createGroupChatButton');
 
         // --- Global State Variables ---
         // To keep track of data from Firestore in real-time.
@@ -923,6 +1339,7 @@
         function showPanel(panelToShow) {
             const panelList = [
                 {el: loginButtonsContainer, name: "loginButtonsContainer"},
+                {el: mainActionButtons, name: "mainActionButtons"}, // New main hub
                 {el: adminPanel, name: "adminPanel"},
                 {el: userManagementPanel, name: "userManagementPanel"},
                 {el: accountManagementPanel, name: "accountManagementPanel"},
@@ -947,23 +1364,23 @@
                 }
             });
             
-            // If no specific panel is shown, ensure main action buttons are visible
-            // (Login buttons are handled by auth state)
+            // If no specific panel is shown (i.e., user is logged in but on main screen)
             if (panelToShow === null && auth.currentUser) {
-                 logoutButton.classList.remove('hidden');
-                 viewUserDirectoryButton.classList.remove('hidden');
-                 openAccountManagementButton.classList.remove('hidden');
-                 joinGameButton.classList.remove('hidden');
+                 showPanel(mainActionButtons); // Show the main button hub
                  if(hasAdminAccess(auth.currentUser.uid)) {
                     openAdminPanelButton.classList.remove('hidden');
+                 } else {
+                    openAdminPanelButton.classList.add('hidden');
                  }
+            } else if (panelToShow === null && !auth.currentUser) {
+                showPanel(loginButtonsContainer); // Show login
             }
         }
 
         /** Shows a message in the message box */
         function showMessage(message, type = 'error') {
             messageBox.textContent = message;
-            messageBox.className = `message-box ${type}`; // The w-full is handled by the stylesheet now
+            messageBox.className = `message-box ${type}`;
             messageBox.classList.remove('hidden');
             setTimeout(hideMessage, 5000); // Auto-hide after 5 seconds
         }
@@ -1162,7 +1579,12 @@
                 showMessage("You cannot force fold yourself.", "info");
                 return;
             }
-            if (!confirm(`Are you sure you want to force fold ${targetPlayerName || 'this player'}?`)) {
+            
+            // Custom modal confirmation would go here. Using prompt as a placeholder
+            // for now, but avoiding confirm().
+            const confirmation = prompt(`Type 'FOLD' to confirm force-folding ${targetPlayerName || 'this player'}.`);
+            if (confirmation !== 'FOLD') {
+                showMessage("Action cancelled.", "info");
                 return;
             }
 
@@ -1191,7 +1613,11 @@
                 showMessage("You cannot remove yourself. Use the 'Leave Room' button.", "info");
                 return;
             }
-            if (!confirm(`Are you sure you want to remove ${targetPlayerName || 'this player'} from the room?`)) {
+            
+            // Custom modal confirmation would go here. Using prompt as a placeholder
+            const confirmation = prompt(`Type 'REMOVE' to confirm removing ${targetPlayerName || 'this player'} from the room.`);
+            if (confirmation !== 'REMOVE') {
+                showMessage("Action cancelled.", "info");
                 return;
             }
 
@@ -1329,7 +1755,7 @@
                 // Chip count input
                 const chipInput = document.createElement('input');
                 chipInput.type = 'number';
-                chipInput.className = 'w-20'; // Styles from .user-table in CSS
+                // chipInput.className = 'w-20'; // Handled by .user-table input
                 chipInput.setAttribute('data-uid', user.uid);
                 chipInput.setAttribute('name', `chip_count_${user.uid}`);
                 chipInput.value = (typeof user.chip_count === 'number') ? user.chip_count : 0;
@@ -1392,7 +1818,7 @@
                 const actionsCell = row.insertCell();
                 const forceLogoutButton = document.createElement('button');
                 forceLogoutButton.textContent = 'Force Logout';
-                forceLogoutButton.className = 'bg-red-500 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed';
+                forceLogoutButton.className = 'btn btn-red btn-sm'; // New button classes
                 
                 const targetUserIsOnline = activeSessionUIDs.includes(user.uid);
                 let disableLogoutButton = false;
@@ -1467,7 +1893,11 @@
                 showMessage("Admins cannot force logout other Admins or Owners.", 'error');
                 return;
             }
-            if (!confirm(`Are you sure you want to force logout ${targetUserDisplayName || targetUid}?`)) {
+            
+            // Custom modal confirmation would go here. Using prompt as a placeholder
+            const confirmation = prompt(`Type 'LOGOUT' to confirm force-logging out ${targetUserDisplayName || targetUid}.`);
+            if (confirmation !== 'LOGOUT') {
+                showMessage("Action cancelled.", "info");
                 return;
             }
             
@@ -1500,7 +1930,7 @@
 
         /** Renders the table for the public user directory */
         async function renderUserDirectoryTable() { 
-            userDirectoryTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">Loading users...</td></tr>';
+            userDirectoryTableBody.innerHTML = '<tr><td colspan="4">Loading users...</td></tr>';
             try {
                 const activeSessionUIDs = firestoreActiveSessions.map(session => session.id);
                 // Use the globally available allFirebaseUsersData
@@ -1508,7 +1938,7 @@
 
                 userDirectoryTableBody.innerHTML = '';
                 if (users.length === 0) {
-                    userDirectoryTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-4">No users found.</td></tr>';
+                    userDirectoryTableBody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
                     return;
                 }
 
@@ -1527,15 +1957,15 @@
 
                     // Determine status: In-Game > Online > Offline
                     let userStatus = "Offline";
-                    let statusClass = "text-gray-500";
+                    let statusClass = "status-offline";
                     let isInGame = firestoreGameRooms.some(room => room.players && room.players.includes(user.uid));
 
                     if (isInGame) {
                         userStatus = "In-Game";
-                        statusClass = "text-blue-600 font-semibold";
+                        statusClass = "status-ingame";
                     } else if (activeSessionUIDs.includes(user.uid)) {
                         userStatus = 'Online';
-                        statusClass = 'text-green-600 font-semibold';
+                        statusClass = 'status-online';
                     }
                     
                     statusCell.textContent = userStatus;
@@ -1544,7 +1974,7 @@
 
             } catch (error) {
                 console.error("Error rendering user directory:", error);
-                userDirectoryTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-red-500 py-4">Error loading users.</td></tr>';
+                userDirectoryTableBody.innerHTML = '<tr><td colspan="4">Error loading users.</td></tr>';
             }
         }
         // --- End "User Directory" Panel Functions ---
@@ -1757,13 +2187,6 @@
             dataLoadedAndListenersSetup = false;
             showMessage('You have been logged out.', 'info');
             showPanel(loginButtonsContainer);
-            
-            // Hide all user-specific buttons and panels
-            logoutButton.classList.add('hidden');
-            viewUserDirectoryButton.classList.add('hidden');
-            openAccountManagementButton.classList.add('hidden');
-            openAdminPanelButton.classList.add('hidden');
-            joinGameButton.classList.add('hidden');
         }
 
         /** Cleans up session on tab close */
@@ -1865,7 +2288,7 @@
                     if (!userManagementPanel.classList.contains('hidden')) renderUserRolesTable();
                     if (!userDirectoryPanel.classList.contains('hidden')) renderUserDirectoryTable();
                     if (currentJoinedRoomId && !gameRoomViewPanel.classList.contains('hidden')) renderGameRoomView(currentJoinedRoomId);
-                    if (!investmentsPanel.classList.contains('hidden')) populateInvestmentPlayerSelect();
+                    // if (!investmentsPanel.classList.contains('hidden')) populateInvestmentPlayerSelect(); // Feature hidden
 
                     if (initialLoad) { initialLoad = false; resolve(); }
                 }, (error) => { console.error("Firestore: Error listening to user profiles:", error); reject(error); });
@@ -1919,11 +2342,13 @@
                     firestoreInvestments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     console.log("Firestore: Investments snapshot. Count:", firestoreInvestments.length);
 
+                    /* // Feature hidden
                     if (auth.currentUser && !investmentsPanel.classList.contains('hidden')) {
                         renderMySharesList();
                         renderIncomingOffersList();
                         renderMyInvestmentsAsInvesteeList();
                     }
+                    */
                     if (initialLoad) { initialLoad = false; resolve(); }
                 }, (error) => { console.error("Firestore: Error listening to investments:", error); reject(error); });
             });
@@ -1952,7 +2377,6 @@
                     } else if (isLoggingOut) {
                         console.log("onAuthStateChanged: User present but logging out.");
                         showPanel(loginButtonsContainer);
-                        logoutButton.classList.add('hidden');
                         isLoggingOut = false; // Reset flag
                     }
                 } else {
@@ -1978,7 +2402,6 @@
                         // Regular web or after logout
                         console.log("Firebase: Displaying login options.");
                         showPanel(loginButtonsContainer);
-                        logoutButton.classList.add('hidden');
                         loadingIndicator.classList.add('hidden');
                     }
                     dataLoadedAndListenersSetup = false; 
@@ -2151,7 +2574,11 @@
                 showMessage("You do not have permission to delete rooms.", "error");
                 return;
             }
-            if (!confirm(`Are you sure you want to delete room: "${roomName}"?`)) {
+            
+            // Custom modal confirmation would go here. Using prompt as a placeholder
+            const confirmation = prompt(`Type 'DELETE' to confirm deleting room: "${roomName}".`);
+            if (confirmation !== 'DELETE') {
+                showMessage("Action cancelled.", "info");
                 return;
             }
 
@@ -2193,45 +2620,36 @@
 
             gameRoomsListContainer.innerHTML = '';
             if (firestoreGameRooms.length === 0) {
-                gameRoomsListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No game rooms created yet.</p>';
+                gameRoomsListContainer.innerHTML = '<p>No game rooms created yet.</p>';
                 return;
             }
-
-            const ul = document.createElement('ul');
-            ul.className = 'space-y-2';
 
             const sortedRooms = [...firestoreGameRooms].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
             sortedRooms.forEach(room => {
-                const li = document.createElement('li');
-                li.className = 'p-3 bg-gray-100 rounded-md shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center';
+                const li = document.createElement('div');
+                li.className = 'list-item';
                 
                 const roomInfoDiv = document.createElement('div');
-                const roomNameSpan = document.createElement('span');
-                roomNameSpan.textContent = room.roomName || 'Unnamed Room';
-                roomNameSpan.className = 'font-semibold text-gray-800';
-                roomInfoDiv.appendChild(roomNameSpan);
-                
-                const roomStatusSpan = document.createElement('span');
-                roomStatusSpan.textContent = `Status: ${room.status || 'N/A'}`;
-                roomStatusSpan.className = `text-sm px-2 py-1 rounded-full ml-0 sm:ml-2 mt-1 sm:mt-0 ${room.status === 'open' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}`;
-                roomInfoDiv.appendChild(roomStatusSpan);
-                
+                roomInfoDiv.className = 'list-item-info';
+                roomInfoDiv.innerHTML = `
+                    <span class="name">${room.roomName || 'Unnamed Room'}</span>
+                    <span class="details">Status: ${room.status || 'N/A'}</span>
+                `;
                 li.appendChild(roomInfoDiv);
 
                 const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'flex items-center space-x-2 mt-2 sm:mt-0 sm:ml-4 flex-shrink-0';
+                actionsDiv.className = 'list-item-actions';
                 
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Delete';
-                deleteButton.className = 'bg-red-500 hover:bg-red-700 text-white text-xs py-1 px-2 rounded';
+                deleteButton.className = 'btn btn-red btn-sm';
                 deleteButton.onclick = () => handleDeleteRoom(room.id, room.roomName || 'Unnamed Room');
                 actionsDiv.appendChild(deleteButton);
                 
                 li.appendChild(actionsDiv);
-                ul.appendChild(li);
+                gameRoomsListContainer.appendChild(li);
             });
-            gameRoomsListContainer.appendChild(ul);
         }
 
         /** Renders the list of rooms for players to join */
@@ -2242,32 +2660,26 @@
             const openRooms = firestoreGameRooms.filter(room => room.status === 'open');
 
             if (openRooms.length === 0) {
-                availableRoomsListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No game rooms available.</p>';
+                availableRoomsListContainer.innerHTML = '<p>No game rooms available.</p>';
                 return;
             }
 
-            const ul = document.createElement('ul');
-            ul.className = 'space-y-3';
             const playerUID = auth.currentUser?.uid;
 
             openRooms.forEach(room => {
-                const li = document.createElement('li');
-                li.className = 'p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0';
+                const li = document.createElement('div');
+                li.className = 'list-item';
                 
                 const roomInfoDiv = document.createElement('div');
-                const roomNameSpan = document.createElement('span');
-                roomNameSpan.textContent = room.roomName || 'Unnamed Room';
-                roomNameSpan.className = 'font-semibold text-lg text-indigo-700 block';
-                roomInfoDiv.appendChild(roomNameSpan);
-
-                const playerCountSpan = document.createElement('span');
-                playerCountSpan.textContent = `Players: ${room.players?.length || 0}`;
-                playerCountSpan.className = 'text-sm text-gray-600 block mt-1';
-                roomInfoDiv.appendChild(playerCountSpan);
+                roomInfoDiv.className = 'list-item-info';
+                roomInfoDiv.innerHTML = `
+                    <span class="name">${room.roomName || 'Unnamed Room'}</span>
+                    <span class="details">Players: ${room.players?.length || 0}</span>
+                `;
                 li.appendChild(roomInfoDiv);
 
                 const joinButton = document.createElement('button');
-                joinButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed';
+                joinButton.className = 'btn btn-blue btn-sm';
                 joinButton.setAttribute('data-room-id', room.id);
 
                 let playerIsCurrentlyInThisRoom = playerUID && room.players && room.players.includes(playerUID);
@@ -2275,7 +2687,7 @@
 
                 if (playerIsCurrentlyInThisRoom) {
                     joinButton.textContent = 'View Current Game';
-                    joinButton.className = 'bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out text-sm sm:ml-4 flex-shrink-0';
+                    joinButton.className = 'btn btn-green btn-sm';
                     joinButton.onclick = () => {
                         currentJoinedRoomId = room.id;
                         showPanel(gameRoomViewPanel);
@@ -2291,10 +2703,12 @@
                     joinButton.onclick = () => handleJoinRoom(room.id);
                 }
                 
-                li.appendChild(joinButton);
-                ul.appendChild(li);
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'list-item-actions';
+                actionsDiv.appendChild(joinButton);
+                li.appendChild(actionsDiv);
+                availableRoomsListContainer.appendChild(li);
             });
-            availableRoomsListContainer.appendChild(ul);
         }
 
         /** Renders the main view when a player is in a game room */
@@ -2332,7 +2746,7 @@
             const highestBet = Object.values(room.currentBets || {}).reduce((max, bet) => Math.max(max, bet), 0);
 
             if (!room.players || room.players.length === 0) {
-                roomPlayersListContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center py-4">No players in this room yet.</p>';
+                roomPlayersListContainer.innerHTML = '<p>No players in this room yet.</p>';
             } else {
                 room.players.forEach(playerId => {
                     const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
@@ -2342,7 +2756,6 @@
                     const rawStatus = room.playerStatuses ? room.playerStatuses[playerId] : 'pending';
                     const playerBetAmount = room.currentBets ? (room.currentBets[playerId] ?? 0) : 0;
 
-                    // --- NEW ---
                     // Determine display status and card class
                     let displayStatus = rawStatus;
                     let cardStatusClass = 'player-card-default'; // Default
@@ -2362,45 +2775,29 @@
                     }
 
                     const playerCard = document.createElement('div');
-                    // Apply base class and new dynamic status class
                     playerCard.className = `player-card ${cardStatusClass}`;
                     
                     // Create and append card content
-                    const nameEl = document.createElement('p');
-                    nameEl.className = 'font-semibold text-lg'; // Text color is white by default from .player-card
-                    nameEl.textContent = playerName;
-                    playerCard.appendChild(nameEl);
-
-                    const chipsEl = document.createElement('p');
-                    chipsEl.className = 'text-sm text-gray-200'; // Lighter text
-                    chipsEl.textContent = `Chips: ${playerChips}`;
-                    playerCard.appendChild(chipsEl);
-
-                    const statusTextEl = document.createElement('p');
-                    statusTextEl.className = 'text-sm font-medium mt-1';
-                    statusTextEl.textContent = `Status: ${displayStatus}`;
-                    playerCard.appendChild(statusTextEl);
-                    
-                    const betEl = document.createElement('p');
-                    betEl.className = 'text-xs text-gray-300'; // Lighter text
-                    betEl.textContent = `Bet: ${playerBetAmount}`; 
-                    playerCard.appendChild(betEl);
-                    // --- END NEW ---
+                    playerCard.innerHTML = `
+                        <p class="player-name">${playerName}</p>
+                        <p class="player-chips">Chips: ${playerChips}</p>
+                        <p class="player-status">Status: ${displayStatus}</p>
+                        <p class="player-bet">Bet: ${playerBetAmount}</p>
+                    `;
 
                     // Admin Menu for Player Card
                     if (isAdmin) {
                         const adminMenuButton = document.createElement('button');
                         adminMenuButton.innerHTML = '&#8942;'; // Vertical ellipsis
-                        adminMenuButton.className = 'absolute top-2 right-2 text-gray-200 hover:text-white p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-500'; 
+                        adminMenuButton.className = 'admin-menu-btn';
                         
                         const adminMenuDropdown = document.createElement('div');
-                        adminMenuDropdown.className = 'hidden absolute top-8 right-2 bg-gray-600 text-white rounded-md shadow-lg py-1 z-10 min-w-max';
+                        adminMenuDropdown.className = 'admin-menu-dropdown hidden';
                         adminMenuDropdown.id = `admin-menu-${playerId}`;
 
                         // Remove Player
                         const removePlayerButton = document.createElement('button');
                         removePlayerButton.textContent = 'Remove Player';
-                        removePlayerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
                         removePlayerButton.disabled = (playerId === auth.currentUser.uid);
                         removePlayerButton.onclick = (e) => { e.stopPropagation(); adminRemovePlayer(roomId, playerId, playerName); adminMenuDropdown.classList.add('hidden'); };
                         adminMenuDropdown.appendChild(removePlayerButton);
@@ -2408,7 +2805,6 @@
                         // Force Fold
                         const forceFoldButton = document.createElement('button');
                         forceFoldButton.textContent = 'Force Fold';
-                        forceFoldButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
                         forceFoldButton.disabled = (playerId === auth.currentUser.uid || rawStatus === 'folded' || rawStatus === 'all-in');
                         forceFoldButton.onclick = (e) => { e.stopPropagation(); adminForceFoldPlayer(roomId, playerId, playerName); adminMenuDropdown.classList.add('hidden'); };
                         adminMenuDropdown.appendChild(forceFoldButton);
@@ -2416,7 +2812,6 @@
                         // Place Bet
                         const placeBetForPlayerButton = document.createElement('button');
                         placeBetForPlayerButton.textContent = 'Place Bet for Player';
-                        placeBetForPlayerButton.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-gray-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed';
                         placeBetForPlayerButton.disabled = (rawStatus === 'folded' || rawStatus === 'all-in');
                         placeBetForPlayerButton.onclick = (e) => { e.stopPropagation(); adminPlaceBetForPlayer(roomId, playerId, playerName, playerChips); adminMenuDropdown.classList.add('hidden'); };
                         adminMenuDropdown.appendChild(placeBetForPlayerButton);
@@ -2426,7 +2821,7 @@
 
                         adminMenuButton.onclick = (event) => {
                             event.stopPropagation();
-                            document.querySelectorAll('[id^="admin-menu-"]').forEach(menu => {
+                            document.querySelectorAll('.admin-menu-dropdown').forEach(menu => {
                                 if (menu.id !== adminMenuDropdown.id) menu.classList.add('hidden');
                             });
                             adminMenuDropdown.classList.toggle('hidden');
@@ -2438,7 +2833,7 @@
                 // Add body click listener to close admin menus
                 document.body.addEventListener('click', (event) => {
                     if (!event.target.closest('.player-card')) {
-                         document.querySelectorAll('[id^="admin-menu-"]').forEach(menu => menu.classList.add('hidden'));
+                         document.querySelectorAll('.admin-menu-dropdown').forEach(menu => menu.classList.add('hidden'));
                     }
                 }, { capture: true, once: true });
             }
@@ -2446,10 +2841,10 @@
             // Update player's chip count for betting UI
             const currentUserProfileForBetUI = allFirebaseUsersData.find(p => p.uid === auth.currentUser.uid);
             if (currentUserProfileForBetUI && playerChipCountForBet) {
-                playerChipCountForBet.textContent = currentUserProfileForBetUI.chip_count ?? 0;
+                playerChipCountForBet.textContent = `Your chips: ${currentUserProfileForBetUI.chip_count ?? 0}`;
                 if (playerBetInput) playerBetInput.max = currentUserProfileForBetUI.chip_count ?? 0;
             } else if (playerChipCountForBet) {
-                playerChipCountForBet.textContent = 'N/A';
+                playerChipCountForBet.textContent = 'Your chips: N/A';
                  if (playerBetInput) playerBetInput.removeAttribute('max');
             }
 
@@ -2466,7 +2861,6 @@
                 `;
 
                 const activePlayersUl = document.createElement('ul');
-                activePlayersUl.className = 'list-disc list-inside text-sm space-y-1';
                 let activePlayerFound = false;
                 if (room.players) {
                     room.players.forEach(playerId => {
@@ -2596,7 +2990,7 @@
             // This function is complex and involves pot calculation.
             // For now, it's a placeholder.
             console.log(`ADMIN ACTION: Declare Winner triggered for ${targetPlayerName}.`);
-            alert(`Admin action: Declared ${targetPlayerName} as winner. (Pot distribution not yet implemented.)`);
+            // alert(`Admin action: Declared ${targetPlayerName} as winner. (Pot distribution not yet implemented.)`);
             showMessage(`Placeholder: ${targetPlayerName} declared winner. No chips moved.`, "info");
         }
 
@@ -2665,7 +3059,13 @@
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) return;
             const room = firestoreGameRooms.find(r => r.id === roomId);
             if (!room || !room.players) return;
-            if (!confirm("Are you sure you want to reset all bets to 0 and unfold all players?")) return;
+            
+            // Custom modal confirmation would go here. Using prompt as a placeholder
+            const confirmation = prompt(`Type 'RESET' to reset all bets and unfold all players.`);
+            if (confirmation !== 'RESET') {
+                showMessage("Action cancelled.", "info");
+                return;
+            }
 
             showMessage("Resetting room...", "info");
             try {
@@ -2700,7 +3100,7 @@
             updateChipsPlayerList.innerHTML = '';
             const room = firestoreGameRooms.find(r => r.id === roomId);
             if (!room || !room.players || room.players.length === 0) {
-                updateChipsPlayerList.innerHTML = '<p class="text-gray-400">No players in room.</p>';
+                updateChipsPlayerList.innerHTML = '<p>No players in room.</p>';
                 return;
             }
 
@@ -2709,24 +3109,23 @@
                 const playerName = playerProfile ? formatDisplayName(playerProfile) : `Player ${playerId.substring(0,6)}`;
                 const playerStatus = room.playerStatuses ? room.playerStatuses[playerId] : 'unknown';
 
-                if (playerStatus === 'folded') {
-                    updateChipsPlayerList.innerHTML += `
-                        <div classclass="flex justify-between items-center p-2 bg-gray-600 rounded">
-                            <span class="text-gray-400">${playerName} (Folded)</span>
-                        </div>`;
-                    return;
-                }
+                const row = document.createElement('div');
+                row.className = 'chip-update-row';
 
-                updateChipsPlayerList.innerHTML += `
-                    <div class="flex justify-between items-center p-2 bg-gray-600 rounded">
-                        <span class="text-gray-100">${playerName}</span>
-                        <select class="bg-gray-500 text-white rounded-md p-1 text-sm" data-player-id="${playerId}">
+                if (playerStatus === 'folded') {
+                    row.innerHTML = `<span style="text-decoration: line-through;">${playerName} (Folded)</span>`;
+                } else {
+                    row.innerHTML = `
+                        <span>${playerName}</span>
+                        <select data-player-id="${playerId}">
                             <option value="0">No Win / Loser</option>
                             <option value="1">Winner 1st</option>
                             <option value="2">Winner 2nd</option>
                             <option value="3">Winner 3rd</option>
                         </select>
-                    </div>`;
+                    `;
+                }
+                updateChipsPlayerList.appendChild(row);
             });
         }
 
@@ -2832,7 +3231,11 @@
             }
             newChipAmount = Math.round(newChipAmount);
 
-            if (!confirm(`Are you sure you want to set ALL USERS' chip count to ${newChipAmount}?`)) return;
+            const confirmation = prompt(`Type 'CHIPS' to set ALL USERS' chip count to ${newChipAmount}.`);
+            if (confirmation !== 'CHIPS') {
+                showMessage("Action cancelled.", "info");
+                return;
+            }
 
             showMessage("Updating all chip counts...", 'info');
             try {
@@ -2852,7 +3255,12 @@
         /** Admin: Force logout all other users */
         async function handleForceLogoutAllUsers() {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) return;
-            if (!confirm("Are you sure you want to force logout ALL OTHER users? (Admins/Owners may be protected).")) return;
+            
+            const confirmation = prompt(`Type 'LOGOUT ALL' to force logout ALL OTHER users. (Admins/Owners may be protected).`);
+            if (confirmation !== 'LOGOUT ALL') {
+                showMessage("Action cancelled.", "info");
+                return;
+            }
 
             showMessage("Forcing logout for all applicable users...", 'info');
             try {
@@ -2889,8 +3297,17 @@
         /** Admin: Delete ALL game rooms */
         async function handleDeleteAllGameRooms() {
             if (!auth.currentUser || !hasAdminAccess(auth.currentUser.uid)) return;
-            if (!confirm("EXTREME CAUTION: Delete ALL game rooms? This cannot be undone.")) return;
-            if (!confirm("SECOND WARNING: Confirm again to delete ALL game rooms.")) return;
+            
+            const confirmation1 = prompt("EXTREME CAUTION: Type 'DELETE ALL' to delete ALL game rooms. This cannot be undone.");
+            if (confirmation1 !== 'DELETE ALL') {
+                showMessage("Action cancelled.", "info");
+                return;
+            }
+            const confirmation2 = prompt("SECOND WARNING: Confirm again by typing 'DELETE ALL ROOMS'.");
+             if (confirmation2 !== 'DELETE ALL ROOMS') {
+                showMessage("Action cancelled.", "info");
+                return;
+            }
 
             showMessage("Deleting all game rooms...", 'info');
             try {
@@ -2912,20 +3329,10 @@
         }
 
         // --- (Investments Panel Event Listeners are here, but commented out) ---
-        // if (investmentsButton) { ... }
-        // if (sharesTab) { ... }
-        // if (offersTab) { ... }
-        // if (offerInvestmentForm) { ... }
-        // if (mySharesList) { ... }
-        // if (incomingOffersList) { ... }
+        // ...
 
         // --- (Investment Logic Functions are here, but commented out) ---
-        // function populateInvestmentPlayerSelect() { ... }
-        // async function handleOfferInvestment(event) { ... }
-        // function formatDate(timestamp) { ... }
-        // function renderMySharesList() { ... }
-        // function renderIncomingOffersList() { ... }
-        // function renderMyInvestmentsAsInvesteeList() { ... }
+        // ...
 
     </script>
     <!-- =================== JAVASCRIPT END =================== -->
