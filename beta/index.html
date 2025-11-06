@@ -1329,6 +1329,23 @@
         const openAdminPanelButton = document.getElementById('openAdminPanelButton');
         const joinGameButton = document.getElementById('joinGameButton');
 
+        // --- NEW Header & Sidebar Elements ---
+        const hamburgerButton = document.getElementById('hamburgerButton');
+        const accountButton = document.getElementById('accountButton');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const accountDropdown = document.getElementById('accountDropdown');
+
+        // Sidebar links
+        const sidebarJoinGame = document.getElementById('sidebarJoinGame');
+        const sidebarUserDirectory = document.getElementById('sidebarUserDirectory');
+
+        // Dropdown links
+        const dropdownAccountLink = document.getElementById('dropdownAccountLink');
+        const dropdownAdminLink = document.getElementById('dropdownAdminLink');
+        const dropdownLogoutLink = document.getElementById('dropdownLogoutLink');
+        // --- END NEW Header & Sidebar Elements ---
+
         // Admin Panel
         const adminPanel = document.getElementById('adminPanel');
         const manageUsersButton = document.getElementById('manageUsersButton');
@@ -2557,6 +2574,12 @@
                     if (!isLoggingOut && !dataLoadedAndListenersSetup) {
                         console.log("onAuthStateChanged: User present, triggering handleLoginSuccess.");
                         await handleLoginSuccess(user);
+                        // NEW: Show/hide admin link in dropdown based on role
+                        if (hasAdminAccess(user.uid)) {
+                            dropdownAdminLink.classList.remove('hidden');
+                        } else {
+                            dropdownAdminLink.classList.add('hidden');
+                        }
                     } else if (isLoggingOut) {
                         console.log("onAuthStateChanged: User present but logging out.");
                         showPanel(loginButtonsContainer);
@@ -2584,12 +2607,105 @@
                     } else {
                         // Regular web or after logout
                         console.log("Firebase: Displaying login options.");
+                        // NEW: Hide admin link on logout
+                        dropdownAdminLink.classList.add('hidden');
                         showPanel(loginButtonsContainer);
                         loadingIndicator.classList.add('hidden');
                     }
                     dataLoadedAndListenersSetup = false; 
                 }
             });
+
+            // --- NEW Header/Sidebar UI Event Listeners ---
+
+            // Function to toggle the sidebar
+            function toggleSidebar(show) {
+                if (show) {
+                    sidebar.classList.add('show');
+                    sidebarOverlay.classList.add('show');
+                } else {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            }
+
+            // Function to toggle the account dropdown
+            function toggleAccountDropdown(show) {
+                if (show) {
+                    accountDropdown.classList.remove('hidden');
+                } else {
+                    accountDropdown.classList.add('hidden');
+                }
+            }
+
+            // Hamburger button click
+            hamburgerButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent body click from closing it immediately
+                const isVisible = sidebar.classList.contains('show');
+                toggleSidebar(!isVisible);
+                if (!isVisible) {
+                    toggleAccountDropdown(false); // Close dropdown if opening sidebar
+                }
+            });
+
+            // Account button click
+            accountButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent body click from closing it immediately
+                const isVisible = !accountDropdown.classList.contains('hidden');
+                toggleAccountDropdown(!isVisible);
+                if (!isVisible) {
+                    toggleSidebar(false); // Close sidebar if opening dropdown
+                }
+            });
+
+            // Click-away listener (to close menus)
+            document.body.addEventListener('click', () => {
+                toggleSidebar(false);
+                toggleAccountDropdown(false);
+            });
+
+            // Stop propagation on menus themselves to prevent body click from closing them
+            sidebar.addEventListener('click', (e) => e.stopPropagation());
+            accountDropdown.addEventListener('click', (e) => e.stopPropagation());
+            // Overlay click closes sidebar
+            sidebarOverlay.addEventListener('click', () => toggleSidebar(false)); 
+
+
+            // --- Wire up menu links ---
+            
+            // Sidebar links
+            sidebarJoinGame.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleSidebar(false);
+                joinGameButton.click(); // Trigger existing logic
+            });
+            
+            sidebarUserDirectory.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleSidebar(false);
+                viewUserDirectoryButton.click(); // Trigger existing logic
+            });
+
+            // Dropdown links
+            dropdownAccountLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAccountDropdown(false);
+                openAccountManagementButton.click(); // Trigger existing logic
+            });
+
+            dropdownAdminLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAccountDropdown(false);
+                openAdminPanelButton.click(); // Trigger existing logic
+            });
+            
+            dropdownLogoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAccountDropdown(false);
+                handleLogout(); // Call existing logout function
+            });
+
+            // --- END NEW Header/Sidebar UI Event Listeners ---
         });
 
         // --- Main Event Listeners ---
