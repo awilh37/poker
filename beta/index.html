@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WPS 3.2</title>
-
+    
     <!-- 
       ============================================================
       =                 NEW CUSTOM STYLESHEET START                =
@@ -15,598 +15,557 @@
       buttons, panels, tables, and the game room.
     -->
     <style>
-      /* --- Imports & Base --- */
-      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+        /* --- Imports & Base --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-      /* --- CSS Reset & Base --- */
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: "Inter", sans-serif;
-        /* NEW: Light blue to light purple gradient */
-        background-color: #c2d2ff; /* Fallback color */
-        background-image: linear-gradient(135deg, #a8c0ff 0%, #d8b4fe 100%);
-        min-height: 100vh;
-        margin: 0;
-        color: #334155; /* Default text color (slate-700) */
-        overflow-x: hidden; /* Prevent horizontal scroll */
-      }
-
-      /* --- New Header --- */
-      .main-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1rem;
-        background-color: rgba(255, 255, 255, 0.7); /* Translucent white */
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px); /* Safari support */
-        border-bottom: 1px solid rgba(200, 200, 200, 0.3);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        position: fixed; /* Stick to top */
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 30; /* Above most content */
-      }
-      .header-left,
-      .header-center,
-      .header-right {
-        display: flex;
-        align-items: center;
-        flex: 1; /* Each takes 1/3 space */
-      }
-      .header-center {
-        justify-content: center;
-      }
-      .header-right {
-        justify-content: flex-end;
-        position: relative; /* For dropdown */
-      }
-      .header-title {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #1f2937;
-        margin: 0;
-      }
-      .header-icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #374151;
-        padding: 0.5rem;
-        border-radius: 99px;
-        transition: background-color 0.2s;
-      }
-      .header-icon-btn svg {
-        width: 1.75rem;
-        height: 1.75rem;
-        display: block; /* Fixes potential SVG alignment issues */
-      }
-      .header-icon-btn:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-      }
-
-      /* --- New Account Dropdown --- */
-      .dropdown-menu {
-        position: absolute;
-        top: 100%; /* Right below the button */
-        right: 0;
-        background-color: white;
-        border-radius: 0.75rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e5e7eb;
-        min-width: 180px;
-        z-index: 40;
-        overflow: hidden;
-        margin-top: 0.5rem;
-      }
-      .dropdown-menu a {
-        display: block;
-        padding: 0.75rem 1.25rem;
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: #374151;
-        text-decoration: none;
-        transition: background-color 0.15s;
-      }
-      .dropdown-menu a:hover {
-        background-color: #f3f4f6;
-      }
-      .dropdown-menu a#dropdownLogoutLink {
-        color: #dc3545;
-      }
-
-      /* --- New Sidebar --- */
-      .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 280px;
-        background-color: #ffffff;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-        z-index: 50; /* Topmost */
-        padding: 2rem 1rem;
-        transition: transform 0.3s ease-in-out;
-        transform: translateX(-100%);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      .sidebar.show {
-        transform: translateX(0);
-      }
-      .sidebar a {
-        display: block;
-        padding: 0.75rem 1rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: #374151;
-        text-decoration: none;
-        border-radius: 0.5rem;
-        transition: background-color 0.2s;
-      }
-      .sidebar a:hover {
-        background-color: #f3f4f6;
-      }
-      .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.4);
-        z-index: 45; /* Below sidebar, above content */
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-        pointer-events: none;
-      }
-      .sidebar-overlay.show {
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      /* --- New Standings Sidebar (Right) --- */
-      .standings-sidebar {
-        display: none; /* Hidden on mobile by default */
-      }
-
-      .standings-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1f2937;
-        margin: 0 0 1rem 0;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-      }
-
-      .standings-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .standings-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem;
-        background-color: rgba(255, 255, 255, 0.4);
-        border-radius: 0.5rem;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        border: 1px solid transparent;
-      }
-      .standings-item:hover {
-        background-color: rgba(255, 255, 255, 0.9);
-        border-color: rgba(0, 0, 0, 0.1);
-      }
-      .standings-item .name {
-        font-weight: 600;
-        color: #1f2937;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .standings-item .name .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: #9ca3af; /* Offline (gray) */
-      }
-      .standings-item .name .status-dot.online {
-        background-color: #22c55e; /* Online (green) */
-      }
-      .standings-item .chips {
-        font-weight: 500;
-        color: #007bff;
-        font-size: 0.9rem;
-      }
-
-      /* --- Utility --- */
-      .hidden {
-        display: none !important;
-      }
-      .text-center {
-        text-align: center;
-      }
-
-      /* --- Layout --- */
-      #mainContainer {
-        width: 100%;
-        /* max-width: 1280px;  <- REMOVED to go full-width */
-        /* margin: 0 auto;       <- REMOVED to go full-width */
-        padding: 5rem 1rem 2rem 1rem; /* UPDATED - Added 5rem top padding for fixed header */
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* Center the panels in the main content area */
-        gap: 1.5rem; /* Replaces all the separate margins */
-      }
-
-      /* --- Typography --- */
-      h2 {
-        font-size: 1.5rem; /* text-2xl */
-        font-weight: 600; /* semibold */
-        color: #111827;
-        margin: 0 0 1rem 0;
-        text-align: center;
-      }
-      h4 {
-        font-size: 1.25rem; /* text-xl */
-        font-weight: 600; /* semibold */
-        color: #111827;
-        margin: 0 0 0.75rem 0;
-        text-align: center;
-      }
-      h5 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 0.75rem;
-      }
-      p {
-        line-height: 1.6;
-        margin-bottom: 1rem;
-      }
-
-      /* --- Panels --- */
-      .content-panel {
-        background-color: #ffffff;
-        border-radius: 1rem; /* rounded-xl */
-        padding: 1.5rem; /* p-6 */
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        width: 100%;
-        max-width: 48rem; /* max-w-3xl */
-        text-align: center;
-      }
-
-      /* --- Buttons --- */
-      .btn {
-        display: inline-flex; /* Use inline-flex for icon alignment */
-        align-items: center;
-        justify-content: center;
-        font-weight: 600; /* font-semibold */
-        padding: 0.875rem 1.5rem; /* UPDATED: py-3.5 px-6 - Made buttons bigger */
-        border-radius: 0.75rem; /* UPDATED: rounded-xl */
-        font-size: 1rem; /* UPDATED: text-base */
-        line-height: 1.5rem;
-        color: #ffffff;
-        border: none;
-        cursor: pointer;
-        /* UPDATED: Added shadow and better transition */
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-          0 2px 4px -2px rgba(0, 0, 0, 0.06);
-        transition: all 0.2s ease-out;
-        text-decoration: none; /* For <a> tags styled as buttons */
-      }
-      .btn:hover {
-        /* UPDATED: Brighter transform/shadow on hover */
-        opacity: 1; /* Reset opacity from old style if any */
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      }
-      .btn:focus {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
-      }
-      .btn svg {
-        width: 1.25rem;
-        height: 1.25rem;
-        margin-right: 0.5rem;
-      }
-      /* Button full width */
-      .btn-full {
-        width: 100%;
-      }
-      /* Button half width */
-      .btn-half {
-        width: 50%;
-      }
-      @media (min-width: 640px) {
-        .btn-half {
-          width: calc(50% - 0.5rem); /* Adjust for gap */
+        /* --- CSS Reset & Base --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
         }
-      }
-      /* Button Colors */
-      .btn-blue {
-        background-color: #3b82f6;
-      } /* blue-500 */
-      .btn-green {
-        background-color: #22c55e;
-      } /* green-500 */
-      .btn-red {
-        background-color: #ef4444;
-      } /* red-500 */
-      .btn-gray {
-        background-color: #6b7280;
-      } /* gray-500 */
-      .btn-purple {
-        background-color: #8b5cf6;
-      } /* violet-500 */
-      .btn-google {
-        background-color: #db4437;
-      } /* Google Red */
 
-      /* --- Forms --- */
-      .form-label {
-        display: block;
-        text-align: left;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #374151;
-        margin-bottom: 0.5rem;
-      }
-      .form-input,
-      .form-select {
-        display: block;
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.5rem;
-        background-color: #f9fafb;
-        font-size: 0.9rem;
-        transition: border-color 0.2s, box-shadow 0.2s;
-      }
-      .form-input:focus,
-      .form-select:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-      }
-      .form-group {
-        margin-bottom: 1rem;
-      }
-      .form-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        margin-top: 1.5rem;
-      }
-
-      /* --- Tables --- */
-      .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1.5rem;
-        font-size: 0.875rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border-radius: 0.75rem;
-        overflow: hidden;
-      }
-      .data-table th,
-      .data-table td {
-        border: 1px solid #e5e7eb;
-        padding: 0.75rem 1rem;
-        text-align: left;
-        vertical-align: middle;
-      }
-      .data-table th {
-        background-color: #f3f4f6;
-        color: #374151;
-        font-weight: 600;
-      }
-      .data-table tr:nth-child(even) {
-        background-color: #f9fafb;
-      }
-      .data-table tr:hover {
-        background-color: #f0f9ff;
-      }
-      .data-table .form-select,
-      .data-table .form-input {
-        width: auto;
-        min-width: 150px;
-        padding: 0.5rem;
-        font-size: 0.875rem;
-      }
-
-      /* --- List --- */
-      .list-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-top: 1rem;
-      }
-      .list-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1rem;
-        background-color: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-      }
-      .list-item-content {
-        font-weight: 500;
-        color: #1f2937;
-      }
-      .list-item-actions {
-        display: flex;
-        gap: 0.5rem;
-      }
-      .list-item-actions .btn {
-        width: auto;
-      }
-      @media (min-width: 640px) {
-        .list-item {
-          flex-direction: row;
-          align-items: center;
+        body {
+            font-family: 'Inter', sans-serif;
+            /* NEW: Light blue to light purple gradient */
+            background-color: #c2d2ff; /* Fallback color */
+            background-image: linear-gradient(135deg, #a8c0ff 0%, #d8b4fe 100%);
+            min-height: 100vh;
+            margin: 0;
+            color: #334155; /* Default text color (slate-700) */
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
-      }
 
-      /* --- Popups / Modals --- */
-      .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(5px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 100;
-        padding: 1rem;
-      }
-      .modal-content {
-        position: relative;
-        background-color: #ffffff;
-        border-radius: 1rem;
-        padding: 2rem;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-          0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        max-width: 500px;
-        width: 100%;
-        max-height: 90vh;
-        overflow-y: auto;
-        border-radius: 0.375rem; /* rounded-md */
-        background-color: white;
-        text-align: center;
-      }
-      .modal-content h3 {
-        font-size: 1.25rem;
-        font-weight: 500;
-        color: #111827; /* text-gray-900 */
-      }
-      #groupPlayerList {
-        list-style: none;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-top: 1rem;
-      }
+        /* --- New Header --- */
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.7); /* Translucent white */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px); /* Safari support */
+            border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: fixed; /* Stick to top */
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 30; /* Above most content */
+        }
+        .header-left, .header-center, .header-right {
+            display: flex;
+            align-items: center;
+            flex: 1; /* Each takes 1/3 space */
+        }
+        .header-center {
+            justify-content: center;
+        }
+        .header-right {
+            justify-content: flex-end;
+            position: relative; /* For dropdown */
+        }
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin: 0;
+        }
+        .header-icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #374151;
+            padding: 0.5rem;
+            border-radius: 99px;
+            transition: background-color 0.2s;
+        }
+        .header-icon-btn svg {
+            width: 1.75rem;
+            height: 1.75rem;
+            display: block; /* Fixes potential SVG alignment issues */
+        }
+        .header-icon-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
 
-      /* --- Responsive Layout Adjustments --- */
+        /* --- New Account Dropdown --- */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%; /* Right below the button */
+            right: 0;
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+            min-width: 180px;
+            z-index: 40;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .dropdown-menu a {
+            display: block;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #374151;
+            text-decoration: none;
+            transition: background-color 0.15s;
+        }
+        .dropdown-menu a:hover {
+            background-color: #f3f4f6;
+        }
+        .dropdown-menu a#dropdownLogoutLink {
+            color: #dc3545;
+        }
 
-      /* Large screens (lg: 1024px) */
-      @media (min-width: 1024px) {
-        /* Show and pin the standings sidebar */
+        /* --- New Sidebar --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 280px;
+            background-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 50; /* Topmost */
+            padding: 2rem 1rem;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .sidebar.show {
+            transform: translateX(0);
+        }
+        .sidebar a {
+            display: block;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #374151;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .sidebar a:hover {
+            background-color: #f3f4f6;
+        }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 45; /* Below sidebar, above content */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        .sidebar-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* --- New Standings Sidebar (Right) --- */
         .standings-sidebar {
-          display: block;
-          position: fixed;
-          top: 65px; /* Approx header height */
-          right: 0;
-          width: 280px;
-          height: calc(100vh - 65px);
-          background-color: rgba(255, 255, 255, 0.7); /* Translucent white */
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px); /* Safari support */
-          border-left: 1px solid rgba(200, 200, 200, 0.3);
-          z-index: 25; /* Below header (30), above content */
-          padding: 1rem;
-          overflow-y: auto;
+            display: none; /* Hidden on mobile by default */
         }
 
-        /* Add padding to main container to avoid overlap */
-        #mainContainer {
-          padding-right: 300px; /* 280px sidebar + 20px gutter */
+        .standings-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
         }
-      }
+        
+        .standings-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .standings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border: 1px solid transparent;
+        }
+        .standings-item:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(0,0,0,0.1);
+        }
+        .standings-item .name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .standings-item .name .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #9ca3af; /* Offline (gray) */
+        }
+        .standings-item .name .status-dot.online {
+            /* This class will no longer be added, as RTDB is removed */
+            background-color: #22c55e; /* Online (green) */
+        }
+        .standings-item .chips {
+            font-weight: 500;
+            color: #007bff;
+            font-size: 0.9rem;
+        }
+
+
+        /* --- Utility --- */
+        .hidden {
+            display: none !important;
+        }
+        .text-center {
+            text-align: center;
+        }
+
+        /* --- Layout --- */
+        #mainContainer {
+            width: 100%;
+            /* max-width: 1280px;  <- REMOVED to go full-width */
+            /* margin: 0 auto;       <- REMOVED to go full-width */
+            padding: 5rem 1rem 2rem 1rem; /* UPDATED - Added 5rem top padding for fixed header */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center the panels in the main content area */
+            gap: 1.5rem; /* Replaces all the separate margins */
+        }
+
+        /* --- Typography --- */
+        h2 {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 600; /* semibold */
+            color: #111827;
+            margin: 0 0 1rem 0;
+            text-align: center;
+        }
+        h4 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* semibold */
+            color: #111827;
+            margin: 0 0 0.75rem 0;
+            text-align: center;
+        }
+        h5 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.75rem;
+        }
+        p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Panels --- */
+        .content-panel {
+            background-color: #ffffff;
+            border-radius: 1rem; /* rounded-xl */
+            padding: 1.5rem; /* p-6 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 48rem; /* max-w-3xl */
+            text-align: center;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            display: inline-flex; /* Use inline-flex for icon alignment */
+            align-items: center;
+            justify-content: center;
+            font-weight: 600; /* font-semibold */
+            padding: 0.875rem 1.5rem; /* UPDATED: py-3.5 px-6 - Made buttons bigger */
+            border-radius: 0.75rem; /* UPDATED: rounded-xl */
+            font-size: 1rem; /* UPDATED: text-base */
+            line-height: 1.5rem;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            /* UPDATED: Added shadow and better transition */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease-out; 
+            text-decoration: none; /* For <a> tags styled as buttons */
+        }
+        .btn:hover {
+            /* UPDATED: Brighter transform/shadow on hover */
+            opacity: 1; /* Reset opacity from old style if any */
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        }
+        .btn svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+        }
+        /* Button full width */
+        .btn-full {
+            width: 100%;
+        }
+        /* Button half width */
+        .btn-half {
+            width: 50%;
+        }
+        @media (min-width: 640px) {
+            .btn-half {
+                width: calc(50% - 0.5rem); /* Adjust for gap */
+            }
+        }
+        /* Button Colors */
+        .btn-blue { background-color: #3b82f6; } /* blue-500 */
+        .btn-green { background-color: #22c55e; } /* green-500 */
+        .btn-red { background-color: #ef4444; } /* red-500 */
+        .btn-gray { background-color: #6b7280; } /* gray-500 */
+        .btn-purple { background-color: #8b5cf6; } /* violet-500 */
+        .btn-google { background-color: #db4437; } /* Google Red */
+
+        /* --- Forms --- */
+        .form-label {
+            display: block;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .form-input, .form-select {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        /* --- Tables --- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .data-table th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+        }
+        .data-table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .data-table tr:hover {
+            background-color: #f0f9ff;
+        }
+        .data-table .form-select, .data-table .form-input {
+            width: auto;
+            min-width: 150px;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        /* --- List --- */
+        .list-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+        }
+        .list-item-content {
+            font-weight: 500;
+            color: #1f2937;
+        }
+        .list-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .list-item-actions .btn {
+            width: auto;
+        }
+        @media (min-width: 640px) {
+            .list-item {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        /* --- Popups / Modals --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 1rem;
+        }
+        .modal-content {
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: white;
+            text-align: center;
+        }
+        .modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #111827; /* text-gray-900 */
+        }
+        #groupPlayerList {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* --- Responsive Layout Adjustments --- */
+        
+        /* Large screens (lg: 1024px) */
+        @media (min-width: 1024px) {
+            /* Show and pin the standings sidebar */
+            .standings-sidebar {
+                display: block;
+                position: fixed;
+                top: 65px; /* Approx header height */
+                right: 0;
+                width: 280px;
+                height: calc(100vh - 65px);
+                background-color: rgba(255, 255, 255, 0.7); /* Translucent white */
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px); /* Safari support */
+                border-left: 1px solid rgba(200, 200, 200, 0.3);
+                z-index: 25; /* Below header (30), above content */
+                padding: 1rem;
+                overflow-y: auto;
+            }
+
+            /* Add padding to main container to avoid overlap */
+            #mainContainer {
+                padding-right: 300px; /* 280px sidebar + 20px gutter */
+            }
+        }
     </style>
     <!-- 
       ============================================================
       =                 NEW CUSTOM STYLESHEET END                  =
       ============================================================
     -->
-  </head>
+</head>
 
-  <body>
+<body>
+
     <!-- 
       ============================================================
       =                 NEW HEADER START                       =
       ============================================================
     -->
     <header class="main-header">
-      <div class="header-left">
-        <button id="hamburgerButton" class="header-icon-btn">
-          <!-- Hamburger Menu Icon -->
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-            />
-          </svg>
-        </button>
-      </div>
-      <div class="header-center">
-        <h1 class="header-title">WPS 3.2</h1>
-      </div>
-      <div class="header-right">
-        <button id="accountButton" class="header-icon-btn">
-          <!-- Account Icon -->
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-            />
-          </svg>
-        </button>
-
-        <!-- Account dropdown, hidden by default -->
-        <div id="accountDropdown" class="dropdown-menu hidden">
-          <!-- Links will be controlled by JS -->
-          <a href="#" id="dropdownAccountLink">Manage Account</a>
-          <a href="#" id="dropdownAdminLink" class="hidden">Admin Panel</a>
-          <a href="#" id="dropdownLogoutLink">Logout</a>
+        <div class="header-left">
+            <button id="hamburgerButton" class="header-icon-btn">
+                <!-- Hamburger Menu Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
         </div>
-      </div>
+        <div class="header-center">
+            <h1 class="header-title">WPS 3.2</h1>
+        </div>
+        <div class="header-right">
+            <button id="accountButton" class="header-icon-btn">
+                <!-- Account Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+            </button>
+            
+            <!-- Account dropdown, hidden by default -->
+            <div id="accountDropdown" class="dropdown-menu hidden">
+                <!-- Links will be controlled by JS -->
+                <a href="#" id="dropdownAccountLink">Manage Account</a>
+                <a href="#" id="dropdownAdminLink" class="hidden">Admin Panel</a>
+                <a href="#" id="dropdownLogoutLink">Logout</a>
+            </div>
+        </div>
     </header>
 
     <!-- Sidebar (for hamburger menu), hidden by default -->
     <nav id="sidebar" class="sidebar hidden">
-      <a href="#" id="sidebarJoinGame">Join a Game</a>
-      <a href="#" id="sidebarUserDirectory">User Directory</a>
-      <!-- We can add more links here later -->
+        <a href="#" id="sidebarJoinGame">Join a Game</a>
+        <a href="#" id="sidebarUserDirectory">User Directory</a>
+        <!-- We can add more links here later -->
     </nav>
     <div id="sidebarOverlay" class="sidebar-overlay hidden"></div>
     <!-- =================== NEW HEADER END =================== -->
+
 
     <!-- 
       ============================================================
@@ -614,13 +573,14 @@
       ============================================================
     -->
     <aside id="standingsSidebar" class="standings-sidebar">
-      <h4 class="standings-title">Standings</h4>
-      <ul id="standingsList" class="standings-list">
-        <!-- User standings will be populated here by JS -->
-        <li><p>Loading...</p></li>
-      </ul>
+        <h4 class="standings-title">Standings</h4>
+        <ul id="standingsList" class="standings-list">
+            <!-- User standings will be populated here by JS -->
+            <li><p>Loading...</p></li>
+        </ul>
     </aside>
     <!-- =================== NEW STANDINGS SIDEBAR END =================== -->
+
 
     <!-- 
       ============================================================
@@ -628,342 +588,204 @@
       ============================================================
     -->
     <div id="mainContainer">
-      <!-- Loading Indicator: Shown when app is initializing -->
-      <div id="loadingIndicator" class="hidden loading-indicator">
-        <svg
-          class="animate-spin"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v8H4z"
-          ></path>
-        </svg>
-        <span>Loading, please wait...</span>
-      </div>
+        
+        <!-- Loading Indicator: Shown when app is initializing -->
+        <div id="loadingIndicator" class="hidden loading-indicator">
+            <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span>Loading, please wait...</span>
+        </div>
 
-      <!-- Message Box: For success/error messages -->
-      <div id="messageBox" class="message-box hidden"></div>
+        <!-- Message Box: For success/error messages -->
+        <div id="messageBox" class="message-box hidden"></div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =                LOGIN PANEL (Hidden by default)           =
           ============================================================
         -->
-      <div id="loginButtonsContainer" class="content-panel hidden">
-        <h2>Welcome to WPS 3.2</h2>
-        <p>Please sign in to continue.</p>
-        <div class="form-actions">
-          <button id="googleLoginButton" class="btn btn-google btn-full">
-            <svg
-              fill="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.1,20.4 12.18,20.4C8.99,20.4 6.4,17.81 6.4,14.62C6.4,11.43 8.99,8.84 12.18,8.84C13.79,8.84 15.2,9.45 16.29,10.44L18.87,7.86C17.06,6.23 14.81,5.25 12.18,5.25C7.29,5.25 3.33,9.09 3.33,14.62C3.33,20.15 7.29,24 12.18,24C17.43,24 21.5,20.08 21.5,14.74C21.5,13.88 21.43,12.7 21.35,11.1V11.1Z"
-              ></path>
-            </svg>
-            Sign in with Google
-          </button>
+        <div id="loginButtonsContainer" class="content-panel hidden">
+            <h2>Welcome to WPS 3.2</h2>
+            <p>Please sign in to continue.</p>
+            <div class="form-actions">
+                <button id="googleLoginButton" class="btn btn-google btn-full">
+                    <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21.35,11.1H12.18V13.83H18.69C18.36,17.64 15.1,20.4 12.18,20.4C8.99,20.4 6.4,17.81 6.4,14.62C6.4,11.43 8.99,8.84 12.18,8.84C13.79,8.84 15.2,9.45 16.29,10.44L18.87,7.86C17.06,6.23 14.81,5.25 12.18,5.25C7.29,5.25 3.33,9.09 3.33,14.62C3.33,20.15 7.29,24 12.18,24C17.43,24 21.5,20.08 21.5,14.74C21.5,13.88 21.43,12.7 21.35,11.1V11.1Z"></path>
+                    </svg>
+                    Sign in with Google
+                </button>
+            </div>
         </div>
-      </div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =                MAIN ACTIONS (Hidden by default)          =
           ============================================================
         -->
-      <div id="mainActionButtons" class="content-panel hidden">
-        <h2>Main Menu</h2>
-        <div class="form-actions" style="flex-direction: column">
-          <button id="joinGameButton" class="btn btn-green btn-full">
-            Join a Game
-          </button>
-          <button id="viewUserDirectoryButton" class="btn btn-blue btn-full">
-            User Directory
-          </button>
-          <button
-            id="openAccountManagementButton"
-            class="btn btn-purple btn-full"
-          >
-            Manage Account
-          </button>
-          <button id="openAdminPanelButton" class="btn btn-red btn-full hidden">
-            Admin Panel
-          </button>
+        <div id="mainActionButtons" class="content-panel hidden">
+            <h2>Main Menu</h2>
+            <div class="form-actions" style="flex-direction: column;">
+                <button id="joinGameButton" class="btn btn-green btn-full">Join a Game</button>
+                <button id="viewUserDirectoryButton" class="btn btn-blue btn-full">User Directory</button>
+                <button id="openAccountManagementButton" class="btn btn-purple btn-full">Manage Account</button>
+                <button id="openAdminPanelButton" class="btn btn-red btn-full hidden">Admin Panel</button>
+            </div>
         </div>
-      </div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =           ACCOUNT MANAGEMENT (Hidden by default)         =
           ============================================================
         -->
-      <div id="accountManagementPanel" class="content-panel hidden">
-        <button class="btn btn-gray" id="backToMenuFromAccount">
-          ← Back to Menu
-        </button>
-        <h2>Manage Account</h2>
-        <div class="form-group">
-          <label for="displayNameInput" class="form-label">Display Name</label>
-          <input
-            type="text"
-            id="displayNameInput"
-            class="form-input"
-            placeholder="Enter your display name"
-          />
+        <div id="accountManagementPanel" class="content-panel hidden">
+            <button class="btn btn-gray" id="backToMenuFromAccount">← Back to Menu</button>
+            <h2>Manage Account</h2>
+            <div class="form-group">
+                <label for="displayNameInput" class="form-label">Display Name</label>
+                <input type="text" id="displayNameInput" class="form-input" placeholder="Enter your display name">
+            </div>
+            <button id="updateDisplayNameButton" class="btn btn-blue btn-full">Update Display Name</button>
         </div>
-        <button id="updateDisplayNameButton" class="btn btn-blue btn-full">
-          Update Display Name
-        </button>
-      </div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =               ADMIN PANEL (Hidden by default)            =
           ============================================================
         -->
-      <div id="adminPanel" class="content-panel hidden">
-        <button class="btn btn-gray" id="backToMenuFromAdmin">
-          ← Back to Menu
-        </button>
-        <h2>Admin Panel</h2>
-        <div class="form-actions" style="flex-direction: column">
-          <button id="openUserManagement" class="btn btn-blue btn-full">
-            User Management
-          </button>
-          <button id="openGameRoomManagement" class="btn btn-green btn-full">
-            Game Room Management
-          </button>
-          <button id="openCreateGroup" class="btn btn-purple btn-full">
-            Create Chat Group
-          </button>
-          <button id="openInvestments" class="btn btn-gray btn-full">
-            Investments (Disabled)
-          </button>
+        <div id="adminPanel" class="content-panel hidden">
+            <button class="btn btn-gray" id="backToMenuFromAdmin">← Back to Menu</button>
+            <h2>Admin Panel</h2>
+            <div class="form-actions" style="flex-direction: column;">
+                <button id="openUserManagement" class="btn btn-blue btn-full">User Management</button>
+                <button id="openGameRoomManagement" class="btn btn-green btn-full">Game Room Management</button>
+                <button id="openCreateGroup" class="btn btn-purple btn-full">Create Chat Group</button>
+                <button id="openInvestments" class="btn btn-gray btn-full">Investments (Disabled)</button>
+            </div>
         </div>
-      </div>
-
-      <!-- 
+        
+        <!-- 
           ============================================================
           =            USER MANAGEMENT (Hidden by default)           =
           ============================================================
         -->
-      <div
-        id="userManagementPanel"
-        class="content-panel hidden"
-        style="max-width: 64rem"
-      >
-        <!-- max-w-6xl -->
-        <button class="btn btn-gray" id="backToAdminFromUser">
-          ← Back to Admin Panel
-        </button>
-        <h2>User Management</h2>
-        <div style="overflow-x: auto">
-          <table id="userRolesTable" class="data-table">
-            <!-- JS will create table headers and rows -->
-          </table>
+        <div id="userManagementPanel" class="content-panel hidden" style="max-width: 64rem;"> <!-- max-w-6xl -->
+            <button class="btn btn-gray" id="backToAdminFromUser">← Back to Admin Panel</button>
+            <h2>User Management</h2>
+            <div style="overflow-x: auto;">
+                <table id="userRolesTable" class="data-table">
+                    <!-- JS will create table headers and rows -->
+                </table>
+            </div>
         </div>
-      </div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =            GAME ROOM MGMT (Hidden by default)            =
           ============================================================
         -->
-      <div id="gameRoomManagementPanel" class="content-panel hidden">
-        <button class="btn btn-gray" id="backToAdminFromGame">
-          ← Back to Admin Panel
-        </button>
-        <h2>Game Room Management</h2>
-        <div class="form-group">
-          <label for="newRoomName" class="form-label">New Room Name</label>
-          <input
-            type="text"
-            id="newRoomName"
-            class="form-input"
-            placeholder="e.g., 'Main Table'"
-          />
+        <div id="gameRoomManagementPanel" class="content-panel hidden">
+            <button class="btn btn-gray" id="backToAdminFromGame">← Back to Admin Panel</button>
+            <h2>Game Room Management</h2>
+            <div class="form-group">
+                <label for="newRoomName" class="form-label">New Room Name</label>
+                <input type="text" id="newRoomName" class="form-input" placeholder="e.g., 'Main Table'">
+            </div>
+            <button id="createGameRoomButton" class="btn btn-green btn-full">Create New Game Room</button>
+            
+            <h4 style="margin-top: 2rem;">Active Rooms</h4>
+            <div id="gameRoomList" class="list-group">
+                <!-- JS will populate this -->
+            </div>
         </div>
-        <button id="createGameRoomButton" class="btn btn-green btn-full">
-          Create New Game Room
-        </button>
-
-        <h4 style="margin-top: 2rem">Active Rooms</h4>
-        <div id="gameRoomList" class="list-group">
-          <!-- JS will populate this -->
-        </div>
-      </div>
-
-      <!-- 
+        
+        <!-- 
           ============================================================
           =             GAME ROOM VIEW (Hidden by default)           =
           ============================================================
         -->
-      <div
-        id="gameRoomViewPanel"
-        class="content-panel hidden"
-        style="max-width: 64rem"
-      >
-        <!-- max-w-6xl -->
-        <button class="btn btn-gray" id="leaveGameRoomButton">
-          ← Leave Room
-        </button>
-        <h2 id="gameRoomName">Game Room</h2>
-        <div id="gameRoomContent">
-          <!-- JS will populate all game content here -->
+        <div id="gameRoomViewPanel" class="content-panel hidden" style="max-width: 64rem;"> <!-- max-w-6xl -->
+            <button class="btn btn-gray" id="leaveGameRoomButton">← Leave Room</button>
+            <h2 id="gameRoomName">Game Room</h2>
+            <div id="gameRoomContent">
+                <!-- JS will populate all game content here -->
+            </div>
         </div>
-      </div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =             USER DIRECTORY (Hidden by default)           =
           ============================================================
         -->
-      <div
-        id="userDirectoryPanel"
-        class="content-panel hidden"
-        style="max-width: 64rem"
-      >
-        <!-- max-w-6xl -->
-        <button class="btn btn-gray" id="backToMenuFromDirectory">
-          ← Back to Menu
-        </button>
-        <h2>User Directory</h2>
-        <div style="overflow-x: auto">
-          <table id="userDirectoryTable" class="data-table">
-            <!-- JS will create table headers and rows -->
-          </table>
+        <div id="userDirectoryPanel" class="content-panel hidden" style="max-width: 64rem;"> <!-- max-w-6xl -->
+            <button class="btn btn-gray" id="backToMenuFromDirectory">← Back to Menu</button>
+            <h2>User Directory</h2>
+            <div style="overflow-x: auto;">
+                <table id="userDirectoryTable" class="data-table">
+                    <!-- JS will create table headers and rows -->
+                </table>
+            </div>
         </div>
-      </div>
-
-      <!-- 
+        
+        <!-- 
           ============================================================
           =            CREATE GROUP (Hidden by default)              =
           ============================================================
         -->
-      <div id="createGroupPanel" class="content-panel hidden">
-        <button class="btn btn-gray" id="backToAdminFromGroup">
-          ← Back to Admin Panel
-        </button>
-        <h2>Create New Chat Group</h2>
-        <div class="form-group">
-          <label for="groupNameInput" class="form-label">Group Name</label>
-          <input
-            type="text"
-            id="groupNameInput"
-            class="form-input"
-            placeholder="Enter group name"
-          />
+        <div id="createGroupPanel" class="content-panel hidden">
+            <button class="btn btn-gray" id="backToAdminFromGroup">← Back to Admin Panel</button>
+            <h2>Create New Chat Group</h2>
+            <div class="form-group">
+                <label for="groupNameInput" class="form-label">Group Name</label>
+                <input type="text" id="groupNameInput" class="form-input" placeholder="Enter group name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Members</label>
+                <div id="groupUserChecklist" style="text-align: left; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 8px;">
+                    <!-- JS will populate this -->
+                </div>
+            </div>
+            <button id="finalizeGroupButton" class="btn btn-green btn-full">Create Group</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Select Members</label>
-          <div
-            id="groupUserChecklist"
-            style="
-              text-align: left;
-              max-height: 200px;
-              overflow-y: auto;
-              border: 1px solid #ccc;
-              padding: 10px;
-              border-radius: 8px;
-            "
-          >
-            <!-- JS will populate this -->
-          </div>
-        </div>
-        <button id="finalizeGroupButton" class="btn btn-green btn-full">
-          Create Group
-        </button>
-      </div>
 
-      <!-- 
+        <!-- 
           ============================================================
           =            GROUP CHAT MODAL (Hidden by default)          =
           ============================================================
         -->
-      <div id="groupChatModal" class="modal-overlay hidden">
-        <div
-          class="modal-content"
-          style="
-            display: flex;
-            flex-direction: column;
-            max-width: 600px;
-            height: 70vh;
-          "
-        >
-          <h3 id="groupChatTitle">Group Chat</h3>
-          <div
-            id="groupChatMessages"
-            style="
-              flex-grow: 1;
-              overflow-y: auto;
-              border: 1px solid #eee;
-              padding: 10px;
-              margin: 10px 0;
-              border-radius: 8px;
-              text-align: left;
-            "
-          >
-            <!-- Messages will be populated here -->
-          </div>
-          <div id="groupPlayerList" class="hidden"></div>
-          <div style="display: flex; gap: 10px; margin-top: 10px">
-            <input
-              type="text"
-              id="groupMessageInput"
-              class="form-input"
-              placeholder="Type a message..."
-            />
-            <button
-              id="sendGroupMessageButton"
-              class="btn btn-blue"
-              style="width: auto"
-            >
-              Send
-            </button>
-          </div>
-          <button
-            id="closeGroupChatButton"
-            class="btn btn-gray"
-            style="margin-top: 1rem"
-          >
-            Close
-          </button>
+        <div id="groupChatModal" class="modal-overlay hidden">
+            <div class="modal-content" style="display: flex; flex-direction: column; max-width: 600px; height: 70vh;">
+                <h3 id="groupChatTitle">Group Chat</h3>
+                <div id="groupChatMessages" style="flex-grow: 1; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin: 10px 0; border-radius: 8px; text-align: left;">
+                    <!-- Messages will be populated here -->
+                </div>
+                <div id="groupPlayerList" class="hidden"></div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <input type="text" id="groupMessageInput" class="form-input" placeholder="Type a message...">
+                    <button id="sendGroupMessageButton" class="btn btn-blue" style="width: auto;">Send</button>
+                </div>
+                <button id="closeGroupChatButton" class="btn btn-gray" style="margin-top: 1rem;">Close</button>
+            </div>
         </div>
-      </div>
-      <!-- =================== GROUP CHAT MODAL END =================== -->
+        <!-- =================== GROUP CHAT MODAL END =================== -->
 
-      <!-- 
+        <!-- 
           ============================================================
           =                USER INFO MODAL START (Hidden)            =
           ============================================================
         -->
-      <div id="userInfoModal" class="modal-overlay hidden">
-        <div class="modal-content" id="userInfoModalContent">
-          <!-- User info will be populated here by JS -->
-          <h3>User Information</h3>
-          <p>Loading...</p>
-          <button id="closeUserInfoModalButton" class="btn btn-gray btn-half">
-            Close
-          </button>
+        <div id="userInfoModal" class="modal-overlay hidden">
+            <div class="modal-content" id="userInfoModalContent">
+                <!-- User info will be populated here by JS -->
+                <h3>User Information</h3>
+                <p>Loading...</p>
+                <button id="closeUserInfoModalButton" class="btn btn-gray btn-half">Close</button>
+            </div>
         </div>
-      </div>
-      <!-- =================== USER INFO MODAL END =================== -->
-    </div>
-    <!-- End of #mainContainer -->
+        <!-- =================== USER INFO MODAL END =================== -->
+
+    </div> <!-- End of #mainContainer -->
     <!-- =================== MAIN CONTAINER END =================== -->
 
     <!-- 
@@ -972,1088 +794,830 @@
       ============================================================
     -->
     <script type="module">
-      // --- Firebase Imports ---
-      // Import the functions you need from the SDKs you need
-      import { initializeApp } from "firebase/app";
-      import { getAnalytics } from "firebase/analytics";
-      // TODO: Add SDKs for Firebase products that you want to use
-      // https://firebase.google.com/docs/web/setup#available-libraries
-
-      // Your web app's Firebase configuration
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-      const firebaseConfig = {
-        apiKey: "AIzaSyBefsHEBuiRyJ31NzF885ac3ugCefzngTU",
-        authDomain: "wps-3-be723.firebaseapp.com",
-        projectId: "wps-3-be723",
-        storageBucket: "wps-3-be723.firebasestorage.app",
-        messagingSenderId: "420146617877",
-        appId: "1:420146617877:web:ea2e06a690732da76fb81c",
-        measurementId: "G-H0Z4C2185Y",
-      };
-
-      // Initialize Firebase
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-      // --- END NEW ---
-
-      // --- Global Variables ---
-      let db, auth, rtdb;
-      let currentUserId = null;
-      let currentUserData = null;
-      let firebaseAuthReady = false;
-      let dataLoadedAndListenersSetup = false;
-      let isLoggingOut = false;
-
-      let allFirebaseUsersData = []; // Stores all user profile docs
-      let allFirebaseRolesData = []; // Stores all user role docs
-      let firestoreActiveSessions = []; // Stores active session docs
-      let firestoreGameRooms = []; // Stores game room docs
-      let firestoreMessages = []; // Stores messages
-      let currentJoinedRoomId = null; // Stores the ID of the room the player is in
-
-      // Defined roles for the system
-      const ROLES = {
-        PLAYER: "player",
-        ADMIN: "admin",
-        OWNER: "owner",
-      };
-
-      // --- DOM Element Refs ---
-
-      // Panels
-      const mainContainer = document.getElementById("mainContainer");
-      const loginButtonsContainer = document.getElementById(
-        "loginButtonsContainer"
-      );
-      const mainActionButtons = document.getElementById("mainActionButtons");
-      const accountManagementPanel = document.getElementById(
-        "accountManagementPanel"
-      );
-      const adminPanel = document.getElementById("adminPanel");
-      const userManagementPanel = document.getElementById(
-        "userManagementPanel"
-      );
-      const gameRoomManagementPanel = document.getElementById(
-        "gameRoomManagementPanel"
-      );
-      const gameRoomViewPanel = document.getElementById("gameRoomViewPanel");
-      const userDirectoryPanel = document.getElementById("userDirectoryPanel");
-      const createGroupPanel = document.getElementById("createGroupPanel");
-
-      // Buttons
-      const googleLoginButton = document.getElementById("googleLoginButton");
-      const messageBox = document.getElementById("messageBox");
-      const loadingIndicator = document.getElementById("loadingIndicator");
-
-      // Main action buttons
-      const openAccountManagementButton = document.getElementById(
-        "openAccountManagementButton"
-      );
-      const viewUserDirectoryButton = document.getElementById(
-        "viewUserDirectoryButton"
-      );
-      const openAdminPanelButton = document.getElementById(
-        "openAdminPanelButton"
-      );
-      const joinGameButton = document.getElementById("joinGameButton");
-
-      // --- NEW Header & Sidebar Elements ---
-      const hamburgerButton = document.getElementById("hamburgerButton");
-      const accountButton = document.getElementById("accountButton");
-      const sidebar = document.getElementById("sidebar");
-      const sidebarOverlay = document.getElementById("sidebarOverlay");
-      const accountDropdown = document.getElementById("accountDropdown");
-
-      // Sidebar links
-      const sidebarJoinGame = document.getElementById("sidebarJoinGame");
-      const sidebarUserDirectory = document.getElementById(
-        "sidebarUserDirectory"
-      );
-
-      // Dropdown links
-      const dropdownAccountLink = document.getElementById(
-        "dropdownAccountLink"
-      );
-      const dropdownAdminLink = document.getElementById("dropdownAdminLink");
-      const dropdownLogoutLink = document.getElementById("dropdownLogoutLink");
-      // --- END NEW Header & Sidebar Elements ---
-
-      // --- NEW Standings Sidebar & Modal Elements ---
-      const standingsList = document.getElementById("standingsList");
-      const userInfoModal = document.getElementById("userInfoModal");
-      const userInfoModalContent = document.getElementById(
-        "userInfoModalContent"
-      );
-      // --- END NEW Standings Sidebar & Modal Elements ---
-
-      // Admin Panel
-      const backToMenuFromAdmin = document.getElementById(
-        "backToMenuFromAdmin"
-      );
-      const openUserManagement = document.getElementById("openUserManagement");
-      const openGameRoomManagement = document.getElementById(
-        "openGameRoomManagement"
-      );
-      const openCreateGroup = document.getElementById("openCreateGroup");
-      const openInvestments = document.getElementById("openInvestments");
-
-      // Account Management
-      const backToMenuFromAccount = document.getElementById(
-        "backToMenuFromAccount"
-      );
-      const displayNameInput = document.getElementById("displayNameInput");
-      const updateDisplayNameButton = document.getElementById(
-        "updateDisplayNameButton"
-      );
-
-      // User Management
-      const userRolesTable = document.getElementById("userRolesTable");
-      const backToAdminFromUser = document.getElementById(
-        "backToAdminFromUser"
-      );
-
-      // Game Room Management
-      const backToAdminFromGame = document.getElementById(
-        "backToAdminFromGame"
-      );
-      const newRoomName = document.getElementById("newRoomName");
-      const createGameRoomButton = document.getElementById(
-        "createGameRoomButton"
-      );
-      const gameRoomList = document.getElementById("gameRoomList");
-
-      // Game Room View
-      const leaveGameRoomButton = document.getElementById(
-        "leaveGameRoomButton"
-      );
-      const gameRoomName = document.getElementById("gameRoomName");
-      const gameRoomContent = document.getElementById("gameRoomContent");
-
-      // User Directory
-      const backToMenuFromDirectory = document.getElementById(
-        "backToMenuFromDirectory"
-      );
-      const userDirectoryTable = document.getElementById("userDirectoryTable");
-
-      // Create Group
-      const backToAdminFromGroup = document.getElementById(
-        "backToAdminFromGroup"
-      );
-      const groupNameInput = document.getElementById("groupNameInput");
-      const groupUserChecklist = document.getElementById("groupUserChecklist");
-      const finalizeGroupButton = document.getElementById(
-        "finalizeGroupButton"
-      );
-
-      // Group Chat Modal
-      const groupChatModal = document.getElementById("groupChatModal");
-      const groupChatTitle = document.getElementById("groupChatTitle");
-      const groupChatMessages = document.getElementById("groupChatMessages");
-      const groupPlayerList = document.getElementById("groupPlayerList");
-      const groupMessageInput = document.getElementById("groupMessageInput");
-      const sendGroupMessageButton = document.getElementById(
-        "sendGroupMessageButton"
-      );
-      const closeGroupChatButton = document.getElementById(
-        "closeGroupChatButton"
-      );
-
-      // --- Firebase Init ---
-      try {
-        const firebaseApp = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp, '(default)'); // Using named database '(default)'
-        const auth = getAuth(firebaseApp);
-        const googleProvider = new GoogleAuthProvider();
-        console.log("Firebase initialized successfully.");
-      } catch (e) {
-        console.error("Firebase initialization failed:", e);
-        showMessage(
-          "Error: Could not connect to the application services. Please refresh.",
-          "error"
-        );
-      }
-
-      // --- Auth State Change Listener ---
-
-      /**
-       * Main listener for authentication changes.
-       * Triggers when user logs in, logs out, or page loads.
-       */
-      if (auth) {
-        onAuthStateChanged(auth, async (user) => {
-          console.log(
-            "onAuthStateChanged: Auth state changed. User:",
-            user ? user.uid : "null"
-          );
-
-          if (user) {
-            currentUserId = user.uid;
-            firebaseAuthReady = true;
-
-            if (!isLoggingOut && !dataLoadedAndListenersSetup) {
-              console.log(
-                "onAuthStateChanged: User present, triggering handleLoginSuccess."
-              );
-              await handleLoginSuccess(user);
-              // NEW: Show/hide admin link in dropdown based on role
-              if (hasAdminAccess(user.uid)) {
-                dropdownAdminLink.classList.remove("hidden");
-              } else {
-                dropdownAdminLink.classList.add("hidden");
-              }
-            } else if (isLoggingOut) {
-              console.log(
-                "onAuthStateChanged: isLoggingOut is true, skipping login success logic."
-              );
-            } else if (dataLoadedAndListenersSetup) {
-              console.log(
-                "onAuthStateChanged: Data listeners already setup, skipping login success logic."
-              );
-            }
-          } else {
-            // User is signed out or not yet signed in
-            currentUserId = null;
-            currentUserData = null;
-            firebaseAuthReady = true;
-            dataLoadedAndListenersSetup = false; // Reset listener flag
-
-            if (isLoggingOut) {
-              // User just logged out, show message and login options
-              console.log("Firebase: User logged out.");
-              isLoggingOut = false; // Reset flag
-              showPanel(loginButtonsContainer);
-              showMessage("You have been successfully logged out.", "success");
-              // NEW: Hide admin link on logout
-              dropdownAdminLink.classList.add("hidden");
-            } else if (
-              typeof __initial_auth_token !== "undefined" &&
-              __initial_auth_token
-            ) {
-              // We have a custom token, let's try to sign in
-              console.log("Firebase: No user, trying custom token auth.");
-              try {
-                await signInWithCustomToken(auth, __initial_auth_token);
-                console.log("Firebase: Custom token sign-in successful.");
-              } catch (error) {
-                console.error("Firebase: Custom token sign-in failed:", error);
-                // Fallback to anonymous
-                await signInAnonymously(auth);
-              }
-            } else if (
-              firebaseConfig &&
-              Object.keys(firebaseConfig).length > 0
-            ) {
-              // No token, but we have config, try anonymous sign-in
-              console.log("Firebase: No user, trying anonymous auth.");
-              try {
-                await signInAnonymously(auth);
-                console.log("Firebase: Anonymous sign-in successful.");
-              } catch (error) {
-                console.error("Firebase: Anonymous sign-in failed:", error);
-              }
-            } else {
-              // Regular web or after logout
-              console.log("Firebase: Displaying login options.");
-              // NEW: Hide admin link on logout
-              dropdownAdminLink.classList.add("hidden");
-              showPanel(loginButtonsContainer);
-              loadingIndicator.classList.add("hidden");
-            }
-          }
-        });
-
-        // --- NEW Header/Sidebar UI Event Listeners ---
-
-        // Function to toggle the sidebar
-        function toggleSidebar(show) {
-          if (show) {
-            sidebar.classList.add("show");
-            sidebarOverlay.classList.add("show");
-          } else {
-            sidebar.classList.remove("show");
-            sidebarOverlay.classList.remove("show");
-          }
-        }
-
-        // Function to toggle the account dropdown
-        function toggleAccountDropdown(show) {
-          if (show) {
-            accountDropdown.classList.remove("hidden");
-          } else {
-            accountDropdown.classList.add("hidden");
-          }
-        }
-
-        // Hamburger button click
-        hamburgerButton.addEventListener("click", (e) => {
-          e.stopPropagation(); // Prevent body click from closing it immediately
-          const isVisible = sidebar.classList.contains("show");
-          toggleSidebar(!isVisible);
-          if (!isVisible) {
-            toggleAccountDropdown(false); // Close dropdown if opening sidebar
-          }
-        });
-
-        // Account button click
-        accountButton.addEventListener("click", (e) => {
-          e.stopPropagation(); // Prevent body click from closing it immediately
-          const isVisible = !accountDropdown.classList.contains("hidden");
-          toggleAccountDropdown(!isVisible);
-          if (!isVisible) {
-            toggleSidebar(false); // Close sidebar if opening dropdown
-          }
-        });
-
-        // Click-away listener (to close menus)
-        document.body.addEventListener("click", () => {
-          toggleSidebar(false);
-          toggleAccountDropdown(false);
-        });
-
-        // Stop propagation on menus themselves to prevent body click from closing them
-        sidebar.addEventListener("click", (e) => e.stopPropagation());
-        accountDropdown.addEventListener("click", (e) => e.stopPropagation());
-        // Overlay click closes sidebar
-        sidebarOverlay.addEventListener("click", () => toggleSidebar(false));
-
-        // --- Wire up menu links ---
-
-        // Sidebar links
-        sidebarJoinGame.addEventListener("click", (e) => {
-          e.preventDefault();
-          toggleSidebar(false);
-          joinGameButton.click(); // Trigger existing logic
-        });
-
-        sidebarUserDirectory.addEventListener("click", (e) => {
-          e.preventDefault();
-          toggleSidebar(false);
-          viewUserDirectoryButton.click(); // Trigger existing logic
-        });
-
-        // Dropdown links
-        dropdownAccountLink.addEventListener("click", (e) => {
-          e.preventDefault();
-          toggleAccountDropdown(false);
-          openAccountManagementButton.click(); // Trigger existing logic
-        });
-
-        dropdownAdminLink.addEventListener("click", (e) => {
-          e.preventDefault();
-          toggleAccountDropdown(false);
-          openAdminPanelButton.click(); // Trigger existing logic
-        });
-
-        dropdownLogoutLink.addEventListener("click", (e) => {
-          e.preventDefault();
-          toggleAccountDropdown(false);
-          handleLogout(); // Call existing logout function
-        });
-
-        // --- END NEW Header/Sidebar UI Event Listeners ---
-
-        // --- NEW Standings Modal Event Listeners ---
-
-        function hideUserInfoModal() {
-          userInfoModal.classList.add("hidden");
-        }
-
-        // Close modal if overlay is clicked
-        userInfoModal.addEventListener("click", (e) => {
-          if (e.target === userInfoModal) {
-            hideUserInfoModal();
-          }
-        });
-
-        // Close modal button (event delegation, since button is dynamic)
-        userInfoModal.addEventListener("click", (e) => {
-          if (e.target.id === "closeUserInfoModalButton") {
-            hideUserInfoModal();
-          }
-        });
-
-        // --- END NEW Standings Modal Event Listeners ---
-      }
-
-      // --- Main Event Listeners ---
-
-      /** Runs when the page content is loaded */
-      document.addEventListener("DOMContentLoaded", () => {
-        // This check ensures Firebase is initialized before adding listeners
-        if (!auth) {
-          console.error("DOM Loaded, but Firebase auth is not available.");
-          return;
-        }
-
-        // --- Auth Buttons ---
-        googleLoginButton.addEventListener("click", async () => {
-          const provider = new GoogleAuthProvider();
-          try {
-            await signInWithPopup(auth, provider);
-            // onAuthStateChanged will handle the rest
-          } catch (error) {
-            console.error("Google Sign-In Error:", error);
-            showMessage(`Google Sign-In Error: ${error.message}`, "error");
-          }
-        });
-
-        // --- Main Menu Navigation ---
-        openAccountManagementButton.addEventListener("click", () => {
-          displayNameInput.value = auth.currentUser.displayName || "";
-          showPanel(accountManagementPanel);
-        });
-
-        viewUserDirectoryButton.addEventListener("click", () => {
-          renderUserDirectoryTable();
-          showPanel(userDirectoryPanel);
-        });
-
-        openAdminPanelButton.addEventListener("click", () =>
-          showPanel(adminPanel)
-        );
-
-        joinGameButton.addEventListener("click", () => {
-          // For now, just show the first available room, or create one
-          // This logic can be expanded to a "lobby"
-          if (firestoreGameRooms.length > 0) {
-            joinGameRoom(firestoreGameRooms[0].id);
-          } else {
-            showMessage(
-              "No game rooms available. An admin needs to create one.",
-              "info"
-            );
-          }
-        });
-
-        // --- Panel Navigation (Back Buttons) ---
-        backToMenuFromAccount.addEventListener("click", () =>
-          showPanel(mainActionButtons)
-        );
-        backToMenuFromAdmin.addEventListener("click", () =>
-          showPanel(mainActionButtons)
-        );
-        backToMenuFromDirectory.addEventListener("click", () =>
-          showPanel(mainActionButtons)
-        );
-        backToAdminFromUser.addEventListener("click", () =>
-          showPanel(adminPanel)
-        );
-        backToAdminFromGame.addEventListener("click", () =>
-          showPanel(adminPanel)
-        );
-        backToAdminFromGroup.addEventListener("click", () =>
-          showPanel(adminPanel)
-        );
-        leaveGameRoomButton.addEventListener("click", leaveGameRoom);
-
-        // --- Account Management ---
-        updateDisplayNameButton.addEventListener("click", async () => {
-          const newName = displayNameInput.value.trim();
-          if (newName.length < 3) {
-            showMessage("Display name must be at least 3 characters.", "error");
-            return;
-          }
-          try {
-            // Update Firebase Auth profile
-            await updateProfile(auth.currentUser, { displayName: newName });
-            // Update Firestore profile
-            const userProfileRef = doc(
-              db,
-              "artifacts",
-              appId,
-              "users",
-              currentUserId,
-              "profiles",
-              currentUserId
-            );
-            await updateDoc(userProfileRef, { display_name: newName });
-
-            showMessage("Display name updated successfully!", "success");
-            showPanel(mainActionButtons);
-          } catch (error) {
-            console.error("Error updating display name:", error);
-            showMessage(`Error: ${error.message}`, "error");
-          }
-        });
-
-        // --- Admin Panel ---
-        openUserManagement.addEventListener("click", () => {
-          renderUserRolesTable();
-          showPanel(userManagementPanel);
-        });
-
-        openGameRoomManagement.addEventListener("click", () => {
-          renderGameRoomList();
-          showPanel(gameRoomManagementPanel);
-        });
-
-        openCreateGroup.addEventListener("click", () => {
-          populateUserChecklist();
-          showPanel(createGroupPanel);
-        });
-
-        // Game Room Management
-        createGameRoomButton.addEventListener("click", async () => {
-          const name = newRoomName.value.trim();
-          if (!name) {
-            showMessage("Please enter a room name.", "error");
-            return;
-          }
-          try {
-            const roomCollectionRef = collection(
-              db,
-              "artifacts",
-              appId,
-              "public",
-              "data",
-              "game_rooms"
-            );
-            await addDoc(roomCollectionRef, {
-              name: name,
-              createdAt: serverTimestamp(),
-              hostId: currentUserId,
-              players: [],
-              gameState: { status: "waiting" }, // Initial game state
-            });
-            showMessage(`Room '${name}' created!`, "success");
-            newRoomName.value = "";
-            // The onSnapshot listener will auto-update the list
-          } catch (error) {
-            console.error("Error creating game room:", error);
-            showMessage(`Error: ${error.message}`, "error");
-          }
-        });
-
-        // Create Group
-        finalizeGroupButton.addEventListener("click", async () => {
-          const groupName = groupNameInput.value.trim();
-          if (!groupName) {
-            showMessage("Please enter a group name.", "error");
-            return;
-          }
-          const selectedUsers = Array.from(
-            groupUserChecklist.querySelectorAll("input:checked")
-          ).map((input) => input.value);
-
-          if (selectedUsers.length < 1) {
-            // Need at least one other member
-            showMessage(
-              "Please select at least one member for the group.",
-              "error"
-            );
-            return;
-          }
-
-          // Add the creator to the group
-          if (!selectedUsers.includes(currentUserId)) {
-            selectedUsers.push(currentUserId);
-          }
-
-          try {
-            const groupCollectionRef = collection(
-              db,
-              "artifacts",
-              appId,
-              "public",
-              "data",
-              "chat_groups"
-            );
-            await addDoc(groupCollectionRef, {
-              name: groupName,
-              members: selectedUsers,
-              createdAt: serverTimestamp(),
-              createdBy: currentUserId,
-            });
-            showMessage(`Group '${groupName}' created!`, "success");
-            groupNameInput.value = "";
-            showPanel(adminPanel);
-          } catch (error) {
-            console.error("Error creating group:", error);
-            showMessage(`Error: ${error.message}`, "error");
-          }
-        });
-
-        // Group Chat
-        sendGroupMessageButton.addEventListener("click", sendGroupMessage);
-        groupMessageInput.addEventListener("keyup", (e) => {
-          if (e.key === "Enter") sendGroupMessage();
-        });
-        closeGroupChatButton.addEventListener("click", () =>
-          groupChatModal.classList.add("hidden")
-        );
-      }); // End DOMContentLoaded
-
-      // --- Core Functions ---
-
-      /**
-       * Runs after a successful login.
-       * Creates user profile, sets up presence, and attaches data listeners.
-       */
-      async function handleLoginSuccess(user) {
-        console.log("handleLoginSuccess: Setting up for user:", user.uid);
-        loadingIndicator.classList.remove("hidden");
-
-        try {
-          await setupUserProfile(user);
-          setupPresence(user.uid);
-
-          // Set up global data listeners
-          if (!dataLoadedAndListenersSetup) {
-            console.log("handleLoginSuccess: Setting up data listeners.");
-            await setupDataListeners();
-            dataLoadedAndListenersSetup = true;
-            console.log("handleLoginSuccess: Data listeners setup complete.");
-          } else {
-            console.log(
-              "handleLoginSuccess: Data listeners already setup, skipping."
-            );
-          }
-
-          // Update UI
-          currentUserData = allFirebaseUsersData.find(
-            (u) => u.uid === user.uid
-          );
-          if (hasAdminAccess(user.uid)) {
-            openAdminPanelButton.classList.remove("hidden");
-          } else {
-            openAdminPanelButton.classList.add("hidden");
-          }
-
-          showPanel(mainActionButtons);
-          showMessage(
-            `Welcome, ${formatDisplayName(currentUserData)}!`,
-            "success"
-          );
-        } catch (error) {
-          console.error("Error during login success handling:", error);
-          showMessage(`Error on login: ${error.message}`, "error");
-          showPanel(loginButtonsContainer); // Go back to login
-        } finally {
-          loadingIndicator.classList.add("hidden");
-        }
-      }
-
-      /**
-       * Logs out the current user.
-       */
-      async function handleLogout() {
-        console.log("handleLogout: Initiating logout for:", currentUserId);
-        isLoggingOut = true;
-
-        // 1. Remove from Realtime DB (Presence)
-        if (rtdb && currentUserId) {
-          const sessionRef = ref(
-            rtdb,
-            `artifacts/${appId}/sessions/${currentUserId}`
-          );
-          try {
-            await removeRTDB(sessionRef);
-            console.log("handleLogout: Removed RTDB presence.");
-          } catch (error) {
-            console.error("handleLogout: Error removing RTDB presence:", error);
-          }
-        }
-
-        // 2. Sign out from Firebase Auth
-        try {
-          await signOut(auth);
-          console.log("handleLogout: Firebase signOut() complete.");
-          // onAuthStateChanged will handle the UI reset
-        } catch (error) {
-          console.error("handleLogout: Error during signOut:", error);
-          isLoggingOut = false; // Reset flag on error
-          showMessage(`Logout Error: ${error.message}`, "error");
-        }
-      }
-
-      /**
-       * Checks or creates user profile and role in Firestore.
-       */
-      async function setupUserProfile(user) {
-        const { uid, email, displayName } = user;
-        console.log("setupUserProfile: Setting up profile for:", uid);
-
-        const batch = writeBatch(db);
-
-        // 1. User Role
-        const roleRef = doc(db, "artifacts", appId, "users", uid, "roles", uid);
-        const roleDoc = await getDoc(roleRef);
-        if (!roleDoc.exists()) {
-          console.log(
-            "setupUserProfile: No role found, creating 'player' role."
-          );
-          batch.set(roleRef, {
-            uid: uid,
-            email: email,
-            role: ROLES.PLAYER, // Default role
-            createdAt: serverTimestamp(),
-          });
-        } else {
-          console.log("setupUserProfile: Role doc already exists.");
-        }
-
-        // 2. User Profile
-        const profileRef = doc(
-          db,
-          "artifacts",
-          appId,
-          "users",
-          uid,
-          "profiles",
-          uid
-        );
-        const profileDoc = await getDoc(profileRef);
-        if (!profileDoc.exists()) {
-          console.log("setupUserProfile: No profile found, creating profile.");
-          batch.set(profileRef, {
-            uid: uid,
-            email: email,
-            display_name: displayName || email.split("@")[0],
-            photo_url: user.photoURL || null,
-            created_at: serverTimestamp(),
-            last_login: serverTimestamp(),
-            chip_count: 1000, // Starting chips
-            current_room: null,
-          });
-        } else {
-          console.log(
-            "setupUserProfile: Profile doc exists, updating last_login."
-          );
-          batch.update(profileRef, { last_login: serverTimestamp() });
-        }
-
-        // Commit the batch
-        await batch.commit();
-        console.log("setupUserProfile: Profile setup complete.");
-      }
-
-      /**
-       * Sets up real-time database presence (online status).
-       */
-      function setupPresence(uid) {
-        console.log("setupPresence: Setting up RTDB presence for:", uid);
-        const sessionRef = ref(rtdb, `artifacts/${appId}/sessions/${uid}`);
-        const userStatus = {
-          online: true,
-          lastSeen: serverTimestamp(), // Use RTDB server timestamp
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut,
+            updateProfile,
+            signInAnonymously,
+            signInWithCustomToken
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            updateDoc, 
+            deleteDoc,
+            onSnapshot, 
+            collection, 
+            query, 
+            where, 
+            addDoc, 
+            getDocs,
+            serverTimestamp,
+            arrayUnion,
+            arrayRemove,
+            writeBatch,
+            runTransaction,
+            Timestamp,
+            increment
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- RTDB IMPORTS REMOVED ---
+        // import { 
+        //     getDatabase, 
+        //     ref, 
+        //     onValue, 
+        //     set as setRTDB, 
+        //     remove as removeRTDB, 
+        //     onDisconnect 
+        // } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+
+        // --- App Config ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        
+        // --- Hard-coded config provided by user ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBefsHEBuiRyJ31NzF885ac3ugCefzngTU",
+            authDomain: "wps-3-be723.firebaseapp.com",
+            projectId: "wps-3-be723",
+            storageBucket: "wps-3-be723.firebasestorage.app",
+            messagingSenderId: "420146617877",
+            appId: "1:420146617877:web:ea2e06a690732da76fb81c",
+            measurementId: "G-H0Z4C2185Y"
         };
 
-        // Set online status
-        setRTDB(sessionRef, userStatus);
+        // --- Global Variables ---
+        let db, auth; // --- RTDB REMOVED ---
+        let currentUserId = null;
+        let currentUserData = null;
+        let firebaseAuthReady = false;
+        let dataLoadedAndListenersSetup = false;
+        let isLoggingOut = false;
+        
+        let allFirebaseUsersData = []; // Stores all user profile docs
+        let allFirebaseRolesData = []; // Stores all user role docs
+        let firestoreActiveSessions = []; // --- This will just stay empty ---
+        let firestoreGameRooms = []; // Stores game room docs
+        let firestoreMessages = []; // Stores messages
+        let currentJoinedRoomId = null; // Stores the ID of the room the player is in
 
-        // Set offline status on disconnect
-        onDisconnect(sessionRef).set({
-          online: false,
-          lastSeen: serverTimestamp(),
-        });
-      }
+        // Defined roles for the system
+        const ROLES = {
+            PLAYER: 'player',
+            ADMIN: 'admin',
+            OWNER: 'owner'
+        };
 
-      /**
-       * Attaches all global Firestore listeners.
-       * Returns a promise that resolves when all initial data is loaded.
-       */
-      function setupDataListeners() {
-        console.log("setupDataListeners: Attaching listeners...");
-        // Base collection paths
-        const rolesCollectionRef = collection(
-          db,
-          "artifacts",
-          appId,
-          "users",
-          currentUserId,
-          "roles"
-        );
-        const profilesCollectionRef = collection(
-          db,
-          "artifacts",
-          appId,
-          "users",
-          currentUserId,
-          "profiles"
-        );
-        const gameRoomsCollectionRef = collection(
-          db,
-          "artifacts",
-          appId,
-          "public",
-          "data",
-          "game_rooms"
-        );
-        const investmentsCollectionRef = collection(
-          db,
-          "artifacts",
-          appId,
-          "public",
-          "data",
-          "investments"
-        ); // Feature hidden
+        // --- DOM Element Refs ---
+        
+        // Panels
+        const mainContainer = document.getElementById('mainContainer');
+        const loginButtonsContainer = document.getElementById('loginButtonsContainer');
+        const mainActionButtons = document.getElementById('mainActionButtons');
+        const accountManagementPanel = document.getElementById('accountManagementPanel');
+        const adminPanel = document.getElementById('adminPanel');
+        const userManagementPanel = document.getElementById('userManagementPanel');
+        const gameRoomManagementPanel = document.getElementById('gameRoomManagementPanel');
+        const gameRoomViewPanel = document.getElementById('gameRoomViewPanel');
+        const userDirectoryPanel = document.getElementById('userDirectoryPanel');
+        const createGroupPanel = document.getElementById('createGroupPanel');
 
-        // RTDB session ref
-        const sessionsRef = ref(rtdb, `artifacts/${appId}/sessions`);
+        // Buttons
+        const googleLoginButton = document.getElementById('googleLoginButton');
+        const messageBox = document.getElementById('messageBox');
+        const loadingIndicator = document.getElementById('loadingIndicator');
 
-        // --- Promise-based listeners for initial load ---
+        // Main action buttons
+        const openAccountManagementButton = document.getElementById('openAccountManagementButton');
+        const viewUserDirectoryButton = document.getElementById('viewUserDirectoryButton');
+        const openAdminPanelButton = document.getElementById('openAdminPanelButton');
+        const joinGameButton = document.getElementById('joinGameButton');
 
-        // Promise for User Roles
-        const rolesPromise = new Promise((resolve, reject) => {
-          let initialLoad = true;
-          onSnapshot(
-            rolesCollectionRef,
-            (snapshot) => {
-              allFirebaseRolesData = snapshot.docs.map((doc) => doc.data());
-              console.log(
-                "Firestore: User Roles snapshot. Count:",
-                allFirebaseRolesData.length
-              );
-              if (!userManagementPanel.classList.contains("hidden"))
-                renderUserRolesTable();
+        // --- NEW Header & Sidebar Elements ---
+        const hamburgerButton = document.getElementById('hamburgerButton');
+        const accountButton = document.getElementById('accountButton');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const accountDropdown = document.getElementById('accountDropdown');
 
-              if (initialLoad) {
-                initialLoad = false;
-                resolve();
-              }
-            },
-            (error) => {
-              console.error("Firestore: Error listening to user roles:", error);
-              reject(error);
-            }
-          );
-        });
+        // Sidebar links
+        const sidebarJoinGame = document.getElementById('sidebarJoinGame');
+        const sidebarUserDirectory = document.getElementById('sidebarUserDirectory');
 
-        // Promise for User Profiles
-        const profilesPromise = new Promise((resolve, reject) => {
-          let initialLoad = true;
-          onSnapshot(
-            profilesCollectionRef,
-            (snapshot) => {
-              allFirebaseUsersData = snapshot.docs.map((doc) => doc.data());
-              console.log(
-                "Firestore: User Profiles snapshot. Count:",
-                allFirebaseUsersData.length
-              );
-              if (!userManagementPanel.classList.contains("hidden"))
-                renderUserRolesTable();
-              if (!userDirectoryPanel.classList.contains("hidden"))
-                renderUserDirectoryTable();
-              if (
-                currentJoinedRoomId &&
-                !gameRoomViewPanel.classList.contains("hidden")
-              )
-                renderGameRoomView(currentJoinedRoomId);
-              renderStandingsSidebar(); // NEW: Update standings on profile change
-              // if (!investmentsPanel.classList.contains('hidden')) populateInvestmentPlayerSelect(); // Feature hidden
+        // Dropdown links
+        const dropdownAccountLink = document.getElementById('dropdownAccountLink');
+        const dropdownAdminLink = document.getElementById('dropdownAdminLink');
+        const dropdownLogoutLink = document.getElementById('dropdownLogoutLink');
+        // --- END NEW Header & Sidebar Elements ---
 
-              if (initialLoad) {
-                initialLoad = false;
-                resolve();
-              }
-            },
-            (error) => {
-              console.error(
-                "Firestore: Error listening to user profiles:",
-                error
-              );
-              reject(error);
-            }
-          );
-        });
+        // --- NEW Standings Sidebar & Modal Elements ---
+        const standingsList = document.getElementById('standingsList');
+        const userInfoModal = document.getElementById('userInfoModal');
+        const userInfoModalContent = document.getElementById('userInfoModalContent');
+        // --- END NEW Standings Sidebar & Modal Elements ---
 
-        // Promise for Active Sessions (RTDB)
-        const activeSessionsPromise = new Promise((resolve, reject) => {
-          let initialLoad = true;
-          onValue(
-            sessionsRef,
-            (snapshot) => {
-              const sessions = snapshot.val() || {};
-              firestoreActiveSessions = Object.entries(sessions)
-                .filter(([uid, data]) => data.online)
-                .map(([uid, data]) => ({ id: uid, ...data }));
+        // Admin Panel
+        const backToMenuFromAdmin = document.getElementById('backToMenuFromAdmin');
+        const openUserManagement = document.getElementById('openUserManagement');
+        const openGameRoomManagement = document.getElementById('openGameRoomManagement');
+        const openCreateGroup = document.getElementById('openCreateGroup');
+        const openInvestments = document.getElementById('openInvestments');
+        
+        // Account Management
+        const backToMenuFromAccount = document.getElementById('backToMenuFromAccount');
+        const displayNameInput = document.getElementById('displayNameInput');
+        const updateDisplayNameButton = document.getElementById('updateDisplayNameButton');
+        
+        // User Management
+        const userRolesTable = document.getElementById('userRolesTable');
+        const backToAdminFromUser = document.getElementById('backToAdminFromUser');
 
-              console.log(
-                "Firestore: Active Sessions snapshot. Count:",
-                firestoreActiveSessions.length
-              );
-              if (!userDirectoryPanel.classList.contains("hidden"))
-                renderUserDirectoryTable();
-              if (!userManagementPanel.classList.contains("hidden"))
-                renderUserRolesTable();
-              renderStandingsSidebar(); // NEW: Update standings on session change
+        // Game Room Management
+        const backToAdminFromGame = document.getElementById('backToAdminFromGame');
+        const newRoomName = document.getElementById('newRoomName');
+        const createGameRoomButton = document.getElementById('createGameRoomButton');
+        const gameRoomList = document.getElementById('gameRoomList');
 
-              if (initialLoad) {
-                initialLoad = false;
-                resolve();
-              }
-            },
-            (error) => {
-              console.error(
-                "Firestore: Error listening to active sessions:",
-                error
-              );
-              reject(error);
-            }
-          );
-        });
+        // Game Room View
+        const leaveGameRoomButton = document.getElementById('leaveGameRoomButton');
+        const gameRoomName = document.getElementById('gameRoomName');
+        const gameRoomContent = document.getElementById('gameRoomContent');
 
-        // Promise for Game Rooms
-        const gameRoomsPromise = new Promise((resolve, reject) => {
-          let initialLoad = true;
-          onSnapshot(
-            gameRoomsCollectionRef,
-            (snapshot) => {
-              firestoreGameRooms = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              }));
-              console.log(
-                "Firestore: Game Rooms snapshot. Count:",
-                firestoreGameRooms.length
-              );
-              if (!gameRoomManagementPanel.classList.contains("hidden"))
-                renderGameRoomList();
+        // User Directory
+        const backToMenuFromDirectory = document.getElementById('backToMenuFromDirectory');
+        const userDirectoryTable = document.getElementById('userDirectoryTable');
 
-              if (initialLoad) {
-                initialLoad = false;
-                resolve();
-              }
-            },
-            (error) => {
-              console.error("Firestore: Error listening to game rooms:", error);
-              reject(error);
-            }
-          );
-        });
+        // Create Group
+        const backToAdminFromGroup = document.getElementById('backToAdminFromGroup');
+        const groupNameInput = document.getElementById('groupNameInput');
+        const groupUserChecklist = document.getElementById('groupUserChecklist');
+        const finalizeGroupButton = document.getElementById('finalizeGroupButton');
 
-        // Promise for Investments (Feature hidden)
-        const investmentsPromise = new Promise((resolve, reject) => {
-          let initialLoad = true;
-          onSnapshot(
-            investmentsCollectionRef,
-            (snapshot) => {
-              // investmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              // if (!investmentsPanel.classList.contains('hidden')) renderInvestments();
-              if (initialLoad) {
-                initialLoad = false;
-                resolve();
-              }
-            },
-            (error) => {
-              console.error(
-                "Firestore: Error listening to investments:",
-                error
-              );
-              reject(error);
-            }
-          );
-        });
+        // Group Chat Modal
+        const groupChatModal = document.getElementById('groupChatModal');
+        const groupChatTitle = document.getElementById('groupChatTitle');
+        const groupChatMessages = document.getElementById('groupChatMessages');
+        const groupPlayerList = document.getElementById('groupPlayerList');
+        const groupMessageInput = document.getElementById('groupMessageInput');
+        const sendGroupMessageButton = document.getElementById('sendGroupMessageButton');
+        const closeGroupChatButton = document.getElementById('closeGroupChatButton');
 
-        return Promise.all([
-          rolesPromise,
-          profilesPromise,
-          activeSessionsPromise,
-          gameRoomsPromise,
-          investmentsPromise,
-        ]);
-      }
-
-      // --- NEW Standings Sidebar Functions ---
-
-      /** Renders the right-hand standings sidebar */
-      function renderStandingsSidebar() {
-        if (!standingsList) return;
-        standingsList.innerHTML = ""; // Clear old list
-
-        if (allFirebaseUsersData.length === 0) {
-          standingsList.innerHTML = "<li><p>No users found.</p></li>";
-          return;
+        
+        // --- Firebase Init ---
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            // --- RTDB REMOVED ---
+            // rtdb = getDatabase(app); 
+            console.log("Firebase initialized successfully (Firestore only).");
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            showMessage("Error: Could not connect to the application services. Please refresh.", "error");
         }
 
-        // Get list of online UIDs
-        const onlineUserIds = new Set(
-          firestoreActiveSessions.map((session) => session.id)
-        );
+        
+        // --- Auth State Change Listener ---
+        
+        /**
+         * Main listener for authentication changes.
+         * Triggers when user logs in, logs out, or page loads.
+         */
+        if (auth) {
+            onAuthStateChanged(auth, async (user) => {
+                console.log("onAuthStateChanged: Auth state changed. User:", user ? user.uid : "null");
+                
+                if (user) {
+                    currentUserId = user.uid;
+                    firebaseAuthReady = true;
 
-        // Sort users by chip count, descending
-        const sortedUsers = [...allFirebaseUsersData].sort(
-          (a, b) => (b.chip_count || 0) - (a.chip_count || 0)
-        );
+                    if (!isLoggingOut && !dataLoadedAndListenersSetup) {
+                        console.log("onAuthStateChanged: User present, triggering handleLoginSuccess.");
+                        await handleLoginSuccess(user);
+                        // NEW: Show/hide admin link in dropdown based on role
+                        if (hasAdminAccess(user.uid)) {
+                            dropdownAdminLink.classList.remove('hidden');
+                        } else {
+                            dropdownAdminLink.classList.add('hidden');
+                        }
+                    } else if (isLoggingOut) {
+                        console.log("onAuthStateChanged: isLoggingOut is true, skipping login success logic.");
+                    } else if (dataLoadedAndListenersSetup) {
+                        console.log("onAuthStateChanged: Data listeners already setup, skipping login success logic.");
+                    }
+                } else {
+                    // User is signed out or not yet signed in
+                    currentUserId = null;
+                    currentUserData = null;
+                    firebaseAuthReady = true;
+                    dataLoadedAndListenersSetup = false; // Reset listener flag
+                    
+                    if (isLoggingOut) {
+                        // User just logged out, show message and login options
+                        console.log("Firebase: User logged out.");
+                        isLoggingOut = false; // Reset flag
+                        showPanel(loginButtonsContainer);
+                        showMessage("You have been successfully logged out.", "success");
+                        // NEW: Hide admin link on logout
+                        dropdownAdminLink.classList.add('hidden');
+                    } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        // We have a custom token, let's try to sign in
+                        console.log("Firebase: No user, trying custom token auth.");
+                        try {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                            console.log("Firebase: Custom token sign-in successful.");
+                        } catch (error) {
+                            console.error("Firebase: Custom token sign-in failed:", error);
+                            // Fallback to anonymous
+                            await signInAnonymously(auth);
+                        }
+                    } else if (firebaseConfig && Object.keys(firebaseConfig).length > 0) {
+                        // This is our case: hard-coded config, no user. Show login.
+                        console.log("Firebase: No user, config present. Showing login options.");
+                        showPanel(loginButtonsContainer);
+                        loadingIndicator.classList.add('hidden');
+                    } else {
+                        // Regular web or after logout
+                        console.log("Firebase: Displaying login options.");
+                        // NEW: Hide admin link on logout
+                        dropdownAdminLink.classList.add('hidden');
+                        showPanel(loginButtonsContainer);
+                        loadingIndicator.classList.add('hidden');
+                    }
+                }
+            });
 
-        sortedUsers.forEach((user) => {
-          const isOnline = onlineUserIds.has(user.uid);
-          const li = document.createElement("li");
-          li.className = "standings-item";
-          li.setAttribute("data-uid", user.uid);
+            // --- NEW Header/Sidebar UI Event Listeners ---
 
-          li.innerHTML = `
+            // Function to toggle the sidebar
+            function toggleSidebar(show) {
+                if (show) {
+                    sidebar.classList.add('show');
+                    sidebarOverlay.classList.add('show');
+                } else {
+                    sidebar.classList.remove('show');
+                    sidebarOverlay.classList.remove('show');
+                }
+            }
+
+            // Function to toggle the account dropdown
+            function toggleAccountDropdown(show) {
+                if (show) {
+                    accountDropdown.classList.remove('hidden');
+                } else {
+                    accountDropdown.classList.add('hidden');
+                }
+            }
+
+            // Hamburger button click
+            hamburgerButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent body click from closing it immediately
+                const isVisible = sidebar.classList.contains('show');
+                toggleSidebar(!isVisible);
+                if (!isVisible) {
+                    toggleAccountDropdown(false); // Close dropdown if opening sidebar
+                }
+            });
+
+            // Account button click
+            accountButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent body click from closing it immediately
+                const isVisible = !accountDropdown.classList.contains('hidden');
+                toggleAccountDropdown(!isVisible);
+                if (!isVisible) {
+                    toggleSidebar(false); // Close sidebar if opening dropdown
+                }
+            });
+
+            // Click-away listener (to close menus)
+            document.body.addEventListener('click', () => {
+                toggleSidebar(false);
+                toggleAccountDropdown(false);
+            });
+
+            // Stop propagation on menus themselves to prevent body click from closing them
+            sidebar.addEventListener('click', (e) => e.stopPropagation());
+            accountDropdown.addEventListener('click', (e) => e.stopPropagation());
+            // Overlay click closes sidebar
+            sidebarOverlay.addEventListener('click', () => toggleSidebar(false)); 
+
+
+            // --- Wire up menu links ---
+            
+            // Sidebar links
+            sidebarJoinGame.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleSidebar(false);
+                joinGameButton.click(); // Trigger existing logic
+            });
+            
+            sidebarUserDirectory.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleSidebar(false);
+                viewUserDirectoryButton.click(); // Trigger existing logic
+            });
+
+            // Dropdown links
+            dropdownAccountLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAccountDropdown(false);
+                openAccountManagementButton.click(); // Trigger existing logic
+            });
+
+            dropdownAdminLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAccountDropdown(false);
+                openAdminPanelButton.click(); // Trigger existing logic
+            });
+            
+            dropdownLogoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleAccountDropdown(false);
+                handleLogout(); // Call existing logout function
+            });
+
+            // --- END NEW Header/Sidebar UI Event Listeners ---
+
+
+            // --- NEW Standings Modal Event Listeners ---
+            
+            function hideUserInfoModal() {
+                userInfoModal.classList.add('hidden');
+            }
+
+            // Close modal if overlay is clicked
+            userInfoModal.addEventListener('click', (e) => {
+                if (e.target === userInfoModal) {
+                    hideUserInfoModal();
+                }
+            });
+            
+            // Close modal button (event delegation, since button is dynamic)
+            userInfoModal.addEventListener('click', (e) => {
+                if (e.target.id === 'closeUserInfoModalButton') {
+                    hideUserInfoModal();
+                }
+            });
+
+            // --- END NEW Standings Modal Event Listeners ---
+        }
+
+        // --- Main Event Listeners ---
+        
+        /** Runs when the page content is loaded */
+        document.addEventListener('DOMContentLoaded', () => {
+            // This check ensures Firebase is initialized before adding listeners
+            if (!auth) {
+                console.error("DOM Loaded, but Firebase auth is not available.");
+                return;
+            }
+
+            // --- Auth Buttons ---
+            googleLoginButton.addEventListener('click', async () => {
+                const provider = new GoogleAuthProvider();
+                try {
+                    await signInWithPopup(auth, provider);
+                    // onAuthStateChanged will handle the rest
+                } catch (error) {
+                    console.error("Google Sign-In Error:", error);
+                    showMessage(`Google Sign-In Error: ${error.message}`, "error");
+                }
+            });
+
+            // --- Main Menu Navigation ---
+            openAccountManagementButton.addEventListener('click', () => {
+                displayNameInput.value = auth.currentUser.displayName || '';
+                showPanel(accountManagementPanel);
+            });
+            
+            viewUserDirectoryButton.addEventListener('click', () => {
+                renderUserDirectoryTable();
+                showPanel(userDirectoryPanel);
+            });
+            
+            openAdminPanelButton.addEventListener('click', () => showPanel(adminPanel));
+            
+            joinGameButton.addEventListener('click', () => {
+                // For now, just show the first available room, or create one
+                // This logic can be expanded to a "lobby"
+                if (firestoreGameRooms.length > 0) {
+                    joinGameRoom(firestoreGameRooms[0].id);
+                } else {
+                    showMessage("No game rooms available. An admin needs to create one.", "info");
+                }
+            });
+
+            // --- Panel Navigation (Back Buttons) ---
+            backToMenuFromAccount.addEventListener('click', () => showPanel(mainActionButtons));
+            backToMenuFromAdmin.addEventListener('click', () => showPanel(mainActionButtons));
+            backToMenuFromDirectory.addEventListener('click', () => showPanel(mainActionButtons));
+            backToAdminFromUser.addEventListener('click', () => showPanel(adminPanel));
+            backToAdminFromGame.addEventListener('click', () => showPanel(adminPanel));
+            backToAdminFromGroup.addEventListener('click', () => showPanel(adminPanel));
+            leaveGameRoomButton.addEventListener('click', leaveGameRoom);
+
+
+            // --- Account Management ---
+            updateDisplayNameButton.addEventListener('click', async () => {
+                const newName = displayNameInput.value.trim();
+                if (newName.length < 3) {
+                    showMessage("Display name must be at least 3 characters.", "error");
+                    return;
+                }
+                try {
+                    // Update Firebase Auth profile
+                    await updateProfile(auth.currentUser, { displayName: newName });
+                    // Update Firestore profile
+                    const userProfileRef = doc(db, "artifacts", appId, "users", currentUserId, "profiles", currentUserId);
+                    await updateDoc(userProfileRef, { display_name: newName });
+                    
+                    showMessage("Display name updated successfully!", "success");
+                    showPanel(mainActionButtons);
+                } catch (error) {
+                    console.error("Error updating display name:", error);
+                    showMessage(`Error: ${error.message}`, "error");
+                }
+            });
+
+            // --- Admin Panel ---
+            openUserManagement.addEventListener('click', () => {
+                renderUserRolesTable();
+                showPanel(userManagementPanel);
+            });
+            
+            openGameRoomManagement.addEventListener('click', () => {
+                renderGameRoomList();
+                showPanel(gameRoomManagementPanel);
+            });
+
+            openCreateGroup.addEventListener('click', () => {
+                populateUserChecklist();
+                showPanel(createGroupPanel);
+            });
+
+            // Game Room Management
+            createGameRoomButton.addEventListener('click', async () => {
+                const name = newRoomName.value.trim();
+                if (!name) {
+                    showMessage("Please enter a room name.", "error");
+                    return;
+                }
+                try {
+                    const roomCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
+                    await addDoc(roomCollectionRef, {
+                        name: name,
+                        createdAt: serverTimestamp(),
+                        hostId: currentUserId,
+                        players: [],
+                        gameState: { status: 'waiting' } // Initial game state
+                    });
+                    showMessage(`Room '${name}' created!`, "success");
+                    newRoomName.value = '';
+                    // The onSnapshot listener will auto-update the list
+                } catch (error) {
+                    console.error("Error creating game room:", error);
+                    showMessage(`Error: ${error.message}`, "error");
+                }
+            });
+
+            // Create Group
+            finalizeGroupButton.addEventListener('click', async () => {
+                const groupName = groupNameInput.value.trim();
+                if (!groupName) {
+                    showMessage("Please enter a group name.", "error");
+                    return;
+                }
+                const selectedUsers = Array.from(groupUserChecklist.querySelectorAll('input:checked'))
+                                           .map(input => input.value);
+                
+                if (selectedUsers.length < 1) { // Need at least one other member
+                    showMessage("Please select at least one member for the group.", "error");
+                    return;
+                }
+
+                // Add the creator to the group
+                if (!selectedUsers.includes(currentUserId)) {
+                    selectedUsers.push(currentUserId);
+                }
+
+                try {
+                    const groupCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups");
+                    await addDoc(groupCollectionRef, {
+                        name: groupName,
+                        members: selectedUsers,
+                        createdAt: serverTimestamp(),
+                        createdBy: currentUserId
+                    });
+                    showMessage(`Group '${groupName}' created!`, "success");
+                    groupNameInput.value = '';
+                    showPanel(adminPanel);
+                } catch (error) {
+                    console.error("Error creating group:", error);
+                    showMessage(`Error: ${error.message}`, "error");
+                }
+            });
+
+            // Group Chat
+            sendGroupMessageButton.addEventListener('click', sendGroupMessage);
+            groupMessageInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') sendGroupMessage();
+            });
+            closeGroupChatButton.addEventListener('click', () => groupChatModal.classList.add('hidden'));
+
+        }); // End DOMContentLoaded
+
+        // --- Core Functions ---
+
+        /**
+         * Runs after a successful login.
+         * Creates user profile, sets up presence, and attaches data listeners.
+         */
+        async function handleLoginSuccess(user) {
+            console.log("handleLoginSuccess: Setting up for user:", user.uid);
+            loadingIndicator.classList.remove('hidden');
+            
+            try {
+                await setupUserProfile(user);
+                // --- RTDB PRESENCE REMOVED ---
+                // setupPresence(user.uid);
+                
+                // Set up global data listeners
+                if (!dataLoadedAndListenersSetup) {
+                    console.log("handleLoginSuccess: Setting up data listeners.");
+                    await setupDataListeners();
+                    dataLoadedAndListenersSetup = true;
+                    console.log("handleLoginSuccess: Data listeners setup complete.");
+                } else {
+                    console.log("handleLoginSuccess: Data listeners already setup, skipping.");
+                }
+
+                // Update UI
+                currentUserData = allFirebaseUsersData.find(u => u.uid === user.uid);
+                if (hasAdminAccess(user.uid)) {
+                    openAdminPanelButton.classList.remove('hidden');
+                } else {
+                    openAdminPanelButton.classList.add('hidden');
+                }
+                
+                showPanel(mainActionButtons);
+                showMessage(`Welcome, ${formatDisplayName(currentUserData)}!`, "success");
+
+            } catch (error) {
+                console.error("Error during login success handling:", error);
+                showMessage(`Error on login: ${error.message}`, "error");
+                showPanel(loginButtonsContainer); // Go back to login
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * Logs out the current user.
+         */
+        async function handleLogout() {
+            console.log("handleLogout: Initiating logout for:", currentUserId);
+            isLoggingOut = true;
+            
+            // --- RTDB PRESENCE REMOVED ---
+            
+            // 2. Sign out from Firebase Auth
+            try {
+                await signOut(auth);
+                console.log("handleLogout: Firebase signOut() complete.");
+                // onAuthStateChanged will handle the UI reset
+            } catch (error) {
+                console.error("handleLogout: Error during signOut:", error);
+                isLoggingOut = false; // Reset flag on error
+                showMessage(`Logout Error: ${error.message}`, "error");
+            }
+        }
+
+        /**
+         * Checks or creates user profile and role in Firestore.
+         */
+        async function setupUserProfile(user) {
+            const { uid, email, displayName } = user;
+            console.log("setupUserProfile: Setting up profile for:", uid);
+
+            const batch = writeBatch(db);
+            
+            // 1. User Role
+            const roleRef = doc(db, "artifacts", appId, "users", uid, "roles", uid);
+            const roleDoc = await getDoc(roleRef);
+            if (!roleDoc.exists()) {
+                console.log("setupUserProfile: No role found, creating 'player' role.");
+                batch.set(roleRef, {
+                    uid: uid,
+                    email: email,
+                    role: ROLES.PLAYER, // Default role
+                    createdAt: serverTimestamp()
+                });
+            } else {
+                console.log("setupUserProfile: Role doc already exists.");
+            }
+
+            // 2. User Profile
+            const profileRef = doc(db, "artifacts", appId, "users", uid, "profiles", uid);
+            const profileDoc = await getDoc(profileRef);
+            if (!profileDoc.exists()) {
+                console.log("setupUserProfile: No profile found, creating profile.");
+                batch.set(profileRef, {
+                    uid: uid,
+                    email: email,
+                    display_name: displayName || email.split('@')[0],
+                    photo_url: user.photoURL || null,
+                    created_at: serverTimestamp(),
+                    last_login: serverTimestamp(),
+                    chip_count: 1000, // Starting chips
+                    current_room: null
+                });
+            } else {
+                console.log("setupUserProfile: Profile doc exists, updating last_login.");
+                batch.update(profileRef, { last_login: serverTimestamp() });
+            }
+
+            // Commit the batch
+            await batch.commit();
+            console.log("setupUserProfile: Profile setup complete.");
+        }
+        
+        /**
+         * --- RTDB PRESENCE FUNCTION REMOVED ---
+         */
+        // function setupPresence(uid) { ... }
+        
+        /**
+         * Attaches all global Firestore listeners.
+         * Returns a promise that resolves when all initial data is loaded.
+         */
+        function setupDataListeners() {
+            console.log("setupDataListeners: Attaching listeners...");
+            // Base collection paths
+            const rolesCollectionRef = collection(db, "artifacts", appId, "users", currentUserId, "roles");
+            const profilesCollectionRef = collection(db, "artifacts", appId, "users", currentUserId, "profiles");
+            const gameRoomsCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
+            const investmentsCollectionRef = collection(db, "artifacts", appId, "public", "data", "investments"); // Feature hidden
+
+            // --- RTDB REF REMOVED ---
+            // const sessionsRef = ref(rtdb, `artifacts/${appId}/sessions`);
+
+            // --- Promise-based listeners for initial load ---
+
+            // Promise for User Roles
+            const rolesPromise = new Promise((resolve, reject) => {
+                let initialLoad = true;
+                onSnapshot(rolesCollectionRef, (snapshot) => {
+                    allFirebaseRolesData = snapshot.docs.map(doc => doc.data());
+                    console.log("Firestore: User Roles snapshot. Count:", allFirebaseRolesData.length);
+                    if (!userManagementPanel.classList.contains('hidden')) renderUserRolesTable();
+                    
+                    if (initialLoad) { initialLoad = false; resolve(); }
+                }, (error) => { console.error("Firestore: Error listening to user roles:", error); reject(error); });
+            });
+
+            // Promise for User Profiles
+            const profilesPromise = new Promise((resolve, reject) => {
+                let initialLoad = true;
+                onSnapshot(profilesCollectionRef, (snapshot) => {
+                    allFirebaseUsersData = snapshot.docs.map(doc => doc.data());
+                    console.log("Firestore: User Profiles snapshot. Count:", allFirebaseUsersData.length);
+                    if (!userManagementPanel.classList.contains('hidden')) renderUserRolesTable();
+                    if (!userDirectoryPanel.classList.contains('hidden')) renderUserDirectoryTable();
+                    if (currentJoinedRoomId && !gameRoomViewPanel.classList.contains('hidden')) renderGameRoomView(currentJoinedRoomId);
+                    renderStandingsSidebar(); // NEW: Update standings on profile change
+                    // if (!investmentsPanel.classList.contains('hidden')) populateInvestmentPlayerSelect(); // Feature hidden
+
+                    if (initialLoad) { initialLoad = false; resolve(); }
+                }, (error) => { console.error("Firestore: Error listening to user profiles:", error); reject(error); });
+            });
+
+            // --- RTDB PROMISE REMOVED ---
+            // const activeSessionsPromise = ...
+
+            // Promise for Game Rooms
+            const gameRoomsPromise = new Promise((resolve, reject) => {
+                let initialLoad = true;
+                onSnapshot(gameRoomsCollectionRef, (snapshot) => {
+                    firestoreGameRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    console.log("Firestore: Game Rooms snapshot. Count:", firestoreGameRooms.length);
+                    if (!gameRoomManagementPanel.classList.contains('hidden')) renderGameRoomList();
+                    
+                    if (initialLoad) { initialLoad = false; resolve(); }
+                }, (error) => { console.error("Firestore: Error listening to game rooms:", error); reject(error); });
+            });
+            
+            // Promise for Investments (Feature hidden)
+            const investmentsPromise = new Promise((resolve, reject) => {
+                let initialLoad = true;
+                onSnapshot(investmentsCollectionRef, (snapshot) => {
+                    // investmentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // if (!investmentsPanel.classList.contains('hidden')) renderInvestments();
+                    if (initialLoad) { initialLoad = false; resolve(); }
+                }, (error) => { console.error("Firestore: Error listening to investments:", error); reject(error); });
+            });
+
+            // --- Promise.all UPDATED (RTDB promise removed) ---
+            return Promise.all([rolesPromise, profilesPromise, gameRoomsPromise, investmentsPromise]);
+        }
+
+        // --- NEW Standings Sidebar Functions ---
+        
+        /** Renders the right-hand standings sidebar */
+        function renderStandingsSidebar() {
+            if (!standingsList) return;
+            standingsList.innerHTML = ''; // Clear old list
+
+            if (allFirebaseUsersData.length === 0) {
+                standingsList.innerHTML = '<li><p>No users found.</p></li>';
+                return;
+            }
+
+            // --- RTDB logic removed ---
+            // Get list of online UIDs
+            // const onlineUserIds = new Set(firestoreActiveSessions.map(session => session.id));
+
+            // Sort users by chip count, descending
+            const sortedUsers = [...allFirebaseUsersData].sort((a, b) => (b.chip_count || 0) - (a.chip_count || 0));
+
+            sortedUsers.forEach(user => {
+                // --- RTDB logic removed ---
+                // const isOnline = onlineUserIds.has(user.uid);
+                const li = document.createElement('li');
+                li.className = 'standings-item';
+                li.setAttribute('data-uid', user.uid);
+                
+                li.innerHTML = `
                     <span class="name">
-                        <span class="status-dot ${
-                          isOnline ? "online" : ""
-                        }"></span>
+                        <!-- 'online' class will not be added -->
+                        <span class="status-dot"></span>
                         ${formatDisplayName(user)}
                     </span>
                     <span class="chips">${user.chip_count || 0} 💎</span>
                 `;
+                
+                // Add click listener to show the modal
+                li.addEventListener('click', () => showUserInfoModal(user.uid));
+                standingsList.appendChild(li);
+            });
+        }
 
-          // Add click listener to show the modal
-          li.addEventListener("click", () => showUserInfoModal(user.uid));
-          standingsList.appendChild(li);
-        });
-      }
+        /** Shows the pop-up modal with a user's info */
+        function showUserInfoModal(uid) {
+            const user = allFirebaseUsersData.find(u => u.uid === uid);
+            if (!user) return;
 
-      /** Shows the pop-up modal with a user's info */
-      function showUserInfoModal(uid) {
-        const user = allFirebaseUsersData.find((u) => u.uid === uid);
-        if (!user) return;
-
-        const userRole = getCurrentUserRole(uid);
-        const isOnline = firestoreActiveSessions.map((s) => s.id).includes(uid);
-
-        userInfoModalContent.innerHTML = `
+            const userRole = getCurrentUserRole(uid);
+            // --- RTDB logic removed ---
+            // const isOnline = firestoreActiveSessions.map(s => s.id).includes(uid);
+            
+            userInfoModalContent.innerHTML = `
                 <h3 style="text-align: left;">${formatDisplayName(user)}</h3>
                 <p classCSS="text-left"><strong>Role:</strong> ${userRole}</p>
-                <p classCSS="text-left"><strong>Chips:</strong> ${
-                  user.chip_count || 0
-                } 💎</p>
-                <p classCSS="text-left"><strong>Status:</strong> ${
-                  isOnline ? "Online" : "Offline"
-                }</p>
-                <p classCSS="text-left"><strong>Email:</strong> ${
-                  user.email || "N/A"
-                }</p>
+                <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} 💎</p>
+                <!-- RTDB logic removed -->
+                <p classCSS="text-left"><strong>Status:</strong> Offline</p> 
+                <p classCSS="text-left"><strong>Email:</strong> ${user.email || 'N/A'}</p>
                 <button id="closeUserInfoModalButton" class="btn btn-gray btn-half" style="margin-top: 1rem;">Close</button>
             `;
+            
+            // Make modal text left-aligned
+            userInfoModalContent.querySelectorAll('p').forEach(p => {
+                p.style.textAlign = 'left';
+            });
+            
+            userInfoModal.classList.remove('hidden');
+        }
 
-        // Make modal text left-aligned
-        userInfoModalContent.querySelectorAll("p").forEach((p) => {
-          p.style.textAlign = "left";
-        });
+        // --- END NEW Standings Sidebar Functions ---
+        
+        // --- Admin: User Management Functions ---
+        
+        /** Renders the table in the User Management panel */
+        function renderUserRolesTable() {
+            if (!userRolesTable) return;
+            
+            // Combine data: profiles, roles, and online status
+            const combinedData = allFirebaseUsersData.map(user => {
+                const roleData = allFirebaseRolesData.find(r => r.uid === user.uid) || {};
+                // --- RTDB logic removed ---
+                // const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
+                return {
+                    ...user,
+                    role: roleData.role || ROLES.PLAYER,
+                    isOnline: false // --- Hard-coded to false ---
+                };
+            });
 
-        userInfoModal.classList.remove("hidden");
-      }
-
-      // --- END NEW Standings Sidebar Functions ---
-
-      // --- Admin: User Management Functions ---
-
-      /** Renders the table in the User Management panel */
-      function renderUserRolesTable() {
-        if (!userRolesTable) return;
-
-        // Combine data: profiles, roles, and online status
-        const combinedData = allFirebaseUsersData.map((user) => {
-          const roleData =
-            allFirebaseRolesData.find((r) => r.uid === user.uid) || {};
-          const isOnline = firestoreActiveSessions.some(
-            (s) => s.id === user.uid
-          );
-          return {
-            ...user,
-            role: roleData.role || ROLES.PLAYER,
-            isOnline: isOnline,
-          };
-        });
-
-        // Create Table Header
-        userRolesTable.innerHTML = `
+            // Create Table Header
+            userRolesTable.innerHTML = `
                 <thead>
                     <tr>
                         <th>User</th>
@@ -2068,336 +1632,250 @@
                     <!-- Rows will be inserted here -->
                 </tbody>
             `;
+            
+            const tbody = userRolesTable.querySelector('tbody');
+            if (combinedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
+                return;
+            }
 
-        const tbody = userRolesTable.querySelector("tbody");
-        if (combinedData.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
-          return;
-        }
-
-        // Create Table Rows
-        combinedData.forEach((user) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
+            // Create Table Rows
+            combinedData.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                     <td>${formatDisplayName(user)}</td>
                     <td>${user.email}</td>
                     <td>
-                        <select class="form-select user-role-select" data-uid="${
-                          user.uid
-                        }" ${user.role === ROLES.OWNER ? "disabled" : ""}>
-                            <option value="player" ${
-                              user.role === ROLES.PLAYER ? "selected" : ""
-                            }>Player</option>
-                            <option value="admin" ${
-                              user.role === ROLES.ADMIN ? "selected" : ""
-                            }>Admin</option>
-                            <option value="owner" ${
-                              user.role === ROLES.OWNER ? "selected" : ""
-                            }>Owner</option>
+                        <select class="form-select user-role-select" data-uid="${user.uid}" ${user.role === ROLES.OWNER ? 'disabled' : ''}>
+                            <option value="player" ${user.role === ROLES.PLAYER ? 'selected' : ''}>Player</option>
+                            <option value="admin" ${user.role === ROLES.ADMIN ? 'selected' : ''}>Admin</option>
+                            <option value="owner" ${user.role === ROLES.OWNER ? 'selected' : ''}>Owner</option>
                         </select>
                     </td>
                     <td>
-                        <input type="number" class="form-input user-chip-input" data-uid="${
-                          user.uid
-                        }" value="${
-            user.chip_count || 0
-          }" style="width: 100px;">
+                        <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;">
                     </td>
-                    <td>${user.isOnline ? "Online" : "Offline"}</td>
+                    <td>${user.isOnline ? 'Online' : 'Offline'}</td>
                     <td>
-                        <button class="btn btn-blue btn-sm update-user-btn" data-uid="${
-                          user.uid
-                        }">Save</button>
+                        <button class="btn btn-blue btn-sm update-user-btn" data-uid="${user.uid}">Save</button>
                     </td>
                 `;
-          tbody.appendChild(tr);
-        });
+                tbody.appendChild(tr);
+            });
 
-        // Add event listeners to buttons and inputs
-        tbody.querySelectorAll(".update-user-btn").forEach((button) => {
-          button.addEventListener("click", (e) => {
-            const uid = e.target.dataset.uid;
-            const row = e.target.closest("tr");
-            const newRole = row.querySelector(".user-role-select").value;
-            const newChips = parseInt(
-              row.querySelector(".user-chip-input").value,
-              10
-            );
-            updateUserRoleAndChips(uid, newRole, newChips);
-          });
-        });
-      }
-
-      /** Updates a user's role and chip count (Admin action) */
-      async function updateUserRoleAndChips(uid, newRole, newChips) {
-        console.log(`Updating user ${uid}: Role=${newRole}, Chips=${newChips}`);
-        if (isNaN(newChips) || newChips < 0) {
-          showMessage(
-            "Invalid chip count. Must be a positive number.",
-            "error"
-          );
-          return;
+            // Add event listeners to buttons and inputs
+            tbody.querySelectorAll('.update-user-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const uid = e.target.dataset.uid;
+                    const row = e.target.closest('tr');
+                    const newRole = row.querySelector('.user-role-select').value;
+                    const newChips = parseInt(row.querySelector('.user-chip-input').value, 10);
+                    updateUserRoleAndChips(uid, newRole, newChips);
+                });
+            });
         }
-
-        try {
-          const batch = writeBatch(db);
-
-          // Update Role
-          const roleRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "users",
-            uid,
-            "roles",
-            uid
-          );
-          batch.update(roleRef, { role: newRole });
-
-          // Update Profile (Chips)
-          const profileRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "users",
-            uid,
-            "profiles",
-            uid
-          );
-          batch.update(profileRef, { chip_count: newChips });
-
-          await batch.commit();
-          showMessage("User updated successfully!", "success");
-        } catch (error) {
-          console.error("Error updating user:", error);
-          showMessage(`Error: ${error.message}`, "error");
-          // Note: Listeners will refresh the table, no manual refresh needed
+        
+        /** Updates a user's role and chip count (Admin action) */
+        async function updateUserRoleAndChips(uid, newRole, newChips) {
+            console.log(`Updating user ${uid}: Role=${newRole}, Chips=${newChips}`);
+            if (isNaN(newChips) || newChips < 0) {
+                showMessage("Invalid chip count. Must be a positive number.", "error");
+                return;
+            }
+            
+            try {
+                const batch = writeBatch(db);
+                
+                // Update Role
+                const roleRef = doc(db, "artifacts", appId, "users", uid, "roles", uid);
+                batch.update(roleRef, { role: newRole });
+                
+                // Update Profile (Chips)
+                const profileRef = doc(db, "artifacts", appId, "users", uid, "profiles", uid);
+                batch.update(profileRef, { chip_count: newChips });
+                
+                await batch.commit();
+                showMessage("User updated successfully!", "success");
+            } catch (error) {
+                console.error("Error updating user:", error);
+                showMessage(`Error: ${error.message}`, "error");
+                // Note: Listeners will refresh the table, no manual refresh needed
+            }
         }
-      }
-
-      // --- Admin: Game Room Management Functions ---
-
-      /** Renders the list of active game rooms */
-      function renderGameRoomList() {
-        if (!gameRoomList) return;
-        gameRoomList.innerHTML = ""; // Clear list
-
-        if (firestoreGameRooms.length === 0) {
-          gameRoomList.innerHTML = "<p>No active game rooms.</p>";
-          return;
-        }
-
-        firestoreGameRooms.forEach((room) => {
-          const li = document.createElement("div");
-          li.className = "list-item";
-          li.innerHTML = `
+        
+        // --- Admin: Game Room Management Functions ---
+        
+        /** Renders the list of active game rooms */
+        function renderGameRoomList() {
+            if (!gameRoomList) return;
+            gameRoomList.innerHTML = ''; // Clear list
+            
+            if (firestoreGameRooms.length === 0) {
+                gameRoomList.innerHTML = '<p>No active game rooms.</p>';
+                return;
+            }
+            
+            firestoreGameRooms.forEach(room => {
+                const li = document.createElement('div');
+                li.className = 'list-item';
+                li.innerHTML = `
                     <div class="list-item-content">
                         <strong>${room.name}</strong>
                         <small> (ID: ${room.id.substring(0, 5)})</small>
                     </div>
                     <div class="list-item-actions">
-                        <button class="btn btn-green btn-sm join-room-btn" data-roomid="${
-                          room.id
-                        }">Join</button>
-                        <button class="btn btn-red btn-sm delete-room-btn" data-roomid="${
-                          room.id
-                        }">Delete</button>
+                        <button class="btn btn-green btn-sm join-room-btn" data-roomid="${room.id}">Join</button>
+                        <button class="btn btn-red btn-sm delete-room-btn" data-roomid="${room.id}">Delete</button>
                     </div>
                 `;
-          gameRoomList.appendChild(li);
-        });
-
-        // Add event listeners
-        gameRoomList.querySelectorAll(".join-room-btn").forEach((btn) => {
-          btn.addEventListener("click", (e) =>
-            joinGameRoom(e.target.dataset.roomid)
-          );
-        });
-        gameRoomList.querySelectorAll(".delete-room-btn").forEach((btn) => {
-          btn.addEventListener("click", (e) =>
-            deleteGameRoom(e.target.dataset.roomid)
-          );
-        });
-      }
-
-      /** Deletes a game room (Admin action) */
-      async function deleteGameRoom(roomId) {
-        if (
-          !confirm(
-            "Are you sure you want to delete this game room? This cannot be undone."
-          )
-        ) {
-          return;
+                gameRoomList.appendChild(li);
+            });
+            
+            // Add event listeners
+            gameRoomList.querySelectorAll('.join-room-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => joinGameRoom(e.target.dataset.roomid));
+            });
+            gameRoomList.querySelectorAll('.delete-room-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => deleteGameRoom(e.target.dataset.roomid));
+            });
         }
-        try {
-          const roomRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "public",
-            "data",
-            "game_rooms",
-            roomId
-          );
-          await deleteDoc(roomRef);
-          showMessage("Room deleted successfully.", "success");
-        } catch (error) {
-          console.error("Error deleting room:", error);
-          showMessage(`Error: ${error.message}`, "error");
+        
+        /** Deletes a game room (Admin action) */
+        async function deleteGameRoom(roomId) {
+            // --- Replaced confirm() with a simple console log/action ---
+            console.log(`Attempting to delete room: ${roomId}`);
+            // if (!confirm("Are you sure you want to delete this game room? This cannot be undone.")) {
+            //     return;
+            // }
+            try {
+                const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+                await deleteDoc(roomRef);
+                showMessage("Room deleted successfully.", "success");
+            } catch (error) {
+                console.error("Error deleting room:", error);
+                showMessage(`Error: ${error.message}`, "error");
+            }
         }
-      }
+        
+        // --- Admin: Create Group Functions ---
 
-      // --- Admin: Create Group Functions ---
-
-      /** Populates the checklist of users for creating a group */
-      function populateUserChecklist() {
-        groupUserChecklist.innerHTML = "";
-        allFirebaseUsersData.forEach((user) => {
-          // Don't let users add themselves (they are added automatically)
-          if (user.uid === currentUserId) return;
-
-          const div = document.createElement("div");
-          div.innerHTML = `
+        /** Populates the checklist of users for creating a group */
+        function populateUserChecklist() {
+            groupUserChecklist.innerHTML = '';
+            allFirebaseUsersData.forEach(user => {
+                // Don't let users add themselves (they are added automatically)
+                if (user.uid === currentUserId) return;
+                
+                const div = document.createElement('div');
+                div.innerHTML = `
                     <label>
                         <input type="checkbox" value="${user.uid}">
                         ${formatDisplayName(user)}
                     </label>
                 `;
-          groupUserChecklist.appendChild(div);
-        });
-      }
-
-      // --- Game Room Functions ---
-
-      /** Joins a game room */
-      async function joinGameRoom(roomId) {
-        console.log(`User ${currentUserId} attempting to join room ${roomId}`);
-        const room = firestoreGameRooms.find((r) => r.id === roomId);
-        if (!room) {
-          showMessage("Room not found.", "error");
-          return;
-        }
-
-        // Add player to room's player list
-        const roomRef = doc(
-          db,
-          "artifacts",
-          appId,
-          "public",
-          "data",
-          "game_rooms",
-          roomId
-        );
-        const playerInfo = {
-          uid: currentUserId,
-          name: formatDisplayName(currentUserData),
-          chips: currentUserData.chip_count,
-          status: "joined", // 'joined', 'ready', 'folded', etc.
-        };
-
-        try {
-          await updateDoc(roomRef, {
-            players: arrayUnion(playerInfo),
-          });
-
-          // Set user's current room
-          const profileRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "users",
-            currentUserId,
-            "profiles",
-            currentUserId
-          );
-          await updateDoc(profileRef, { current_room: roomId });
-
-          currentJoinedRoomId = roomId;
-          renderGameRoomView(roomId);
-          showPanel(gameRoomViewPanel);
-        } catch (error) {
-          console.error("Error joining room:", error);
-          showMessage(`Error joining room: ${error.message}`, "error");
-        }
-      }
-
-      /** Leaves the current game room */
-      async function leaveGameRoom() {
-        if (!currentJoinedRoomId) return;
-
-        const roomId = currentJoinedRoomId;
-        const room = firestoreGameRooms.find((r) => r.id === roomId);
-        if (!room) {
-          console.error("Currently in a room that doesn't exist:", roomId);
-          return;
-        }
-
-        // Find this player's object in the array
-        const playerInfo = room.players.find((p) => p.uid === currentUserId);
-
-        try {
-          // Remove player from room's player list
-          const roomRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "public",
-            "data",
-            "game_rooms",
-            roomId
-          );
-          if (playerInfo) {
-            await updateDoc(roomRef, {
-              players: arrayRemove(playerInfo),
+                groupUserChecklist.appendChild(div);
             });
-          }
-
-          // Clear user's current room
-          const profileRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "users",
-            currentUserId,
-            "profiles",
-            currentUserId
-          );
-          await updateDoc(profileRef, { current_room: null });
-
-          currentJoinedRoomId = null;
-          showPanel(mainActionButtons);
-        } catch (error) {
-          console.error("Error leaving room:", error);
-          showMessage(`Error leaving room: ${error.message}`, "error");
         }
-      }
-
-      /** Renders the main game room view */
-      function renderGameRoomView(roomId) {
-        const room = firestoreGameRooms.find((r) => r.id === roomId);
-        if (!room) {
-          console.warn("RenderGameRoomView: Room not found, leaving.");
-          leaveGameRoom(); // Room might have been deleted
-          return;
+        
+        // --- Game Room Functions ---
+        
+        /** Joins a game room */
+        async function joinGameRoom(roomId) {
+            console.log(`User ${currentUserId} attempting to join room ${roomId}`);
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+            if (!room) {
+                showMessage("Room not found.", "error");
+                return;
+            }
+            
+            // Add player to room's player list
+            const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+            const playerInfo = {
+                uid: currentUserId,
+                name: formatDisplayName(currentUserData),
+                chips: currentUserData.chip_count,
+                status: 'joined' // 'joined', 'ready', 'folded', etc.
+            };
+            
+            try {
+                await updateDoc(roomRef, {
+                    players: arrayUnion(playerInfo)
+                });
+                
+                // Set user's current room
+                const profileRef = doc(db, "artifacts", appId, "users", currentUserId, "profiles", currentUserId);
+                await updateDoc(profileRef, { current_room: roomId });
+                
+                currentJoinedRoomId = roomId;
+                renderGameRoomView(roomId);
+                showPanel(gameRoomViewPanel);
+            } catch (error) {
+                console.error("Error joining room:", error);
+                showMessage(`Error joining room: ${error.message}`, "error");
+            }
         }
-
-        gameRoomName.textContent = room.name;
-
-        // This is a placeholder. A real game would have complex UI.
-        let playersHtml =
-          '<h4>Players</h4><div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
-        room.players.forEach((player) => {
-          playersHtml += `
+        
+        /** Leaves the current game room */
+        async function leaveGameRoom() {
+            if (!currentJoinedRoomId) return;
+            
+            const roomId = currentJoinedRoomId;
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+            if (!room) {
+                console.error("Currently in a room that doesn't exist:", roomId);
+                return;
+            }
+            
+            // Find this player's object in the array
+            const playerInfo = room.players.find(p => p.uid === currentUserId);
+            
+            try {
+                // Remove player from room's player list
+                const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+                if (playerInfo) {
+                    await updateDoc(roomRef, {
+                        players: arrayRemove(playerInfo)
+                    });
+                }
+                
+                // Clear user's current room
+                const profileRef = doc(db, "artifacts", appId, "users", currentUserId, "profiles", currentUserId);
+                await updateDoc(profileRef, { current_room: null });
+                
+                currentJoinedRoomId = null;
+                showPanel(mainActionButtons);
+                
+            } catch (error) {
+                console.error("Error leaving room:", error);
+                showMessage(`Error leaving room: ${error.message}`, "error");
+            }
+        }
+        
+        /** Renders the main game room view */
+        function renderGameRoomView(roomId) {
+            const room = firestoreGameRooms.find(r => r.id === roomId);
+            if (!room) {
+                console.warn("RenderGameRoomView: Room not found, leaving.");
+                leaveGameRoom(); // Room might have been deleted
+                return;
+            }
+            
+            gameRoomName.textContent = room.name;
+            
+            // This is a placeholder. A real game would have complex UI.
+            let playersHtml = '<h4>Players</h4><div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
+            room.players.forEach(player => {
+                playersHtml += `
                     <div style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; background: #f9f9f9;">
                         <strong>${player.name}</strong><br>
                         Chips: ${player.chips}<br>
                         Status: ${player.status}
                     </div>
                 `;
-        });
-        playersHtml += "</div>";
-
-        gameRoomContent.innerHTML = `
+            });
+            playersHtml += '</div>';
+            
+            gameRoomContent.innerHTML = `
                 <p><strong>Game Status:</strong> ${room.gameState.status}</p>
                 ${playersHtml}
                 <div class="form-actions" style="margin-top: 2rem;">
@@ -2406,77 +1884,63 @@
                     <button id="foldButton" class="btn btn-red">Fold</button>
                 </div>
             `;
-
-        // Add listeners for game actions
-        gameRoomContent
-          .querySelector("#readyUpButton")
-          .addEventListener("click", () => {
-            sendGameAction(roomId, "set_ready");
-          });
-        // Add more game action listeners...
-      }
-
-      /** Sends a game action to be processed (placeholder) */
-      async function sendGameAction(roomId, action, payload = {}) {
-        // In a real app, this would update the game state
-        // For example, set player status to 'ready'
-        console.log(`Action: ${action}`, payload);
-        showMessage(
-          "Game actions are not fully implemented in this demo.",
-          "info"
-        );
-
-        // Example: Set status to 'ready'
-        if (action === "set_ready") {
-          const room = firestoreGameRooms.find((r) => r.id === roomId);
-          const player = room.players.find((p) => p.uid === currentUserId);
-
-          if (player && player.status !== "ready") {
-            // Create a new array with the updated player
-            const newPlayers = room.players.map((p) =>
-              p.uid === currentUserId ? { ...p, status: "ready" } : p
-            );
-
-            const roomRef = doc(
-              db,
-              "artifacts",
-              appId,
-              "public",
-              "data",
-              "game_rooms",
-              roomId
-            );
-            await updateDoc(roomRef, { players: newPlayers });
-          }
+            
+            // Add listeners for game actions
+            gameRoomContent.querySelector('#readyUpButton').addEventListener('click', () => {
+                sendGameAction(roomId, 'set_ready');
+            });
+            // Add more game action listeners...
         }
-      }
+        
+        /** Sends a game action to be processed (placeholder) */
+        async function sendGameAction(roomId, action, payload = {}) {
+            // In a real app, this would update the game state
+            // For example, set player status to 'ready'
+            console.log(`Action: ${action}`, payload);
+            showMessage("Game actions are not fully implemented in this demo.", "info");
+            
+            // Example: Set status to 'ready'
+            if (action === 'set_ready') {
+                const room = firestoreGameRooms.find(r => r.id === roomId);
+                const player = room.players.find(p => p.uid === currentUserId);
+                
+                if (player && player.status !== 'ready') {
+                    // Create a new array with the updated player
+                    const newPlayers = room.players.map(p => 
+                        p.uid === currentUserId ? { ...p, status: 'ready' } : p
+                    );
+                    
+                    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+                    await updateDoc(roomRef, { players: newPlayers });
+                }
+            }
+        }
+        
+        // --- User Directory Functions ---
+        
+        /** Renders the main user directory table */
+        function renderUserDirectoryTable() {
+            if (!userDirectoryTable) return;
 
-      // --- User Directory Functions ---
+            // Combine data: profiles and online status
+            const combinedData = allFirebaseUsersData.map(user => {
+                // --- RTDB logic removed ---
+                // const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
+                return {
+                    ...user,
+                    isOnline: false // --- Hard-coded to false ---
+                };
+            });
+            
+            // Sort by online status first, then by name
+            combinedData.sort((a, b) => {
+                if (a.isOnline && !b.isOnline) return -1;
+                if (!a.isOnline && b.isOnline) return 1;
+                return (a.display_name || '').localeCompare(b.display_name || '');
+            });
 
-      /** Renders the main user directory table */
-      function renderUserDirectoryTable() {
-        if (!userDirectoryTable) return;
-
-        // Combine data: profiles and online status
-        const combinedData = allFirebaseUsersData.map((user) => {
-          const isOnline = firestoreActiveSessions.some(
-            (s) => s.id === user.uid
-          );
-          return {
-            ...user,
-            isOnline: isOnline,
-          };
-        });
-
-        // Sort by online status first, then by name
-        combinedData.sort((a, b) => {
-          if (a.isOnline && !b.isOnline) return -1;
-          if (!a.isOnline && b.isOnline) return 1;
-          return (a.display_name || "").localeCompare(b.display_name || "");
-        });
-
-        // Create Table Header
-        userDirectoryTable.innerHTML = `
+            // Create Table Header
+            userDirectoryTable.innerHTML = `
                 <thead>
                     <tr>
                         <th>User</th>
@@ -2490,272 +1954,239 @@
                     <!-- Rows will be inserted here -->
                 </tbody>
             `;
+            
+            const tbody = userDirectoryTable.querySelector('tbody');
+            if (combinedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+                return;
+            }
 
-        const tbody = userDirectoryTable.querySelector("tbody");
-        if (combinedData.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
-          return;
-        }
-
-        // Create Table Rows
-        combinedData.forEach((user) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
+            // Create Table Rows
+            combinedData.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                     <td>${formatDisplayName(user)}</td>
                     <td>${user.email}</td>
                     <td>${user.chip_count || 0}</td>
-                    <td>${user.isOnline ? "Online" : "Offline"}</td>
+                    <td>${user.isOnline ? 'Online' : 'Offline'}</td>
                     <td>
-                        <button class="btn btn-blue btn-sm open-chat-btn" data-uid="${
-                          user.uid
-                        }" ${user.uid === currentUserId ? "disabled" : ""}>
+                        <button class="btn btn-blue btn-sm open-chat-btn" data-uid="${user.uid}" ${user.uid === currentUserId ? 'disabled' : ''}>
                             Chat
                         </button>
                     </td>
                 `;
-          tbody.appendChild(tr);
-        });
-
-        // Add listeners
-        tbody.querySelectorAll(".open-chat-btn").forEach((btn) => {
-          btn.addEventListener("click", (e) =>
-            openDirectMessage(e.target.dataset.uid)
-          );
-        });
-      }
-
-      // --- Chat Functions ---
-
-      /** Opens a direct message (1-on-1 group) with a user */
-      async function openDirectMessage(otherUserId) {
-        const otherUser = allFirebaseUsersData.find(
-          (u) => u.uid === otherUserId
-        );
-        if (!otherUser) return;
-
-        const members = [currentUserId, otherUserId].sort(); // Sort UIDs to create a consistent group ID
-        const groupId = `dm_${members[0]}_${members[1]}`;
-        const groupName = `DM: ${formatDisplayName(otherUser)}`;
-
-        try {
-          // Check if this DM group already exists
-          const groupRef = doc(
-            db,
-            "artifacts",
-            appId,
-            "public",
-            "data",
-            "chat_groups",
-            groupId
-          );
-          const groupDoc = await getDoc(groupRef);
-
-          if (!groupDoc.exists()) {
-            // Create the DM group
-            await setDoc(groupRef, {
-              id: groupId,
-              name: groupName,
-              members: members,
-              isDM: true,
-              createdAt: serverTimestamp(),
-              createdBy: currentUserId,
+                tbody.appendChild(tr);
             });
-          }
-
-          // Open the chat modal
-          openGroupChat(groupId, groupName);
-        } catch (error) {
-          console.error("Error opening direct message:", error);
-          showMessage(`Error: ${error.message}`, "error");
+            
+            // Add listeners
+            tbody.querySelectorAll('.open-chat-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => openDirectMessage(e.target.dataset.uid));
+            });
         }
-      }
+        
+        // --- Chat Functions ---
+        
+        /** Opens a direct message (1-on-1 group) with a user */
+        async function openDirectMessage(otherUserId) {
+            const otherUser = allFirebaseUsersData.find(u => u.uid === otherUserId);
+            if (!otherUser) return;
+            
+            const members = [currentUserId, otherUserId].sort(); // Sort UIDs to create a consistent group ID
+            const groupId = `dm_${members[0]}_${members[1]}`;
+            const groupName = `DM: ${formatDisplayName(otherUser)}`;
 
-      /** Opens the group chat modal and loads messages */
-      function openGroupChat(groupId, groupName) {
-        groupChatTitle.textContent = groupName;
-        groupChatModal.dataset.currentGroupId = groupId;
-        groupChatMessages.innerHTML = "<p>Loading messages...</p>";
-
-        // Clear message input
-        groupMessageInput.value = "";
-
-        // Show modal
-        groupChatModal.classList.remove("hidden");
-
-        // --- Attach message listener ---
-        // (We should detach old listeners if any, but for simplicity...)
-        const messagesCollectionRef = collection(
-          db,
-          "artifacts",
-          appId,
-          "public",
-          "data",
-          "chat_groups",
-          groupId,
-          "messages"
-        );
-        const q = query(messagesCollectionRef); // Add orderBy('timestamp') here if you add it
-
-        onSnapshot(
-          q,
-          (snapshot) => {
-            firestoreMessages = snapshot.docs.map((doc) => doc.data());
-            renderGroupChatMessages();
-          },
-          (error) => {
-            console.error("Error listening to messages:", error);
-            groupChatMessages.innerHTML = "<p>Error loading messages.</p>";
-          }
-        );
-      }
-
-      /** Renders messages in the chat modal */
-      function renderGroupChatMessages() {
-        groupChatMessages.innerHTML = "";
-        if (firestoreMessages.length === 0) {
-          groupChatMessages.innerHTML = "<p>No messages yet. Say hi!</p>";
-          return;
+            try {
+                // Check if this DM group already exists
+                const groupRef = doc(db, "artifacts", appId, "public", "data", "chat_groups", groupId);
+                const groupDoc = await getDoc(groupRef);
+                
+                if (!groupDoc.exists()) {
+                    // Create the DM group
+                    await setDoc(groupRef, {
+                        id: groupId,
+                        name: groupName,
+                        members: members,
+                        isDM: true,
+                        createdAt: serverTimestamp(),
+                        createdBy: currentUserId
+                    });
+                }
+                
+                // Open the chat modal
+                openGroupChat(groupId, groupName);
+                
+            } catch (error) {
+                console.error("Error opening direct message:", error);
+                showMessage(`Error: ${error.message}`, "error");
+            }
         }
-
-        // Sort by timestamp (assuming it exists)
-        firestoreMessages.sort((a, b) => a.timestamp - b.timestamp);
-
-        firestoreMessages.forEach((msg) => {
-          const div = document.createElement("div");
-          const user = allFirebaseUsersData.find((u) => u.uid === msg.senderId);
-          const senderName = user ? formatDisplayName(user) : "Unknown";
-
-          div.innerHTML = `
+        
+        /** Opens the group chat modal and loads messages */
+        function openGroupChat(groupId, groupName) {
+            groupChatTitle.textContent = groupName;
+            groupChatModal.dataset.currentGroupId = groupId;
+            groupChatMessages.innerHTML = '<p>Loading messages...</p>';
+            
+            // Clear message input
+            groupMessageInput.value = '';
+            
+            // Show modal
+            groupChatModal.classList.remove('hidden');
+            
+            // --- Attach message listener ---
+            // (We should detach old listeners if any, but for simplicity...)
+            const messagesCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
+            const q = query(messagesCollectionRef); // Add orderBy('timestamp') here if you add it
+            
+            onSnapshot(q, (snapshot) => {
+                firestoreMessages = snapshot.docs.map(doc => doc.data());
+                renderGroupChatMessages();
+            }, (error) => {
+                console.error("Error listening to messages:", error);
+                groupChatMessages.innerHTML = '<p>Error loading messages.</p>';
+            });
+        }
+        
+        /** Renders messages in the chat modal */
+        function renderGroupChatMessages() {
+            groupChatMessages.innerHTML = '';
+            if (firestoreMessages.length === 0) {
+                groupChatMessages.innerHTML = '<p>No messages yet. Say hi!</p>';
+                return;
+            }
+            
+            // Sort by timestamp (assuming it exists)
+            firestoreMessages.sort((a, b) => a.timestamp - b.timestamp);
+            
+            firestoreMessages.forEach(msg => {
+                const div = document.createElement('div');
+                const user = allFirebaseUsersData.find(u => u.uid === msg.senderId);
+                const senderName = user ? formatDisplayName(user) : 'Unknown';
+                
+                div.innerHTML = `
                     <strong>${senderName}:</strong>
                     <p style="margin: 0;">${msg.text}</p>
-                    <small style="font-size: 0.7rem; color: #888;">${new Date(
-                      msg.timestamp?.toDate()
-                    ).toLocaleTimeString()}</small>
+                    <small style="font-size: 0.7rem; color: #888;">${new Date(msg.timestamp?.toDate()).toLocaleTimeString()}</small>
                 `;
-          div.style.marginBottom = "10px";
-          groupChatMessages.appendChild(div);
-        });
-
-        // Scroll to bottom
-        groupChatMessages.scrollTop = groupChatMessages.scrollHeight;
-      }
-
-      /** Sends a message to the currently open group */
-      async function sendGroupMessage() {
-        const text = groupMessageInput.value.trim();
-        const groupId = groupChatModal.dataset.currentGroupId;
-
-        if (!text || !groupId) return;
-
-        const messagesCollectionRef = collection(
-          db,
-          "artifacts",
-          appId,
-          "public",
-          "data",
-          "chat_groups",
-          groupId,
-          "messages"
-        );
-
-        try {
-          await addDoc(messagesCollectionRef, {
-            text: text,
-            senderId: currentUserId,
-            timestamp: serverTimestamp(),
-          });
-          groupMessageInput.value = ""; // Clear input
-        } catch (error) {
-          console.error("Error sending message:", error);
-          showMessage("Error sending message.", "error");
+                div.style.marginBottom = '10px';
+                groupChatMessages.appendChild(div);
+            });
+            
+            // Scroll to bottom
+            groupChatMessages.scrollTop = groupChatMessages.scrollHeight;
         }
-      }
 
-      // --- Utility & UI Functions ---
-
-      /**
-       * Shows a specific panel and hides all others.
-       * @param {HTMLElement} panelToShow - The DOM element of the panel to show.
-       */
-      function showPanel(panelToShow) {
-        // List of all panels
-        const allPanels = [
-          loginButtonsContainer,
-          mainActionButtons,
-          accountManagementPanel,
-          adminPanel,
-          userManagementPanel,
-          gameRoomManagementPanel,
-          gameRoomViewPanel,
-          userDirectoryPanel,
-          createGroupPanel,
-        ];
-
-        // Hide all panels
-        allPanels.forEach((panel) => {
-          if (panel) panel.classList.add("hidden");
-        });
-
-        // Hide loading and message
-        loadingIndicator.classList.add("hidden");
-        messageBox.classList.add("hidden");
-
-        // Show the target panel
-        if (panelToShow) {
-          panelToShow.classList.remove("hidden");
-          console.log("showPanel: Showing:", panelToShow.id);
-        } else {
-          console.warn("showPanel: panelToShow was null or undefined.");
+        /** Sends a message to the currently open group */
+        async function sendGroupMessage() {
+            const text = groupMessageInput.value.trim();
+            const groupId = groupChatModal.dataset.currentGroupId;
+            
+            if (!text || !groupId) return;
+            
+            const messagesCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
+            
+            try {
+                await addDoc(messagesCollectionRef, {
+                    text: text,
+                    senderId: currentUserId,
+                    timestamp: serverTimestamp()
+                });
+                groupMessageInput.value = ''; // Clear input
+            } catch (error) {
+                console.error("Error sending message:", error);
+                showMessage("Error sending message.", "error");
+            }
         }
-      }
+        
+        
+        // --- Utility & UI Functions ---
 
-      /**
-       * Displays a message to the user.
-       * @param {string} message - The text to display.
-       * @param {string} type - 'success', 'error', or 'info'.
-       */
-      function showMessage(message, type = "info") {
-        messageBox.textContent = message;
-        messageBox.className = "message-box"; // Reset classes
-        messageBox.classList.add(type); // 'success', 'error', 'info'
-        messageBox.classList.remove("hidden");
-      }
+        /**
+         * Shows a specific panel and hides all others.
+         * @param {HTMLElement} panelToShow - The DOM element of the panel to show.
+         */
+        function showPanel(panelToShow) {
+            // List of all panels
+            const allPanels = [
+                loginButtonsContainer,
+                mainActionButtons,
+                accountManagementPanel,
+                adminPanel,
+                userManagementPanel,
+                gameRoomManagementPanel,
+                gameRoomViewPanel,
+                userDirectoryPanel,
+                createGroupPanel
+            ];
 
-      /**
-       * Formats a user's name for display.
-       * @param {object} userData - A user profile object.
-       * @returns {string} The formatted name.
-       */
-      function formatDisplayName(userData) {
-        if (!userData) return "Unknown User";
-        return userData.display_name || userData.email || "User";
-      }
+            // Hide all panels
+            allPanels.forEach(panel => {
+                if (panel) panel.classList.add('hidden');
+            });
+            
+            // Hide loading and message
+            loadingIndicator.classList.add('hidden');
+            messageBox.classList.add('hidden');
 
-      /**
-       * Checks if a user has Admin or Owner role.
-       * @param {string} uid - The user's ID.
-       * @returns {boolean} True if user is Admin or Owner.
-       */
-      function hasAdminAccess(uid) {
-        const roleData = allFirebaseRolesData.find((r) => r.uid === uid);
-        if (!roleData) return false;
-        return roleData.role === ROLES.ADMIN || roleData.role === ROLES.OWNER;
-      }
+            // Show the target panel
+            if (panelToShow) {
+                panelToShow.classList.remove('hidden');
+                console.log("showPanel: Showing:", panelToShow.id);
+            } else {
+                console.warn("showPanel: panelToShow was null or undefined.");
+            }
+        }
+        
+        /**
+         * Displays a message to the user.
+         * @param {string} message - The text to display.
+         * @param {string} type - 'success', 'error', or 'info'.
+         */
+        function showMessage(message, type = "info") {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box'; // Reset classes
+            messageBox.classList.add(type); // 'success', 'error', 'info'
+            messageBox.classList.remove('hidden');
+        }
 
-      /**
-       * Gets the current role string for a user.
-       * @param {string} uid - The user's ID.
-       * @returns {string} The user's role.
-       */
-      function getCurrentUserRole(uid) {
-        const roleData = allFirebaseRolesData.find((r) => r.uid === uid);
-        return roleData ? roleData.role : ROLES.PLAYER;
-      }
+        /**
+         * Formats a user's name for display.
+         * @param {object} userData - A user profile object.
+         * @returns {string} The formatted name.
+         */
+        function formatDisplayName(userData) {
+            if (!userData) return "Unknown User";
+            return userData.display_name || userData.email || "User";
+        }
+
+        /**
+         * Checks if a user has Admin or Owner role.
+         * @param {string} uid - The user's ID.
+         * @returns {boolean} True if user is Admin or Owner.
+         */
+        function hasAdminAccess(uid) {
+            const roleData = allFirebaseRolesData.find(r => r.uid === uid);
+            if (!roleData) return false;
+            return roleData.role === ROLES.ADMIN || roleData.role === ROLES.OWNER;
+        }
+
+        /**
+         * Gets the current role string for a user.
+         * @param {string} uid - The user's ID.
+         * @returns {string} The user's role.
+         */
+        function getCurrentUserRole(uid) {
+            const roleData = allFirebaseRolesData.find(r => r.uid === uid);
+            return roleData ? roleData.role : ROLES.PLAYER;
+        }
     </script>
     <!-- 
       ============================================================
       =                 FIREBASE & APP SCRIPT END                  =
-      ============================================================
+      ================================Moving to a new plan...
+Moving to a new plan...
+Moving to a new plan...
+============================
     -->
-  </body>
+</body>
 </html>
