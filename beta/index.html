@@ -292,19 +292,23 @@
             align-items: center;
             justify-content: center;
             font-weight: 600; /* font-semibold */
-            padding: 0.625rem 1.25rem; /* py-2.5 px-5 */
-            border-radius: 0.5rem; /* rounded-lg */
-            font-size: 0.95rem; /* text-sm */
+            padding: 0.875rem 1.5rem; /* UPDATED: py-3.5 px-6 - Made buttons bigger */
+            border-radius: 0.75rem; /* UPDATED: rounded-xl */
+            font-size: 1rem; /* UPDATED: text-base */
             line-height: 1.5rem;
             color: #ffffff;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
+            /* UPDATED: Added shadow and better transition */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease-out; 
             text-decoration: none; /* For <a> tags styled as buttons */
         }
         .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
+            /* UPDATED: Brighter transform/shadow on hover */
+            opacity: 1; /* Reset opacity from old style if any */
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .btn:focus {
             outline: none;
