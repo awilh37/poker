@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WPS 3.1</title>
+    <title>WPS 3.2</title>
     
     <!-- 
       ============================================================
@@ -33,7 +33,142 @@
             min-height: 100vh;
             margin: 0;
             color: #334155; /* Default text color (slate-700) */
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
+
+        /* --- New Header --- */
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.7); /* Translucent white */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px); /* Safari support */
+            border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            position: fixed; /* Stick to top */
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 30; /* Above most content */
+        }
+        .header-left, .header-center, .header-right {
+            display: flex;
+            align-items: center;
+            flex: 1; /* Each takes 1/3 space */
+        }
+        .header-center {
+            justify-content: center;
+        }
+        .header-right {
+            justify-content: flex-end;
+            position: relative; /* For dropdown */
+        }
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin: 0;
+        }
+        .header-icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #374151;
+            padding: 0.5rem;
+            border-radius: 99px;
+            transition: background-color 0.2s;
+        }
+        .header-icon-btn svg {
+            width: 1.75rem;
+            height: 1.75rem;
+            display: block; /* Fixes potential SVG alignment issues */
+        }
+        .header-icon-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        /* --- New Account Dropdown --- */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%; /* Right below the button */
+            right: 0;
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e5e7eb;
+            min-width: 180px;
+            z-index: 40;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .dropdown-menu a {
+            display: block;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #374151;
+            text-decoration: none;
+            transition: background-color 0.15s;
+        }
+        .dropdown-menu a:hover {
+            background-color: #f3f4f6;
+        }
+        .dropdown-menu a#dropdownLogoutLink {
+            color: #dc3545;
+        }
+
+        /* --- New Sidebar --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 280px;
+            background-color: #ffffff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 50; /* Topmost */
+            padding: 2rem 1rem;
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .sidebar.show {
+            transform: translateX(0);
+        }
+        .sidebar a {
+            display: block;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #374151;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+        .sidebar a:hover {
+            background-color: #f3f4f6;
+        }
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            z-index: 45; /* Below sidebar, above content */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        .sidebar-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
 
         /* --- Utility --- */
         .hidden {
@@ -43,9 +178,9 @@
         /* --- Layout --- */
         #mainContainer {
             width: 100%;
-            max-width: 1280px; /* Large, but not infinite */
-            margin: 0 auto; /* Center the content */
-            padding: 2rem 1rem;
+            /* max-width: 1280px;  <- REMOVED to go full-width */
+            /* margin: 0 auto;       <- REMOVED to go full-width */
+            padding: 5rem 1rem 2rem 1rem; /* UPDATED - Added 5rem top padding for fixed header */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -697,12 +832,58 @@
 
     <!-- 
       ============================================================
+      =                 NEW HEADER START                       =
+      ============================================================
+    -->
+    <header class="main-header">
+        <div class="header-left">
+            <button id="hamburgerButton" class="header-icon-btn">
+                <!-- Hamburger Menu Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+        </div>
+        <div class="header-center">
+            <h1 class="header-title">WPS 3.2</h1>
+        </div>
+        <div class="header-right">
+            <button id="accountButton" class="header-icon-btn">
+                <!-- Account Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+            </button>
+            
+            <!-- Account dropdown, hidden by default -->
+            <div id="accountDropdown" class="dropdown-menu hidden">
+                <!-- Links will be controlled by JS -->
+                <a href="#" id="dropdownAccountLink">Manage Account</a>
+                <a href="#" id="dropdownAdminLink" class="hidden">Admin Panel</a>
+                <a href="#" id="dropdownLogoutLink">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar (for hamburger menu), hidden by default -->
+    <nav id="sidebar" class="sidebar hidden">
+        <a href="#" id="sidebarJoinGame">Join a Game</a>
+        <a href="#" id="sidebarUserDirectory">User Directory</a>
+        <!-- We can add more links here later -->
+    </nav>
+    <div id="sidebarOverlay" class="sidebar-overlay hidden"></div>
+    <!-- =================== NEW HEADER END =================== -->
+
+
+    <!-- 
+      ============================================================
       =                 MAIN CONTAINER START                 =
       ============================================================
+    -->
     <div id="mainContainer" class="w-full flex flex-col items-center">
         
-        <!-- Main Application Title -->
-        <h2 class="main-title">WPS 3.1</h2>
+        <!-- Main Application Title - REMOVED, now in header -->
+        <!-- <h2 class="main-title">WPS 3.1</h2> -->
 
         <!-- Loading Indicator: Shown when app is initializing -->
         <div id="loadingIndicator" class="hidden loading-indicator">
