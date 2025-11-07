@@ -793,49 +793,45 @@
       ============================================================
     -->
     <script type="module">
-        // --- Firebase Imports ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // --- Firebase Imports (Copied from v3.1 and merged) ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
         import { 
             getAuth, 
+            signInWithCustomToken, 
             onAuthStateChanged, 
             GoogleAuthProvider, 
             signInWithPopup, 
             signOut,
-            updateProfile,
-            signInAnonymously,
-            signInWithCustomToken
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+            updateProfile,      // <-- Merged from v3.2
+            signInAnonymously   // <-- Merged from v3.2
+        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
         import { 
             getFirestore, 
             doc, 
             getDoc, 
             setDoc, 
-            updateDoc, 
-            deleteDoc,
+            addDoc, 
             onSnapshot, 
             collection, 
             query, 
-            where, 
-            addDoc, 
-            getDocs,
-            serverTimestamp,
-            arrayUnion,
-            arrayRemove,
+            getDocs, 
+            deleteDoc, 
+            serverTimestamp, 
+            orderBy,            // <-- From v3.1
+            updateDoc, 
+            arrayUnion, 
+            arrayRemove, 
+            deleteField,        // <-- From v3.1
             writeBatch,
-            runTransaction,
-            Timestamp,
-            increment
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+            runTransaction,     // <-- Merged from v3.2
+            Timestamp,          // <-- Merged from v3.2
+            increment,          // <-- Merged from v3.2
+            where               // <-- Merged from v3.2
+        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
         
 
-        // --- App Config ---
-        
-        // --- THIS IS THE FIX ---
-        // The app was looking for 'default-app-id' instead of 'wps-3'
-        const appId = 'wps-3'; // Hard-coded for GitHub Pages, matches v3.1
-        // const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // <-- This was the bug
-        
-        // --- Hard-coded config provided by user ---
+        // --- Firebase Configuration (Copied from v3.1) ---
         const firebaseConfig = {
             apiKey: "AIzaSyBefsHEBuiRyJ31NzF885ac3ugCefzngTU",
             authDomain: "wps-3-be723.firebaseapp.com",
@@ -846,8 +842,14 @@
             measurementId: "G-H0Z4C2185Y"
         };
 
+        // --- THIS IS THE FIX (from v3.1) ---
+        // It uses firebaseConfig.projectId as the fallback, which is 'wps-3-be723'
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+
         // --- Global Variables ---
-        let db, auth; 
+        let db, auth, analytics, googleProvider; // <-- v3.1 style
         let currentUserId = null;
         let currentUserData = null;
         let firebaseAuthReady = false;
@@ -963,12 +965,14 @@
         const closeGroupChatButton = document.getElementById('closeGroupChatButton');
 
         
-        // --- Firebase Init ---
+        // --- Firebase Init (from v3.1) ---
         try {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            console.log("Firebase initialized successfully (Firestore-only).");
+            const firebaseApp = initializeApp(firebaseConfig);
+            analytics = getAnalytics(firebaseApp);
+            db = getFirestore(firebaseApp, '(default)'); // Using named database '(default)'
+            auth = getAuth(firebaseApp);
+            googleProvider = new GoogleAuthProvider();
+            console.log("Firebase initialized successfully (v3.1 config).");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
             showMessage("Error: Could not connect to the application services. Please refresh.", "error");
@@ -1172,9 +1176,9 @@
 
             // --- Auth Buttons ---
             googleLoginButton.addEventListener('click', async () => {
-                const provider = new GoogleAuthProvider();
+                // const provider = new GoogleAuthProvider(); // Now defined globally
                 try {
-                    await signInWithPopup(auth, provider);
+                    await signInWithPopup(auth, googleProvider); // Use global googleProvider
                     // onAuthStateChanged will handle the rest
                 } catch (error) {
                     console.error("Google Sign-In Error:", error);
@@ -2221,7 +2225,7 @@
          * @param {string} uid - The user's ID.
          * @returns {string} The user's role.
          */
-        function getCurrentUserRole(uid) {
+        async function getCurrentUserRole(uid) { // Made async for fallback
             // This function might be called before the listener is ready,
             // so we check the local array first, but fall back to a direct fetch if needed.
             const roleData = allFirebaseRolesData.find(r => r.uid === uid);
@@ -2232,9 +2236,13 @@
             // Fallback for the very first login, before listeners are set
             console.warn("getCurrentUserRole: Role not in local cache, fetching doc.");
             const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
-            return getDoc(roleRef).then(doc => {
-                return doc.exists() ? doc.data().role : ROLES.PLAYER;
-            }).catch(() => ROLES.PLAYER);
+            try {
+                const docSnap = await getDoc(roleRef);
+                return docSnap.exists() ? docSnap.data().role : ROLES.PLAYER;
+            } catch (error) {
+                console.error("getCurrentUserRole fallback fetch failed:", error);
+                return ROLES.PLAYER; // Default to player on error
+            }
         }
     </script>
     <!-- 
