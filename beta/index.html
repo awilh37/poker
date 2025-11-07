@@ -827,7 +827,7 @@
             increment
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- RTDB IMPORTS RE-ADDED ---
+        // --- RTDB IMPORTS ---
         import { 
             getDatabase, 
             ref, 
@@ -854,7 +854,7 @@
         };
 
         // --- Global Variables ---
-        let db, auth, rtdb; // --- RTDB RE-ADDED ---
+        let db, auth, rtdb;
         let currentUserId = null;
         let currentUserData = null;
         let firebaseAuthReady = false;
@@ -863,7 +863,7 @@
         
         let allFirebaseUsersData = []; // Stores all user profile docs
         let allFirebaseRolesData = []; // Stores all user role docs
-        let firestoreActiveSessions = []; // --- This will be populated by RTDB ---
+        let firestoreActiveSessions = []; // This will be populated by RTDB
         let firestoreGameRooms = []; // Stores game room docs
         let firestoreMessages = []; // Stores messages
         let currentJoinedRoomId = null; // Stores the ID of the room the player is in
@@ -975,7 +975,7 @@
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            rtdb = getDatabase(app); // --- RTDB RE-ADDED ---
+            rtdb = getDatabase(app); 
             console.log("Firebase initialized successfully (Firestore & RTDB).");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
@@ -1234,9 +1234,9 @@
                     // Update Firebase Auth profile
                     await updateProfile(auth.currentUser, { displayName: newName });
                     
-                    // --- PATHS FIXED ---
+                    // --- PATHS SIMPLIFIED ---
                     // Update Firestore profile
-                    const userProfileRef = doc(db, "artifacts", appId, "public", "data", "profiles", currentUserId);
+                    const userProfileRef = doc(db, "artifacts", appId, "profiles", currentUserId);
                     await updateDoc(userProfileRef, { display_name: newName });
                     
                     showMessage("Display name updated successfully!", "success");
@@ -1271,7 +1271,8 @@
                     return;
                 }
                 try {
-                    const roomCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
+                    // --- PATHS SIMPLIFIED ---
+                    const roomCollectionRef = collection(db, "artifacts", appId, "game_rooms");
                     await addDoc(roomCollectionRef, {
                         name: name,
                         createdAt: serverTimestamp(),
@@ -1309,7 +1310,8 @@
                 }
 
                 try {
-                    const groupCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups");
+                    // --- PATHS SIMPLIFIED ---
+                    const groupCollectionRef = collection(db, "artifacts", appId, "chat_groups");
                     await addDoc(groupCollectionRef, {
                         name: groupName,
                         members: selectedUsers,
@@ -1346,7 +1348,7 @@
             
             try {
                 await setupUserProfile(user);
-                setupPresence(user.uid); // --- RTDB PRESENCE RE-ADDED ---
+                setupPresence(user.uid); 
                 
                 // Set up global data listeners
                 if (!dataLoadedAndListenersSetup) {
@@ -1385,7 +1387,6 @@
             console.log("handleLogout: Initiating logout for:", currentUserId);
             isLoggingOut = true;
             
-            // --- RTDB PRESENCE RE-ADDED ---
             // 1. Remove from Realtime DB (Presence)
             if (rtdb && currentUserId) {
                 const sessionRef = ref(rtdb, `artifacts/${appId}/sessions/${currentUserId}`);
@@ -1418,9 +1419,9 @@
 
             const batch = writeBatch(db);
             
-            // --- PATHS FIXED ---
+            // --- PATHS SIMPLIFIED ---
             // 1. User Role
-            const roleRef = doc(db, "artifacts", appId, "public", "data", "roles", uid);
+            const roleRef = doc(db, "artifacts", appId, "roles", uid);
             const roleDoc = await getDoc(roleRef);
             if (!roleDoc.exists()) {
                 console.log("setupUserProfile: No role found, creating 'player' role.");
@@ -1435,7 +1436,7 @@
             }
 
             // 2. User Profile
-            const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", uid);
+            const profileRef = doc(db, "artifacts", appId, "profiles", uid);
             const profileDoc = await getDoc(profileRef);
             if (!profileDoc.exists()) {
                 console.log("setupUserProfile: No profile found, creating profile.");
@@ -1460,7 +1461,6 @@
         }
         
         /**
-         * --- RTDB PRESENCE FUNCTION RE-ADDED ---
          * Sets up real-time database presence (online status).
          */
         function setupPresence(uid) {
@@ -1484,14 +1484,13 @@
          */
         function setupDataListeners() {
             console.log("setupDataListeners: Attaching listeners...");
-            // --- PATHS FIXED ---
+            // --- PATHS SIMPLIFIED ---
             // Base collection paths
-            const rolesCollectionRef = collection(db, "artifacts", appId, "public", "data", "roles");
-            const profilesCollectionRef = collection(db, "artifacts", appId, "public", "data", "profiles");
-            const gameRoomsCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
-            const investmentsCollectionRef = collection(db, "artifacts", appId, "public", "data", "investments"); // Feature hidden
+            const rolesCollectionRef = collection(db, "artifacts", appId, "roles");
+            const profilesCollectionRef = collection(db, "artifacts", appId, "profiles");
+            const gameRoomsCollectionRef = collection(db, "artifacts", appId, "game_rooms");
+            const investmentsCollectionRef = collection(db, "artifacts", appId, "investments"); // Feature hidden
 
-            // --- RTDB REF RE-ADDED ---
             const sessionsRef = ref(rtdb, `artifacts/${appId}/sessions`);
 
             // --- Promise-based listeners for initial load ---
@@ -1524,7 +1523,7 @@
                 }, (error) => { console.error("Firestore: Error listening to user profiles:", error); reject(error); });
             });
 
-            // --- RTDB PROMISE RE-ADDED ---
+            // Promise for Active Sessions (RTDB)
             const activeSessionsPromise = new Promise((resolve, reject) => {
                 let initialLoad = true;
                 onValue(sessionsRef, (snapshot) => {
@@ -1564,7 +1563,7 @@
                 }, (error) => { console.error("Firestore: Error listening to investments:", error); reject(error); });
             });
 
-            // --- Promise.all UPDATED (RTDB promise re-added) ---
+            // --- Promise.all UPDATED ---
             return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise, gameRoomsPromise, investmentsPromise]);
         }
 
@@ -1580,7 +1579,6 @@
                 return;
             }
 
-            // --- RTDB logic RE-ADDED ---
             // Get list of online UIDs
             const onlineUserIds = new Set(firestoreActiveSessions.map(session => session.id));
 
@@ -1588,7 +1586,6 @@
             const sortedUsers = [...allFirebaseUsersData].sort((a, b) => (b.chip_count || 0) - (a.chip_count || 0));
 
             sortedUsers.forEach(user => {
-                // --- RTDB logic RE-ADDED ---
                 const isOnline = onlineUserIds.has(user.uid);
                 const li = document.createElement('li');
                 li.className = 'standings-item';
@@ -1614,7 +1611,6 @@
             if (!user) return;
 
             const userRole = getCurrentUserRole(uid);
-            // --- RTDB logic RE-ADDED ---
             const isOnline = firestoreActiveSessions.map(s => s.id).includes(uid);
             
             userInfoModalContent.innerHTML = `
@@ -1645,7 +1641,6 @@
             // Combine data: profiles, roles, and online status
             const combinedData = allFirebaseUsersData.map(user => {
                 const roleData = allFirebaseRolesData.find(r => r.uid === user.uid) || {};
-                // --- RTDB logic RE-ADDED ---
                 const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
                 return {
                     ...user,
@@ -1724,13 +1719,13 @@
             try {
                 const batch = writeBatch(db);
                 
-                // --- PATHS FIXED ---
+                // --- PATHS SIMPLIFIED ---
                 // Update Role
-                const roleRef = doc(db, "artifacts", appId, "public", "data", "roles", uid);
+                const roleRef = doc(db, "artifacts", appId, "roles", uid);
                 batch.update(roleRef, { role: newRole });
                 
                 // Update Profile (Chips)
-                const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", uid);
+                const profileRef = doc(db, "artifacts", appId, "profiles", uid);
                 batch.update(profileRef, { chip_count: newChips });
                 
                 await batch.commit();
@@ -1787,7 +1782,8 @@
             //     return;
             // }
             try {
-                const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+                // --- PATHS SIMPLIFIED ---
+                const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
                 await deleteDoc(roomRef);
                 showMessage("Room deleted successfully.", "success");
             } catch (error) {
@@ -1828,7 +1824,8 @@
             }
             
             // Add player to room's player list
-            const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+            // --- PATHS SIMPLIFIED ---
+            const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
             const playerInfo = {
                 uid: currentUserId,
                 name: formatDisplayName(currentUserData),
@@ -1841,9 +1838,9 @@
                     players: arrayUnion(playerInfo)
                 });
                 
-                // --- PATHS FIXED ---
+                // --- PATHS SIMPLIFIED ---
                 // Set user's current room
-                const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "profiles", currentUserId);
                 await updateDoc(profileRef, { current_room: roomId });
                 
                 currentJoinedRoomId = roomId;
@@ -1871,16 +1868,17 @@
             
             try {
                 // Remove player from room's player list
-                const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+                // --- PATHS SIMPLIFIED ---
+                const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
                 if (playerInfo) {
                     await updateDoc(roomRef, {
                         players: arrayRemove(playerInfo)
                     });
                 }
                 
-                // --- PATHS FIXED ---
+                // --- PATHS SIMPLIFIED ---
                 // Clear user's current room
-                const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "profiles", currentUserId);
                 await updateDoc(profileRef, { current_room: null });
                 
                 currentJoinedRoomId = null;
@@ -1951,7 +1949,8 @@
                         p.uid === currentUserId ? { ...p, status: 'ready' } : p
                     );
                     
-                    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+                    // --- PATHS SIMPLIFIED ---
+                    const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
                     await updateDoc(roomRef, { players: newPlayers });
                 }
             }
@@ -1965,7 +1964,6 @@
 
             // Combine data: profiles and online status
             const combinedData = allFirebaseUsersData.map(user => {
-                // --- RTDB logic RE-ADDED ---
                 const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
                 return {
                     ...user,
@@ -2038,7 +2036,8 @@
 
             try {
                 // Check if this DM group already exists
-                const groupRef = doc(db, "artifacts", appId, "public", "data", "chat_groups", groupId);
+                // --- PATHS SIMPLIFIED ---
+                const groupRef = doc(db, "artifacts", appId, "chat_groups", groupId);
                 const groupDoc = await getDoc(groupRef);
                 
                 if (!groupDoc.exists()) {
@@ -2075,8 +2074,8 @@
             groupChatModal.classList.remove('hidden');
             
             // --- Attach message listener ---
-            // (We should detach old listeners if any, but for simplicity...)
-            const messagesCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
+            // --- PATHS SIMPLIFIED ---
+            const messagesCollectionRef = collection(db, "artifacts", appId, "chat_groups", groupId, "messages");
             const q = query(messagesCollectionRef); // Add orderBy('timestamp') here if you add it
             
             onSnapshot(q, (snapshot) => {
@@ -2124,7 +2123,8 @@
             
             if (!text || !groupId) return;
             
-            const messagesCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
+            // --- PATHS SIMPLIFIED ---
+            const messagesCollectionRef = collection(db, "artifacts", appId, "chat_groups", groupId, "messages");
             
             try {
                 await addDoc(messagesCollectionRef, {
@@ -2186,7 +2186,16 @@
         function showMessage(message, type = "info") {
             messageBox.textContent = message;
             messageBox.className = 'message-box'; // Reset classes
-            messageBox.classList.add(type); // 'success', 'error', 'info'
+            
+            // Map simple types to style classes
+            if (type === 'success') {
+                messageBox.classList.add('success');
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+            } else {
+                messageBox.classList.add('info');
+            }
+            
             messageBox.classList.remove('hidden');
         }
 
