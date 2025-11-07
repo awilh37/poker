@@ -220,7 +220,6 @@
             background-color: #9ca3af; /* Offline (gray) */
         }
         .standings-item .name .status-dot.online {
-            /* This class will no longer be added, as RTDB is removed */
             background-color: #22c55e; /* Online (green) */
         }
         .standings-item .chips {
@@ -828,15 +827,15 @@
             increment
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- RTDB IMPORTS REMOVED ---
-        // import { 
-        //     getDatabase, 
-        //     ref, 
-        //     onValue, 
-        //     set as setRTDB, 
-        //     remove as removeRTDB, 
-        //     onDisconnect 
-        // } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        // --- RTDB IMPORTS RE-ADDED ---
+        import { 
+            getDatabase, 
+            ref, 
+            onValue, 
+            set as setRTDB, 
+            remove as removeRTDB, 
+            onDisconnect 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
 
         // --- App Config ---
@@ -855,7 +854,7 @@
         };
 
         // --- Global Variables ---
-        let db, auth; // --- RTDB REMOVED ---
+        let db, auth, rtdb; // --- RTDB RE-ADDED ---
         let currentUserId = null;
         let currentUserData = null;
         let firebaseAuthReady = false;
@@ -864,7 +863,7 @@
         
         let allFirebaseUsersData = []; // Stores all user profile docs
         let allFirebaseRolesData = []; // Stores all user role docs
-        let firestoreActiveSessions = []; // --- This will just stay empty ---
+        let firestoreActiveSessions = []; // --- This will be populated by RTDB ---
         let firestoreGameRooms = []; // Stores game room docs
         let firestoreMessages = []; // Stores messages
         let currentJoinedRoomId = null; // Stores the ID of the room the player is in
@@ -976,9 +975,8 @@
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            // --- RTDB REMOVED ---
-            // rtdb = getDatabase(app); 
-            console.log("Firebase initialized successfully (Firestore only).");
+            rtdb = getDatabase(app); // --- RTDB RE-ADDED ---
+            console.log("Firebase initialized successfully (Firestore & RTDB).");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
             showMessage("Error: Could not connect to the application services. Please refresh.", "error");
@@ -1235,8 +1233,10 @@
                 try {
                     // Update Firebase Auth profile
                     await updateProfile(auth.currentUser, { displayName: newName });
+                    
+                    // --- PATHS FIXED ---
                     // Update Firestore profile
-                    const userProfileRef = doc(db, "artifacts", appId, "users", currentUserId, "profiles", currentUserId);
+                    const userProfileRef = doc(db, "artifacts", appId, "public", "data", "profiles", currentUserId);
                     await updateDoc(userProfileRef, { display_name: newName });
                     
                     showMessage("Display name updated successfully!", "success");
@@ -1346,8 +1346,7 @@
             
             try {
                 await setupUserProfile(user);
-                // --- RTDB PRESENCE REMOVED ---
-                // setupPresence(user.uid);
+                setupPresence(user.uid); // --- RTDB PRESENCE RE-ADDED ---
                 
                 // Set up global data listeners
                 if (!dataLoadedAndListenersSetup) {
@@ -1386,7 +1385,17 @@
             console.log("handleLogout: Initiating logout for:", currentUserId);
             isLoggingOut = true;
             
-            // --- RTDB PRESENCE REMOVED ---
+            // --- RTDB PRESENCE RE-ADDED ---
+            // 1. Remove from Realtime DB (Presence)
+            if (rtdb && currentUserId) {
+                const sessionRef = ref(rtdb, `artifacts/${appId}/sessions/${currentUserId}`);
+                try {
+                    await removeRTDB(sessionRef);
+                    console.log("handleLogout: Removed RTDB presence.");
+                } catch (error) {
+                    console.error("handleLogout: Error removing RTDB presence:", error);
+                }
+            }
             
             // 2. Sign out from Firebase Auth
             try {
@@ -1409,8 +1418,9 @@
 
             const batch = writeBatch(db);
             
+            // --- PATHS FIXED ---
             // 1. User Role
-            const roleRef = doc(db, "artifacts", appId, "users", uid, "roles", uid);
+            const roleRef = doc(db, "artifacts", appId, "public", "data", "roles", uid);
             const roleDoc = await getDoc(roleRef);
             if (!roleDoc.exists()) {
                 console.log("setupUserProfile: No role found, creating 'player' role.");
@@ -1425,7 +1435,7 @@
             }
 
             // 2. User Profile
-            const profileRef = doc(db, "artifacts", appId, "users", uid, "profiles", uid);
+            const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", uid);
             const profileDoc = await getDoc(profileRef);
             if (!profileDoc.exists()) {
                 console.log("setupUserProfile: No profile found, creating profile.");
@@ -1450,9 +1460,23 @@
         }
         
         /**
-         * --- RTDB PRESENCE FUNCTION REMOVED ---
+         * --- RTDB PRESENCE FUNCTION RE-ADDED ---
+         * Sets up real-time database presence (online status).
          */
-        // function setupPresence(uid) { ... }
+        function setupPresence(uid) {
+            console.log("setupPresence: Setting up RTDB presence for:", uid);
+            const sessionRef = ref(rtdb, `artifacts/${appId}/sessions/${uid}`);
+            const userStatus = {
+                online: true,
+                lastSeen: serverTimestamp() // Use RTDB server timestamp
+            };
+            
+            // Set online status
+            setRTDB(sessionRef, userStatus);
+            
+            // Set offline status on disconnect
+            onDisconnect(sessionRef).set({ online: false, lastSeen: serverTimestamp() });
+        }
         
         /**
          * Attaches all global Firestore listeners.
@@ -1460,14 +1484,15 @@
          */
         function setupDataListeners() {
             console.log("setupDataListeners: Attaching listeners...");
+            // --- PATHS FIXED ---
             // Base collection paths
-            const rolesCollectionRef = collection(db, "artifacts", appId, "users", currentUserId, "roles");
-            const profilesCollectionRef = collection(db, "artifacts", appId, "users", currentUserId, "profiles");
+            const rolesCollectionRef = collection(db, "artifacts", appId, "public", "data", "roles");
+            const profilesCollectionRef = collection(db, "artifacts", appId, "public", "data", "profiles");
             const gameRoomsCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
             const investmentsCollectionRef = collection(db, "artifacts", appId, "public", "data", "investments"); // Feature hidden
 
-            // --- RTDB REF REMOVED ---
-            // const sessionsRef = ref(rtdb, `artifacts/${appId}/sessions`);
+            // --- RTDB REF RE-ADDED ---
+            const sessionsRef = ref(rtdb, `artifacts/${appId}/sessions`);
 
             // --- Promise-based listeners for initial load ---
 
@@ -1499,8 +1524,23 @@
                 }, (error) => { console.error("Firestore: Error listening to user profiles:", error); reject(error); });
             });
 
-            // --- RTDB PROMISE REMOVED ---
-            // const activeSessionsPromise = ...
+            // --- RTDB PROMISE RE-ADDED ---
+            const activeSessionsPromise = new Promise((resolve, reject) => {
+                let initialLoad = true;
+                onValue(sessionsRef, (snapshot) => {
+                    const sessions = snapshot.val() || {};
+                    firestoreActiveSessions = Object.entries(sessions)
+                        .filter(([uid, data]) => data.online)
+                        .map(([uid, data]) => ({ id: uid, ...data }));
+                        
+                    console.log("Firestore: Active Sessions snapshot. Count:", firestoreActiveSessions.length);
+                    if (!userDirectoryPanel.classList.contains('hidden')) renderUserDirectoryTable();
+                    if (!userManagementPanel.classList.contains('hidden')) renderUserRolesTable();
+                    renderStandingsSidebar(); // NEW: Update standings on session change
+                    
+                    if (initialLoad) { initialLoad = false; resolve(); }
+                }, (error) => { console.error("Firestore: Error listening to active sessions:", error); reject(error); });
+            });
 
             // Promise for Game Rooms
             const gameRoomsPromise = new Promise((resolve, reject) => {
@@ -1524,8 +1564,8 @@
                 }, (error) => { console.error("Firestore: Error listening to investments:", error); reject(error); });
             });
 
-            // --- Promise.all UPDATED (RTDB promise removed) ---
-            return Promise.all([rolesPromise, profilesPromise, gameRoomsPromise, investmentsPromise]);
+            // --- Promise.all UPDATED (RTDB promise re-added) ---
+            return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise, gameRoomsPromise, investmentsPromise]);
         }
 
         // --- NEW Standings Sidebar Functions ---
@@ -1540,24 +1580,23 @@
                 return;
             }
 
-            // --- RTDB logic removed ---
+            // --- RTDB logic RE-ADDED ---
             // Get list of online UIDs
-            // const onlineUserIds = new Set(firestoreActiveSessions.map(session => session.id));
+            const onlineUserIds = new Set(firestoreActiveSessions.map(session => session.id));
 
             // Sort users by chip count, descending
             const sortedUsers = [...allFirebaseUsersData].sort((a, b) => (b.chip_count || 0) - (a.chip_count || 0));
 
             sortedUsers.forEach(user => {
-                // --- RTDB logic removed ---
-                // const isOnline = onlineUserIds.has(user.uid);
+                // --- RTDB logic RE-ADDED ---
+                const isOnline = onlineUserIds.has(user.uid);
                 const li = document.createElement('li');
                 li.className = 'standings-item';
                 li.setAttribute('data-uid', user.uid);
                 
                 li.innerHTML = `
                     <span class="name">
-                        <!-- 'online' class will not be added -->
-                        <span class="status-dot"></span>
+                        <span class="status-dot ${isOnline ? 'online' : ''}"></span>
                         ${formatDisplayName(user)}
                     </span>
                     <span class="chips">${user.chip_count || 0} 💎</span>
@@ -1575,15 +1614,14 @@
             if (!user) return;
 
             const userRole = getCurrentUserRole(uid);
-            // --- RTDB logic removed ---
-            // const isOnline = firestoreActiveSessions.map(s => s.id).includes(uid);
+            // --- RTDB logic RE-ADDED ---
+            const isOnline = firestoreActiveSessions.map(s => s.id).includes(uid);
             
             userInfoModalContent.innerHTML = `
                 <h3 style="text-align: left;">${formatDisplayName(user)}</h3>
                 <p classCSS="text-left"><strong>Role:</strong> ${userRole}</p>
                 <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} 💎</p>
-                <!-- RTDB logic removed -->
-                <p classCSS="text-left"><strong>Status:</strong> Offline</p> 
+                <p classCSS="text-left"><strong>Status:</strong> ${isOnline ? 'Online' : 'Offline'}</p>
                 <p classCSS="text-left"><strong>Email:</strong> ${user.email || 'N/A'}</p>
                 <button id="closeUserInfoModalButton" class="btn btn-gray btn-half" style="margin-top: 1rem;">Close</button>
             `;
@@ -1607,12 +1645,12 @@
             // Combine data: profiles, roles, and online status
             const combinedData = allFirebaseUsersData.map(user => {
                 const roleData = allFirebaseRolesData.find(r => r.uid === user.uid) || {};
-                // --- RTDB logic removed ---
-                // const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
+                // --- RTDB logic RE-ADDED ---
+                const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
                 return {
                     ...user,
                     role: roleData.role || ROLES.PLAYER,
-                    isOnline: false // --- Hard-coded to false ---
+                    isOnline: isOnline
                 };
             });
 
@@ -1686,12 +1724,13 @@
             try {
                 const batch = writeBatch(db);
                 
+                // --- PATHS FIXED ---
                 // Update Role
-                const roleRef = doc(db, "artifacts", appId, "users", uid, "roles", uid);
+                const roleRef = doc(db, "artifacts", appId, "public", "data", "roles", uid);
                 batch.update(roleRef, { role: newRole });
                 
                 // Update Profile (Chips)
-                const profileRef = doc(db, "artifacts", appId, "users", uid, "profiles", uid);
+                const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", uid);
                 batch.update(profileRef, { chip_count: newChips });
                 
                 await batch.commit();
@@ -1802,8 +1841,9 @@
                     players: arrayUnion(playerInfo)
                 });
                 
+                // --- PATHS FIXED ---
                 // Set user's current room
-                const profileRef = doc(db, "artifacts", appId, "users", currentUserId, "profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", currentUserId);
                 await updateDoc(profileRef, { current_room: roomId });
                 
                 currentJoinedRoomId = roomId;
@@ -1838,8 +1878,9 @@
                     });
                 }
                 
+                // --- PATHS FIXED ---
                 // Clear user's current room
-                const profileRef = doc(db, "artifacts", appId, "users", currentUserId, "profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "public", "data", "profiles", currentUserId);
                 await updateDoc(profileRef, { current_room: null });
                 
                 currentJoinedRoomId = null;
@@ -1924,11 +1965,11 @@
 
             // Combine data: profiles and online status
             const combinedData = allFirebaseUsersData.map(user => {
-                // --- RTDB logic removed ---
-                // const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
+                // --- RTDB logic RE-ADDED ---
+                const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
                 return {
                     ...user,
-                    isOnline: false // --- Hard-coded to false ---
+                    isOnline: isOnline
                 };
             });
             
@@ -2183,10 +2224,7 @@
     <!-- 
       ============================================================
       =                 FIREBASE & APP SCRIPT END                  =
-      ================================Moving to a new plan...
-Moving to a new plan...
-Moving to a new plan...
-============================
+      ============================================================
     -->
 </body>
 </html>
