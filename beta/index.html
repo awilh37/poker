@@ -530,7 +530,7 @@
         <div class="header-left">
             <button id="hamburgerButton" class="header-icon-btn">
                 <!-- Hamburger Menu Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <svg xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
             </button>
@@ -541,7 +541,7 @@
         <div class="header-right">
             <button id="accountButton" class="header-icon-btn">
                 <!-- Account Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <svg xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
             </button>
@@ -793,45 +793,48 @@
       ============================================================
     -->
     <script type="module">
-        // --- Firebase Imports (Copied from v3.1 and merged) ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getAuth, 
-            signInWithCustomToken, 
             onAuthStateChanged, 
             GoogleAuthProvider, 
             signInWithPopup, 
             signOut,
-            updateProfile,      // <-- Merged from v3.2
-            signInAnonymously   // <-- Merged from v3.2
-        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+            updateProfile,
+            signInAnonymously,
+            signInWithCustomToken
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, 
             doc, 
             getDoc, 
             setDoc, 
-            addDoc, 
+            updateDoc, 
+            deleteDoc,
             onSnapshot, 
             collection, 
             query, 
-            getDocs, 
-            deleteDoc, 
-            serverTimestamp, 
-            orderBy,            // <-- From v3.1
-            updateDoc, 
-            arrayUnion, 
-            arrayRemove, 
-            deleteField,        // <-- From v3.1
+            where, 
+            addDoc, 
+            getDocs,
+            serverTimestamp,
+            arrayUnion,
+            arrayRemove,
             writeBatch,
-            runTransaction,     // <-- Merged from v3.2
-            Timestamp,          // <-- Merged from v3.2
-            increment,          // <-- Merged from v3.2
-            where               // <-- Merged from v3.2
-        } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
+            runTransaction,
+            Timestamp,
+            increment
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
 
-        // --- Firebase Configuration (Copied from v3.1) ---
+        // --- App Config ---
+        
+        // --- THIS IS THE FIX ---
+        // The app was looking for 'default-app-id' instead of 'wps-3'
+        const appId = 'wps-3'; // Hard-coded for GitHub Pages, matches v3.1
+        
+        // --- Hard-coded config provided by user ---
         const firebaseConfig = {
             apiKey: "AIzaSyBefsHEBuiRyJ31NzF885ac3ugCefzngTU",
             authDomain: "wps-3-be723.firebaseapp.com",
@@ -842,14 +845,8 @@
             measurementId: "G-H0Z4C2185Y"
         };
 
-        // --- THIS IS THE FIX (from v3.1) ---
-        // It uses firebaseConfig.projectId as the fallback, which is 'wps-3-be723'
-        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-
         // --- Global Variables ---
-        let db, auth, analytics, googleProvider; // <-- v3.1 style
+        let db, auth; 
         let currentUserId = null;
         let currentUserData = null;
         let firebaseAuthReady = false;
@@ -965,14 +962,12 @@
         const closeGroupChatButton = document.getElementById('closeGroupChatButton');
 
         
-        // --- Firebase Init (from v3.1) ---
+        // --- Firebase Init ---
         try {
-            const firebaseApp = initializeApp(firebaseConfig);
-            analytics = getAnalytics(firebaseApp);
-            db = getFirestore(firebaseApp, '(default)'); // Using named database '(default)'
-            auth = getAuth(firebaseApp);
-            googleProvider = new GoogleAuthProvider();
-            console.log("Firebase initialized successfully (v3.1 config).");
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            console.log("Firebase initialized successfully (Firestore-only).");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
             showMessage("Error: Could not connect to the application services. Please refresh.", "error");
@@ -1176,9 +1171,9 @@
 
             // --- Auth Buttons ---
             googleLoginButton.addEventListener('click', async () => {
-                // const provider = new GoogleAuthProvider(); // Now defined globally
+                const provider = new GoogleAuthProvider();
                 try {
-                    await signInWithPopup(auth, googleProvider); // Use global googleProvider
+                    await signInWithPopup(auth, provider);
                     // onAuthStateChanged will handle the rest
                 } catch (error) {
                     console.error("Google Sign-In Error:", error);
@@ -1456,7 +1451,8 @@
                 batch.set(profileRef, {
                     uid: uid,
                     email: email,
-                    display_name: displayName || email.split('@')[0],
+                    // *** NAME FIX: Use "New User" or Auth name, never email ***
+                    display_name: displayName || "New User", 
                     photo_url: user.photoURL || null,
                     created_at: serverTimestamp(),
                     last_login: serverTimestamp(),
@@ -1465,7 +1461,12 @@
                 });
             } else {
                 console.log("setupUserProfile: Profile doc exists, updating last_login.");
-                batch.update(profileRef, { last_login: serverTimestamp() });
+                // *** NAME FIX: Only update display_name if it's new from Google/Auth ***
+                const updateData = { last_login: serverTimestamp() };
+                if (displayName && profileDoc.data().display_name !== displayName) {
+                    updateData.display_name = displayName;
+                }
+                batch.update(profileRef, updateData);
             }
 
             // Commit the batch
@@ -1613,12 +1614,12 @@
             const userRole = getCurrentUserRole(uid);
             const isOnline = firestoreActiveSessions.map(s => s.id).includes(uid);
             
+            // *** NAME FIX: Removed Email line ***
             userInfoModalContent.innerHTML = `
                 <h3 style="text-align: left;">${formatDisplayName(user)}</h3>
                 <p classCSS="text-left"><strong>Role:</strong> ${userRole}</p>
                 <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} 💎</p>
                 <p classCSS="text-left"><strong>Status:</strong> ${isOnline ? 'Online' : 'Offline'}</p>
-                <p classCSS="text-left"><strong>Email:</strong> ${user.email || 'N/A'}</p>
                 <button id="closeUserInfoModalButton" class="btn btn-gray btn-half" style="margin-top: 1rem;">Close</button>
             `;
             
@@ -1649,12 +1650,11 @@
                 };
             });
 
-            // Create Table Header
+            // *** NAME FIX: Removed Email header ***
             userRolesTable.innerHTML = `
                 <thead>
                     <tr>
                         <th>User</th>
-                        <th>Email</th>
                         <th>Role</th>
                         <th>Chips</th>
                         <th>Status</th>
@@ -1668,16 +1668,17 @@
             
             const tbody = userRolesTable.querySelector('tbody');
             if (combinedData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
+                // *** NAME FIX: Updated colspan ***
+                tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
                 return;
             }
 
             // Create Table Rows
             combinedData.forEach(user => {
                 const tr = document.createElement('tr');
+                // *** NAME FIX: Removed Email cell ***
                 tr.innerHTML = `
                     <td>${formatDisplayName(user)}</td>
-                    <td>${user.email}</td>
                     <td>
                         <select class="form-select user-role-select" data-uid="${user.uid}" ${user.role === ROLES.OWNER ? 'disabled' : ''}>
                             <option value="player" ${user.role === ROLES.PLAYER ? 'selected' : ''}>Player</option>
@@ -1978,12 +1979,11 @@
                 return (a.display_name || '').localeCompare(b.display_name || '');
             });
 
-            // Create Table Header
+            // *** NAME FIX: Removed Email header ***
             userDirectoryTable.innerHTML = `
                 <thead>
                     <tr>
                         <th>User</th>
-                        <th>Email</th>
                         <th>Chip Count</th>
                         <th>Status</th>
                         <th>Actions</th>
@@ -1996,16 +1996,17 @@
             
             const tbody = userDirectoryTable.querySelector('tbody');
             if (combinedData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+                // *** NAME FIX: Updated colspan ***
+                tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
                 return;
             }
 
             // Create Table Rows
             combinedData.forEach(user => {
                 const tr = document.createElement('tr');
+                // *** NAME FIX: Removed Email cell ***
                 tr.innerHTML = `
                     <td>${formatDisplayName(user)}</td>
-                    <td>${user.email}</td>
                     <td>${user.chip_count || 0}</td>
                     <td>${user.isOnline ? 'Online' : 'Offline'}</td>
                     <td>
@@ -2205,8 +2206,9 @@
          * @returns {string} The formatted name.
          */
         function formatDisplayName(userData) {
+            // *** NAME FIX: Never fall back to email ***
             if (!userData) return "Unknown User";
-            return userData.display_name || userData.email || "User";
+            return userData.display_name || "New User";
         }
 
         /**
@@ -2225,7 +2227,7 @@
          * @param {string} uid - The user's ID.
          * @returns {string} The user's role.
          */
-        async function getCurrentUserRole(uid) { // Made async for fallback
+        async function getCurrentUserRole(uid) {
             // This function might be called before the listener is ready,
             // so we check the local array first, but fall back to a direct fetch if needed.
             const roleData = allFirebaseRolesData.find(r => r.uid === uid);
@@ -2236,12 +2238,17 @@
             // Fallback for the very first login, before listeners are set
             console.warn("getCurrentUserRole: Role not in local cache, fetching doc.");
             const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
+            
             try {
                 const docSnap = await getDoc(roleRef);
-                return docSnap.exists() ? docSnap.data().role : ROLES.PLAYER;
+                if (docSnap.exists()) {
+                    return docSnap.data().role;
+                } else {
+                    return ROLES.PLAYER; // Default if no doc
+                }
             } catch (error) {
-                console.error("getCurrentUserRole fallback fetch failed:", error);
-                return ROLES.PLAYER; // Default to player on error
+                console.error("getCurrentUserRole: Error fetching doc:", error);
+                return ROLES.PLAYER; // Default on error
             }
         }
     </script>
