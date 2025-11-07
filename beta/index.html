@@ -222,6 +222,10 @@
         .standings-item .name .status-dot.online {
             background-color: #22c55e; /* Online (green) */
         }
+        /* --- NEW: Idle Status Dot --- */
+        .standings-item .name .status-dot.idle {
+            background-color: #f59e0b; /* Idle (amber-500) */
+        }
         .standings-item .chips {
             font-weight: 500;
             color: #007bff;
@@ -482,6 +486,12 @@
             background-color: white;
             text-align: center;
         }
+        /* --- NEW: Status Text Colors --- */
+        .status-text.online { color: #22c55e; font-weight: 600; }
+        .status-text.idle { color: #f59e0b; font-weight: 600; }
+        .status-text.offline { color: #6b7280; }
+        /* --- END NEW --- */
+
         .modal-content h3 {
             font-size: 1.25rem;
             font-weight: 500;
@@ -1173,6 +1183,38 @@
             });
 
             // --- END NEW Standings Modal Event Listeners ---
+
+            // --- NEW: Smart Status Listeners ---
+            
+            // 1. Listen for tab visibility changes (Idle status)
+            document.addEventListener('visibilitychange', () => {
+                if (!currentUserId || !db) return; // Not logged in or db not ready
+                
+                // --- PATHS FIXED to v3.1 ---
+                const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", currentUserId);
+
+                if (document.hidden) {
+                    // User switched tabs, mark as idle
+                    updateDoc(activeSessionRef, { status: 'idle' }).catch(console.warn);
+                } else {
+                    // User came back, mark as online
+                    updateDoc(activeSessionRef, { status: 'online' }).catch(console.warn);
+                }
+            });
+
+            // 2. Listen for tab/browser close (Logout)
+            window.addEventListener('beforeunload', () => {
+                // Only run if user is logged in and NOT in the process of logging out
+                if (!currentUserId || !db || isLoggingOut) return; 
+                
+                // This is a "fire-and-forget" delete. We can't wait for it to finish.
+                // This instantly removes the user from "active_sessions"
+                // --- PATHS FIXED to v3.1 ---
+                const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", currentUserId);
+                deleteDoc(activeSessionRef).catch(console.warn);
+            });
+            // --- END NEW Smart Status Listeners ---
+
         }
 
         // --- Main Event Listeners ---
@@ -1368,7 +1410,8 @@
                 await setDoc(activeSessionRef, {
                     email: user.email || 'N/A',
                     role: role,
-                    loginTime: serverTimestamp()
+                    loginTime: serverTimestamp(),
+                    status: 'online' // <-- NEW: Set initial status to 'online'
                 }, { merge: true });
                 console.log("handleLoginSuccess: FIRESTORE presence set.");
                 // --- END NEW PRESENCE ---
@@ -1563,6 +1606,7 @@
             const activeSessionsPromise = new Promise((resolve, reject) => {
                 let initialLoad = true;
                 onSnapshot(activeSessionsCollectionRef, (snapshot) => {
+                    // --- UPDATED: Now stores the full session object ---
                     firestoreActiveSessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     console.log("Firestore: Active Sessions snapshot. Count:", firestoreActiveSessions.length);
                     
@@ -1612,21 +1656,26 @@
                 return;
             }
 
-            // Get list of online UIDs
-            const onlineUserIds = new Set(firestoreActiveSessions.map(session => session.id));
+            // --- UPDATED: Get full session info, not just IDs ---
+            const onlineUserSessions = new Map(firestoreActiveSessions.map(session => [session.id, session]));
 
             // Sort users by chip count, descending
             const sortedUsers = [...allFirebaseUsersData].sort((a, b) => (b.chip_count || 0) - (a.chip_count || 0));
 
             sortedUsers.forEach(user => {
-                const isOnline = onlineUserIds.has(user.uid);
+                // --- UPDATED: Check for 'online' or 'idle' status ---
+                const session = onlineUserSessions.get(user.uid);
+                const isOnline = session && session.status === 'online';
+                const isIdle = session && session.status === 'idle';
+
                 const li = document.createElement('li');
                 li.className = 'standings-item';
                 li.setAttribute('data-uid', user.uid);
                 
                 li.innerHTML = `
                     <span class="name">
-                        <span class="status-dot ${isOnline ? 'online' : ''}"></span>
+                        <!-- UPDATED: Logic now includes 'idle' class -->
+                        <span class="status-dot ${isOnline ? 'online' : (isIdle ? 'idle' : '')}"></span>
                         ${formatDisplayName(user)}
                     </span>
                     <span class="chips">${user.chip_count || 0} 💎</span>
@@ -1644,14 +1693,27 @@
             if (!user) return;
 
             const userRole = getCurrentUserRole(uid);
-            const isOnline = firestoreActiveSessions.map(s => s.id).includes(uid);
+            // --- UPDATED: Get full session status ---
+            const session = firestoreActiveSessions.find(s => s.id === uid);
+            const status = session ? (session.status || 'online') : 'offline'; // Default to 'online' if session exists but no status
+            
+            let statusText = 'Offline';
+            let statusClass = 'offline';
+            if (status === 'online') {
+                statusText = 'Online';
+                statusClass = 'online';
+            } else if (status === 'idle') {
+                statusText = 'Idle';
+                statusClass = 'idle';
+            }
             
             // *** NAME FIX: Removed Email line ***
             userInfoModalContent.innerHTML = `
                 <h3 style="text-align: left;">${formatDisplayName(user)}</h3>
                 <p classCSS="text-left"><strong>Role:</strong> ${userRole}</p>
                 <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} 💎</p>
-                <p classCSS="text-left"><strong>Status:</strong> ${isOnline ? 'Online' : 'Offline'}</p>
+                <!-- UPDATED: Show styled status text -->
+                <p classCSS="text-left"><strong>Status:</strong> <span class="status-text ${statusClass}">${statusText}</span></p>
                 <button id="closeUserInfoModalButton" class="btn btn-gray btn-half" style="margin-top: 1rem;">Close</button>
             `;
             
@@ -1674,18 +1736,12 @@
             // Combine data: profiles, roles, and online status
             const combinedData = allFirebaseUsersData.map(user => {
                 const roleData = allFirebaseRolesData.find(r => r.uid === user.uid) || {};
-                const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
-                
-                // --- NEW: Super Admin Override ---
-                let role = roleData.role || ROLES.PLAYER;
-                if (user.uid === SUPER_ADMIN_UID) {
-                    role = ROLES.OWNER;
-                }
-                
+                // --- UPDATED: Get full session object ---
+                const session = firestoreActiveSessions.find(s => s.id === user.uid);
                 return {
                     ...user,
-                    role: role,
-                    isOnline: isOnline
+                    role: roleData.role || ROLES.PLAYER,
+                    session: session // Pass the whole session object
                 };
             });
 
@@ -1716,19 +1772,23 @@
             combinedData.forEach(user => {
                 const tr = document.createElement('tr');
                 
-                // --- NEW: Super Admin Check ---
-                const isSuperAdmin = user.uid === SUPER_ADMIN_UID;
-                const isDisabled = isSuperAdmin ? 'disabled' : '';
-                
+                // --- UPDATED: Show 'Idle' status ---
+                let statusText = 'Offline';
+                if (user.session && user.session.status === 'online') {
+                    statusText = 'Online';
+                } else if (user.session && user.session.status === 'idle') {
+                    statusText = 'Idle';
+                }
+
                 // *** NAME FIX: Removed Email cell ***
                 tr.innerHTML = `
                     <td>${formatDisplayName(user)} ${isSuperAdmin ? '⭐' : ''}</td>
                     <td>
-                        <select class="form-select user-role-select" data-uid="${user.uid}" ${isDisabled}>
-                            <option value="player" ${user.role === ROLES.PLAYER ? 'selected' : ''}>Player</option>
-                            <option value="admin" ${user.role === ROLES.ADMIN ? 'selected' : ''}>Admin</option>
-                            <option value="owner" ${user.role === ROLES.OWNER ? 'selected' : ''}>Owner</option>
-                        </select>
+                        <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;">
+                    </td>
+                    <td>${statusText}</td>
+                    <td>
+                        <button class="btn btn-blue btn-sm update-user-btn" data-uid="${user.uid}">Save</button>
                     </td>
                     <td>
                         <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;" ${isDisabled}>
@@ -2015,17 +2075,20 @@
 
             // Combine data: profiles and online status
             const combinedData = allFirebaseUsersData.map(user => {
-                const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
+                // --- UPDATED: Get full session object ---
+                const session = firestoreActiveSessions.find(s => s.id === user.uid);
                 return {
                     ...user,
-                    isOnline: isOnline
+                    session: session
                 };
             });
             
             // Sort by online status first, then by name
             combinedData.sort((a, b) => {
-                if (a.isOnline && !b.isOnline) return -1;
-                if (!a.isOnline && b.isOnline) return 1;
+                const aOnline = a.session && (a.session.status === 'online' || a.session.status === 'idle');
+                const bOnline = b.session && (b.session.status === 'online' || b.session.status === 'idle');
+                if (aOnline && !bOnline) return -1;
+                if (!aOnline && bOnline) return 1;
                 return (a.display_name || '').localeCompare(b.display_name || '');
             });
 
@@ -2054,11 +2117,20 @@
             // Create Table Rows
             combinedData.forEach(user => {
                 const tr = document.createElement('tr');
+
+                // --- UPDATED: Show 'Idle' status ---
+                let statusText = 'Offline';
+                if (user.session && user.session.status === 'online') {
+                    statusText = 'Online';
+                } else if (user.session && user.session.status === 'idle') {
+                    statusText = 'Idle';
+                }
+
                 // *** NAME FIX: Removed Email cell ***
                 tr.innerHTML = `
                     <td>${formatDisplayName(user)}</td>
                     <td>${user.chip_count || 0}</td>
-                    <td>${user.isOnline ? 'Online' : 'Offline'}</td>
+                    <td>${statusText}</td>
                     <td>
                         <button class="btn btn-blue btn-sm open-chat-btn" data-uid="${user.uid}" ${user.uid === currentUserId ? 'disabled' : ''}>
                             Chat
