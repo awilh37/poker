@@ -310,6 +310,12 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
+        .btn:disabled, .btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
         .btn:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
@@ -363,6 +369,11 @@
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .form-input:disabled, .form-select:disabled {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
         }
         .form-group {
             margin-bottom: 1rem;
@@ -530,7 +541,7 @@
         <div class="header-left">
             <button id="hamburgerButton" class="header-icon-btn">
                 <!-- Hamburger Menu Icon -->
-                <svg xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
             </button>
@@ -541,7 +552,7 @@
         <div class="header-right">
             <button id="accountButton" class="header-icon-btn">
                 <!-- Account Icon -->
-                <svg xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
             </button>
@@ -844,6 +855,10 @@
             appId: "1:420146617877:web:ea2e06a690732da76fb81c",
             measurementId: "G-H0Z4C2185Y"
         };
+        
+        // --- NEW: Super Admin UID ---
+        // This user will always be granted 'owner' privileges
+        const SUPER_ADMIN_UID = "Qr3XI0uNYrZ3AECim6XtRvp12MJ2";
 
         // --- Global Variables ---
         let db, auth; 
@@ -991,6 +1006,7 @@
                     if (!isLoggingOut && !dataLoadedAndListenersSetup) {
                         console.log("onAuthStateChanged: User present, triggering handleLoginSuccess.");
                         await handleLoginSuccess(user);
+                        
                         // NEW: Show/hide admin link in dropdown based on role
                         if (hasAdminAccess(user.uid)) {
                             dropdownAdminLink.classList.remove('hidden');
@@ -1431,7 +1447,22 @@
             // 1. User Role
             const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
             const roleDoc = await getDoc(roleRef);
-            if (!roleDoc.exists()) {
+            
+            let userRole = ROLES.PLAYER; // Default
+            
+            // --- NEW: Super Admin Check ---
+            if (uid === SUPER_ADMIN_UID) {
+                userRole = ROLES.OWNER;
+                console.log("setupUserProfile: Super Admin detected. Forcing 'owner' role.");
+                if (!roleDoc.exists() || roleDoc.data().role !== ROLES.OWNER) {
+                    batch.set(roleRef, {
+                        uid: uid,
+                        email: email,
+                        role: ROLES.OWNER,
+                        createdAt: serverTimestamp()
+                    }, { merge: true });
+                }
+            } else if (!roleDoc.exists()) {
                 console.log("setupUserProfile: No role found, creating 'player' role.");
                 batch.set(roleRef, {
                     uid: uid,
@@ -1440,6 +1471,7 @@
                     createdAt: serverTimestamp()
                 });
             } else {
+                userRole = roleDoc.data().role; // Get existing role
                 console.log("setupUserProfile: Role doc already exists.");
             }
 
@@ -1643,9 +1675,16 @@
             const combinedData = allFirebaseUsersData.map(user => {
                 const roleData = allFirebaseRolesData.find(r => r.uid === user.uid) || {};
                 const isOnline = firestoreActiveSessions.some(s => s.id === user.uid);
+                
+                // --- NEW: Super Admin Override ---
+                let role = roleData.role || ROLES.PLAYER;
+                if (user.uid === SUPER_ADMIN_UID) {
+                    role = ROLES.OWNER;
+                }
+                
                 return {
                     ...user,
-                    role: roleData.role || ROLES.PLAYER,
+                    role: role,
                     isOnline: isOnline
                 };
             });
@@ -1676,22 +1715,27 @@
             // Create Table Rows
             combinedData.forEach(user => {
                 const tr = document.createElement('tr');
+                
+                // --- NEW: Super Admin Check ---
+                const isSuperAdmin = user.uid === SUPER_ADMIN_UID;
+                const isDisabled = isSuperAdmin ? 'disabled' : '';
+                
                 // *** NAME FIX: Removed Email cell ***
                 tr.innerHTML = `
-                    <td>${formatDisplayName(user)}</td>
+                    <td>${formatDisplayName(user)} ${isSuperAdmin ? '⭐' : ''}</td>
                     <td>
-                        <select class="form-select user-role-select" data-uid="${user.uid}" ${user.role === ROLES.OWNER ? 'disabled' : ''}>
+                        <select class="form-select user-role-select" data-uid="${user.uid}" ${isDisabled}>
                             <option value="player" ${user.role === ROLES.PLAYER ? 'selected' : ''}>Player</option>
                             <option value="admin" ${user.role === ROLES.ADMIN ? 'selected' : ''}>Admin</option>
                             <option value="owner" ${user.role === ROLES.OWNER ? 'selected' : ''}>Owner</option>
                         </select>
                     </td>
                     <td>
-                        <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;">
+                        <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;" ${isDisabled}>
                     </td>
                     <td>${user.isOnline ? 'Online' : 'Offline'}</td>
                     <td>
-                        <button class="btn btn-blue btn-sm update-user-btn" data-uid="${user.uid}">Save</button>
+                        <button class="btn btn-blue btn-sm update-user-btn" data-uid="${user.uid}" ${isDisabled}>Save</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1711,6 +1755,12 @@
         
         /** Updates a user's role and chip count (Admin action) */
         async function updateUserRoleAndChips(uid, newRole, newChips) {
+            // --- NEW: Super Admin Check ---
+            if (uid === SUPER_ADMIN_UID) {
+                showMessage("The Super Admin account cannot be modified.", "error");
+                return;
+            }
+            
             console.log(`Updating user ${uid}: Role=${newRole}, Chips=${newChips}`);
             if (isNaN(newChips) || newChips < 0) {
                 showMessage("Invalid chip count. Must be a positive number.", "error");
@@ -2217,6 +2267,10 @@
          * @returns {boolean} True if user is Admin or Owner.
          */
         function hasAdminAccess(uid) {
+            // --- NEW: Super Admin Check ---
+            if (uid === SUPER_ADMIN_UID) {
+                return true;
+            }
             const roleData = allFirebaseRolesData.find(r => r.uid === uid);
             if (!roleData) return false;
             return roleData.role === ROLES.ADMIN || roleData.role === ROLES.OWNER;
@@ -2228,6 +2282,11 @@
          * @returns {string} The user's role.
          */
         async function getCurrentUserRole(uid) {
+            // --- NEW: Super Admin Check ---
+            if (uid === SUPER_ADMIN_UID) {
+                return ROLES.OWNER;
+            }
+            
             // This function might be called before the listener is ready,
             // so we check the local array first, but fall back to a direct fetch if needed.
             const roleData = allFirebaseRolesData.find(r => r.uid === uid);
