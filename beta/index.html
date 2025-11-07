@@ -1234,9 +1234,8 @@
                     // Update Firebase Auth profile
                     await updateProfile(auth.currentUser, { displayName: newName });
                     
-                    // --- PATHS SIMPLIFIED ---
-                    // Update Firestore profile
-                    const userProfileRef = doc(db, "artifacts", appId, "profiles", currentUserId);
+                    // --- PATHS FIXED to v3.1 ---
+                    const userProfileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
                     await updateDoc(userProfileRef, { display_name: newName });
                     
                     showMessage("Display name updated successfully!", "success");
@@ -1271,8 +1270,8 @@
                     return;
                 }
                 try {
-                    // --- PATHS SIMPLIFIED ---
-                    const roomCollectionRef = collection(db, "artifacts", appId, "game_rooms");
+                    // --- PATHS FIXED to v3.1 ---
+                    const roomCollectionRef = collection(db, "artifacts", appId, "public/data/game_rooms");
                     await addDoc(roomCollectionRef, {
                         name: name,
                         createdAt: serverTimestamp(),
@@ -1310,8 +1309,8 @@
                 }
 
                 try {
-                    // --- PATHS SIMPLIFIED ---
-                    const groupCollectionRef = collection(db, "artifacts", appId, "chat_groups");
+                    // --- PATHS FIXED to v3.1 (assuming chat_groups) ---
+                    const groupCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups");
                     await addDoc(groupCollectionRef, {
                         name: groupName,
                         members: selectedUsers,
@@ -1389,7 +1388,8 @@
             
             // 1. Remove from Realtime DB (Presence)
             if (rtdb && currentUserId) {
-                const sessionRef = ref(rtdb, `artifacts/${appId}/sessions/${currentUserId}`);
+                // --- PATHS FIXED to v3.1 (assuming sessions) ---
+                const sessionRef = ref(rtdb, `artifacts/${appId}/public/data/sessions/${currentUserId}`);
                 try {
                     await removeRTDB(sessionRef);
                     console.log("handleLogout: Removed RTDB presence.");
@@ -1419,9 +1419,9 @@
 
             const batch = writeBatch(db);
             
-            // --- PATHS SIMPLIFIED ---
+            // --- PATHS FIXED to v3.1 ---
             // 1. User Role
-            const roleRef = doc(db, "artifacts", appId, "roles", uid);
+            const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
             const roleDoc = await getDoc(roleRef);
             if (!roleDoc.exists()) {
                 console.log("setupUserProfile: No role found, creating 'player' role.");
@@ -1436,7 +1436,7 @@
             }
 
             // 2. User Profile
-            const profileRef = doc(db, "artifacts", appId, "profiles", uid);
+            const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", uid);
             const profileDoc = await getDoc(profileRef);
             if (!profileDoc.exists()) {
                 console.log("setupUserProfile: No profile found, creating profile.");
@@ -1465,7 +1465,8 @@
          */
         function setupPresence(uid) {
             console.log("setupPresence: Setting up RTDB presence for:", uid);
-            const sessionRef = ref(rtdb, `artifacts/${appId}/sessions/${uid}`);
+            // --- PATHS FIXED to v3.1 (assuming sessions) ---
+            const sessionRef = ref(rtdb, `artifacts/${appId}/public/data/sessions/${uid}`);
             const userStatus = {
                 online: true,
                 lastSeen: serverTimestamp() // Use RTDB server timestamp
@@ -1484,14 +1485,15 @@
          */
         function setupDataListeners() {
             console.log("setupDataListeners: Attaching listeners...");
-            // --- PATHS SIMPLIFIED ---
+            // --- PATHS FIXED to v3.1 ---
             // Base collection paths
-            const rolesCollectionRef = collection(db, "artifacts", appId, "roles");
-            const profilesCollectionRef = collection(db, "artifacts", appId, "profiles");
-            const gameRoomsCollectionRef = collection(db, "artifacts", appId, "game_rooms");
-            const investmentsCollectionRef = collection(db, "artifacts", appId, "investments"); // Feature hidden
+            const rolesCollectionRef = collection(db, "artifacts", appId, "public/data/user_roles");
+            const profilesCollectionRef = collection(db, "artifacts", appId, "public/data/user_profiles");
+            const gameRoomsCollectionRef = collection(db, "artifacts", appId, "public/data/game_rooms");
+            const investmentsCollectionRef = collection(db, "artifacts", appId, "public/data/investments"); // Feature hidden
+            const chatGroupsCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups");
 
-            const sessionsRef = ref(rtdb, `artifacts/${appId}/sessions`);
+            const sessionsRef = ref(rtdb, `artifacts/${appId}/public/data/sessions`);
 
             // --- Promise-based listeners for initial load ---
 
@@ -1719,13 +1721,13 @@
             try {
                 const batch = writeBatch(db);
                 
-                // --- PATHS SIMPLIFIED ---
+                // --- PATHS FIXED to v3.1 ---
                 // Update Role
-                const roleRef = doc(db, "artifacts", appId, "roles", uid);
+                const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
                 batch.update(roleRef, { role: newRole });
                 
                 // Update Profile (Chips)
-                const profileRef = doc(db, "artifacts", appId, "profiles", uid);
+                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", uid);
                 batch.update(profileRef, { chip_count: newChips });
                 
                 await batch.commit();
@@ -1782,8 +1784,8 @@
             //     return;
             // }
             try {
-                // --- PATHS SIMPLIFIED ---
-                const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
+                // --- PATHS FIXED to v3.1 ---
+                const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
                 await deleteDoc(roomRef);
                 showMessage("Room deleted successfully.", "success");
             } catch (error) {
@@ -1824,8 +1826,8 @@
             }
             
             // Add player to room's player list
-            // --- PATHS SIMPLIFIED ---
-            const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
+            // --- PATHS FIXED to v3.1 ---
+            const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
             const playerInfo = {
                 uid: currentUserId,
                 name: formatDisplayName(currentUserData),
@@ -1838,9 +1840,9 @@
                     players: arrayUnion(playerInfo)
                 });
                 
-                // --- PATHS SIMPLIFIED ---
+                // --- PATHS FIXED to v3.1 ---
                 // Set user's current room
-                const profileRef = doc(db, "artifacts", appId, "profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
                 await updateDoc(profileRef, { current_room: roomId });
                 
                 currentJoinedRoomId = roomId;
@@ -1868,17 +1870,17 @@
             
             try {
                 // Remove player from room's player list
-                // --- PATHS SIMPLIFIED ---
-                const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
+                // --- PATHS FIXED to v3.1 ---
+                const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
                 if (playerInfo) {
                     await updateDoc(roomRef, {
                         players: arrayRemove(playerInfo)
                     });
                 }
                 
-                // --- PATHS SIMPLIFIED ---
+                // --- PATHS FIXED to v3.1 ---
                 // Clear user's current room
-                const profileRef = doc(db, "artifacts", appId, "profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
                 await updateDoc(profileRef, { current_room: null });
                 
                 currentJoinedRoomId = null;
@@ -1949,8 +1951,8 @@
                         p.uid === currentUserId ? { ...p, status: 'ready' } : p
                     );
                     
-                    // --- PATHS SIMPLIFIED ---
-                    const roomRef = doc(db, "artifacts", appId, "game_rooms", roomId);
+                    // --- PATHS FIXED to v3.1 ---
+                    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
                     await updateDoc(roomRef, { players: newPlayers });
                 }
             }
@@ -2036,8 +2038,8 @@
 
             try {
                 // Check if this DM group already exists
-                // --- PATHS SIMPLIFIED ---
-                const groupRef = doc(db, "artifacts", appId, "chat_groups", groupId);
+                // --- PATHS FIXED to v3.1 ---
+                const groupRef = doc(db, "artifacts", appId, "public/data/chat_groups", groupId);
                 const groupDoc = await getDoc(groupRef);
                 
                 if (!groupDoc.exists()) {
@@ -2074,8 +2076,8 @@
             groupChatModal.classList.remove('hidden');
             
             // --- Attach message listener ---
-            // --- PATHS SIMPLIFIED ---
-            const messagesCollectionRef = collection(db, "artifacts", appId, "chat_groups", groupId, "messages");
+            // --- PATHS FIXED to v3.1 ---
+            const messagesCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups", groupId, "messages");
             const q = query(messagesCollectionRef); // Add orderBy('timestamp') here if you add it
             
             onSnapshot(q, (snapshot) => {
@@ -2123,8 +2125,8 @@
             
             if (!text || !groupId) return;
             
-            // --- PATHS SIMPLIFIED ---
-            const messagesCollectionRef = collection(db, "artifacts", appId, "chat_groups", groupId, "messages");
+            // --- PATHS FIXED to v3.1 ---
+            const messagesCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups", groupId, "messages");
             
             try {
                 await addDoc(messagesCollectionRef, {
