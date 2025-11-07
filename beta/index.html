@@ -827,13 +827,13 @@
             increment
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- RTDB IMPORTS (REMOVED) ---
-        // (All RTDB imports have been removed)
-
 
         // --- App Config ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        // const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        
+        // --- THIS IS THE FIX ---
+        // The app was looking for 'default-app-id' instead of 'wps-3'
+        const appId = 'wps-3'; // Hard-coded for GitHub Pages, matches v3.1
+        // const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // <-- This was the bug
         
         // --- Hard-coded config provided by user ---
         const firebaseConfig = {
@@ -847,7 +847,7 @@
         };
 
         // --- Global Variables ---
-        let db, auth; // <-- RTDB REMOVED
+        let db, auth; 
         let currentUserId = null;
         let currentUserData = null;
         let firebaseAuthReady = false;
@@ -968,7 +968,6 @@
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            // rtdb = getDatabase(app); // <-- REMOVED
             console.log("Firebase initialized successfully (Firestore-only).");
         } catch (e) {
             console.error("Firebase initialization failed:", e);
@@ -1339,16 +1338,21 @@
             loadingIndicator.classList.remove('hidden');
             
             try {
-                await setupUserProfile(user);
+                // Setup profile first, as presence might need role data
+                await setupUserProfile(user); 
                 
                 // --- NEW PRESENCE (Firestore) ---
                 // Write to Firestore active_sessions collection
                 console.log("handleLoginSuccess: Setting up FIRESTORE presence for:", user.uid);
                 // --- PATHS FIXED to v3.1 ---
                 const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", user.uid);
+                
+                // Get role *after* setupUserProfile has run
+                const role = await getCurrentUserRole(user.uid); 
+                
                 await setDoc(activeSessionRef, {
                     email: user.email || 'N/A',
-                    role: getCurrentUserRole(user.uid), // Get role *after* setupUserProfile
+                    role: role,
                     loginTime: serverTimestamp()
                 }, { merge: true });
                 console.log("handleLoginSuccess: FIRESTORE presence set.");
@@ -2218,8 +2222,19 @@
          * @returns {string} The user's role.
          */
         function getCurrentUserRole(uid) {
+            // This function might be called before the listener is ready,
+            // so we check the local array first, but fall back to a direct fetch if needed.
             const roleData = allFirebaseRolesData.find(r => r.uid === uid);
-            return roleData ? roleData.role : ROLES.PLAYER;
+            if (roleData) {
+                return roleData.role;
+            }
+            
+            // Fallback for the very first login, before listeners are set
+            console.warn("getCurrentUserRole: Role not in local cache, fetching doc.");
+            const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
+            return getDoc(roleRef).then(doc => {
+                return doc.exists() ? doc.data().role : ROLES.PLAYER;
+            }).catch(() => ROLES.PLAYER);
         }
     </script>
     <!-- 
