@@ -314,12 +314,6 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
-        .btn:disabled, .btn[disabled] {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-        }
         .btn:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
@@ -373,11 +367,6 @@
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        }
-        .form-input:disabled, .form-select:disabled {
-            background-color: #e5e7eb;
-            color: #9ca3af;
-            cursor: not-allowed;
         }
         .form-group {
             margin-bottom: 1rem;
@@ -866,8 +855,7 @@
             measurementId: "G-H0Z4C2185Y"
         };
         
-        // --- NEW: Super Admin UID ---
-        // This user will always be granted 'owner' privileges
+        // --- Super Admin UID (from v3.1) ---
         const SUPER_ADMIN_UID = "Qr3XI0uNYrZ3AECim6XtRvp12MJ2";
 
         // --- Global Variables ---
@@ -1009,6 +997,17 @@
             onAuthStateChanged(auth, async (user) => {
                 console.log("onAuthStateChanged: Auth state changed. User:", user ? user.uid : "null");
                 
+                // --- NEW: Stale Session Logout ---
+                // Check if this is a "remembered" session in a new tab
+                const isLoggedInThisTab = sessionStorage.getItem('isLoggedInThisTab');
+                if (user && !isLoggedInThisTab && !isLoggingOut) {
+                    console.warn("onAuthStateChanged: Stale session detected (user exists but tab flag is not set). Forcing logout to clean up.");
+                    await handleLogout(); // This will clear the user and show login
+                    showMessage("Your previous session was cleared. Please log in again.", "info");
+                    return; // Stop further processing
+                }
+                // --- END NEW ---
+
                 if (user) {
                     currentUserId = user.uid;
                     firebaseAuthReady = true;
@@ -1016,7 +1015,6 @@
                     if (!isLoggingOut && !dataLoadedAndListenersSetup) {
                         console.log("onAuthStateChanged: User present, triggering handleLoginSuccess.");
                         await handleLoginSuccess(user);
-                        
                         // NEW: Show/hide admin link in dropdown based on role
                         if (hasAdminAccess(user.uid)) {
                             dropdownAdminLink.classList.remove('hidden');
@@ -1034,6 +1032,9 @@
                     currentUserData = null;
                     firebaseAuthReady = true;
                     dataLoadedAndListenersSetup = false; // Reset listener flag
+                    
+                    // --- NEW: Clear session storage flag on logout ---
+                    sessionStorage.removeItem('isLoggedInThisTab');
                     
                     if (isLoggingOut) {
                         // User just logged out, show message and login options
@@ -1203,7 +1204,8 @@
             });
 
             // 2. Listen for tab/browser close (Logout)
-            window.addEventListener('beforeunload', () => {
+            // --- UPDATED: Use 'pagehide' for better reliability ---
+            window.addEventListener('pagehide', () => {
                 // Only run if user is logged in and NOT in the process of logging out
                 if (!currentUserId || !db || isLoggingOut) return; 
                 
@@ -1393,6 +1395,9 @@
         async function handleLoginSuccess(user) {
             console.log("handleLoginSuccess: Setting up for user:", user.uid);
             loadingIndicator.classList.remove('hidden');
+
+            // --- NEW: Set session storage flag ---
+            sessionStorage.setItem('isLoggedInThisTab', 'true');
             
             try {
                 // Setup profile first, as presence might need role data
@@ -1475,6 +1480,7 @@
                 isLoggingOut = false; // Reset flag on error
                 showMessage(`Logout Error: ${error.message}`, "error");
             }
+            // --- NEW: Session flag is cleared in onAuthStateChanged (when user is null) ---
         }
 
         /**
@@ -1492,30 +1498,25 @@
             const roleDoc = await getDoc(roleRef);
             
             let userRole = ROLES.PLAYER; // Default
-            
-            // --- NEW: Super Admin Check ---
             if (uid === SUPER_ADMIN_UID) {
-                userRole = ROLES.OWNER;
-                console.log("setupUserProfile: Super Admin detected. Forcing 'owner' role.");
-                if (!roleDoc.exists() || roleDoc.data().role !== ROLES.OWNER) {
-                    batch.set(roleRef, {
-                        uid: uid,
-                        email: email,
-                        role: ROLES.OWNER,
-                        createdAt: serverTimestamp()
-                    }, { merge: true });
-                }
-            } else if (!roleDoc.exists()) {
-                console.log("setupUserProfile: No role found, creating 'player' role.");
+                userRole = ROLES.OWNER; // Super admin is always owner
+            }
+            
+            if (!roleDoc.exists()) {
+                console.log(`setupUserProfile: No role found, creating '${userRole}' role.`);
                 batch.set(roleRef, {
                     uid: uid,
                     email: email,
-                    role: ROLES.PLAYER, // Default role
+                    role: userRole, 
                     createdAt: serverTimestamp()
                 });
             } else {
-                userRole = roleDoc.data().role; // Get existing role
                 console.log("setupUserProfile: Role doc already exists.");
+                // If user is super admin but doc says otherwise, fix it
+                if (uid === SUPER_ADMIN_UID && roleDoc.data().role !== ROLES.OWNER) {
+                    console.warn("setupUserProfile: Correcting SUPER_ADMIN role in Firestore.");
+                    batch.update(roleRef, { role: ROLES.OWNER });
+                }
             }
 
             // 2. User Profile
@@ -1740,7 +1741,7 @@
                 const session = firestoreActiveSessions.find(s => s.id === user.uid);
                 return {
                     ...user,
-                    role: roleData.role || ROLES.PLAYER,
+                    role: getCurrentUserRole(user.uid), // Use helper
                     session: session // Pass the whole session object
                 };
             });
@@ -1782,20 +1783,20 @@
 
                 // *** NAME FIX: Removed Email cell ***
                 tr.innerHTML = `
-                    <td>${formatDisplayName(user)} ${isSuperAdmin ? '⭐' : ''}</td>
+                    <td>${formatDisplayName(user)}</td>
+                    <td>
+                        <select class="form-select user-role-select" data-uid="${user.uid}" ${user.role === ROLES.OWNER ? 'disabled' : ''}>
+                            <option value="player" ${user.role === ROLES.PLAYER ? 'selected' : ''}>Player</option>
+                            <option value="admin" ${user.role === ROLES.ADMIN ? 'selected' : ''}>Admin</option>
+                            <option value="owner" ${user.role === ROLES.OWNER ? 'selected' : ''}>Owner</option>
+                        </select>
+                    </td>
                     <td>
                         <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;">
                     </td>
                     <td>${statusText}</td>
                     <td>
                         <button class="btn btn-blue btn-sm update-user-btn" data-uid="${user.uid}">Save</button>
-                    </td>
-                    <td>
-                        <input type="number" class="form-input user-chip-input" data-uid="${user.uid}" value="${user.chip_count || 0}" style="width: 100px;" ${isDisabled}>
-                    </td>
-                    <td>${user.isOnline ? 'Online' : 'Offline'}</td>
-                    <td>
-                        <button class="btn btn-blue btn-sm update-user-btn" data-uid="${user.uid}" ${isDisabled}>Save</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1815,12 +1816,6 @@
         
         /** Updates a user's role and chip count (Admin action) */
         async function updateUserRoleAndChips(uid, newRole, newChips) {
-            // --- NEW: Super Admin Check ---
-            if (uid === SUPER_ADMIN_UID) {
-                showMessage("The Super Admin account cannot be modified.", "error");
-                return;
-            }
-            
             console.log(`Updating user ${uid}: Role=${newRole}, Chips=${newChips}`);
             if (isNaN(newChips) || newChips < 0) {
                 showMessage("Invalid chip count. Must be a positive number.", "error");
@@ -2339,10 +2334,7 @@
          * @returns {boolean} True if user is Admin or Owner.
          */
         function hasAdminAccess(uid) {
-            // --- NEW: Super Admin Check ---
-            if (uid === SUPER_ADMIN_UID) {
-                return true;
-            }
+            if (uid === SUPER_ADMIN_UID) return true; // Super admin always has access
             const roleData = allFirebaseRolesData.find(r => r.uid === uid);
             if (!roleData) return false;
             return roleData.role === ROLES.ADMIN || roleData.role === ROLES.OWNER;
@@ -2354,10 +2346,7 @@
          * @returns {string} The user's role.
          */
         async function getCurrentUserRole(uid) {
-            // --- NEW: Super Admin Check ---
-            if (uid === SUPER_ADMIN_UID) {
-                return ROLES.OWNER;
-            }
+            if (uid === SUPER_ADMIN_UID) return ROLES.OWNER; // Super admin is always owner
             
             // This function might be called before the listener is ready,
             // so we check the local array first, but fall back to a direct fetch if needed.
