@@ -347,6 +347,16 @@
             text-align: center;
         }
 
+        /* --- NEW: Game Room Panel Override --- */
+        /* Make game room panel wider and remove default padding */
+        #gameRoomViewPanel {
+            max-width: 1200px;
+            padding: 0;
+            background-color: transparent;
+            box-shadow: none;
+        }
+
+
         /* --- Buttons --- */
         .btn {
             display: inline-flex;
@@ -551,9 +561,6 @@
 
         .list-item-actions .btn {
             width: auto;
-            /* Make small buttons slightly bigger */
-            padding: 0.5rem 0.75rem;
-            font-size: 0.875rem;
         }
 
         @media (min-width: 640px) {
@@ -660,6 +667,159 @@
                 /* 280px sidebar + 20px gutter */
             }
         }
+
+        /* --- NEW: Game Room UI --- */
+        /*
+            These styles are for the new game room layout,
+            replacing the simple list with a more visual "table".
+        */
+        .game-table-container {
+            width: 100%;
+            background-color: #052e16;
+            /* Dark Green (green-950) */
+            border: 10px solid #5d4037;
+            /* Wood border (brown-700) */
+            border-radius: 9999px;
+            /* Full-on oval */
+            padding: 3rem 2rem;
+            margin-top: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .game-table-center {
+            /* The "pot" and "community cards" area */
+            width: 60%;
+            margin: 0 auto;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pot-display {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fef08a;
+            /* yellow-200 */
+            margin-bottom: 0.5rem;
+        }
+
+        .pot-display-amount {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .community-cards {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 1rem;
+        }
+
+        .player-grid {
+            /* Holds all the player "seats" */
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .player-seat {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .player-seat.is-current-user {
+            border-color: #3b82f6;
+            /* blue-500 */
+            box-shadow: 0 0 15px #3b82f6;
+        }
+
+        .player-seat h5 {
+            /* Player name */
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .player-seat .chips {
+            /* Player chips */
+            font-size: 1rem;
+            font-weight: 500;
+            color: #fef08a;
+            /* yellow-200 */
+            margin-bottom: 0.5rem;
+        }
+
+        .player-seat .bet {
+            /* Player bet */
+            font-size: 0.8rem;
+            color: #d1d5db;
+            /* gray-300 */
+            margin-bottom: 0.75rem;
+        }
+
+        .player-seat .status {
+            /* Player status */
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 99px;
+            display: inline-block;
+        }
+
+        /* Status colors */
+        .player-seat .status.ready {
+            background-color: #166534;
+            color: #bbf7d0;
+        }
+
+        /* green */
+        .player-seat .status.folded {
+            background-color: #7f1d1d;
+            color: #fecaca;
+        }
+
+        /* red */
+        .player-seat .status.pending {
+            background-color: #854d0e;
+            color: #fef08a;
+        }
+
+        /* amber */
+        .player-seat .status.all-in {
+            background-color: #581c87;
+            color: #e9d5ff;
+        }
+
+        /* purple */
+
+        .game-action-bar {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* --- END NEW Game Room UI --- */
     </style>
     <!-- 
       ============================================================
@@ -861,9 +1021,15 @@
           =             GAME ROOM VIEW (Hidden by default)           =
           ============================================================
         -->
-        <div id="gameRoomViewPanel" class="content-panel hidden" style="max-width: 64rem;"> <!-- max-w-6xl -->
+        <!-- 
+            Game Room View Panel
+            UPDATED: Removed max-width and internal styles.
+            The new CSS will handle the styling.
+        -->
+        <div id="gameRoomViewPanel" class="content-panel hidden">
             <button class="btn btn-gray" id="leaveGameRoomButton">← Leave Room</button>
             <h2 id="gameRoomName">Game Room</h2>
+            <!-- gameRoomContent is now the main container for the new UI -->
             <div id="gameRoomContent">
                 <!-- JS will populate all game content here -->
             </div>
@@ -943,27 +1109,6 @@
         </div>
         <!-- =================== USER INFO MODAL END =================== -->
 
-        <!-- 
-          ============================================================
-          =                NEW LOBBY MODAL START (Hidden)            =
-          ============================================================
-        -->
-        <div id="lobbyModal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h3>Game Lobby</h3>
-                <p>Select a room to join.</p>
-                <ul id="lobbyRoomList" class="list-group"
-                    style="margin-top: 1.5rem; max-height: 40vh; overflow-y: auto;">
-                    <!-- Room list will be populated here by JS -->
-                    <li class="list-item">
-                        <p>Loading rooms...</p>
-                    </li>
-                </ul>
-                <button id="closeLobbyModalButton" class="btn btn-gray" style="margin-top: 1.5rem;">Close</button>
-            </div>
-        </div>
-        <!-- =================== NEW LOBBY MODAL END =================== -->
-
     </div> <!-- End of #mainContainer -->
     <!-- =================== MAIN CONTAINER END =================== -->
 
@@ -1026,10 +1171,11 @@
         };
 
         // --- Super Admin UID (from v3.1) ---
+        // --- UPDATED to be a list ---
         const SUPER_ADMIN_UIDS = [
             "Qr3XI0uNYrZ3AECim6XtRvp12MJ2",
-            "M2Q55lfqYNawAKYinXsTbrXDuMw1"
         ];
+
         // --- Global Variables ---
         let db, auth;
         let currentUserId = null;
@@ -1100,11 +1246,6 @@
         const userInfoModal = document.getElementById('userInfoModal');
         const userInfoModalContent = document.getElementById('userInfoModalContent');
         // --- END NEW Standings Sidebar & Modal Elements ---
-
-        // --- NEW Lobby Modal Elements ---
-        const lobbyModal = document.getElementById('lobbyModal');
-        const lobbyRoomList = document.getElementById('lobbyRoomList');
-        // --- END NEW Lobby Modal Elements ---
 
         // Admin Panel
         const backToMenuFromAdmin = document.getElementById('backToMenuFromAdmin');
@@ -1390,11 +1531,6 @@
                 // Only run if user is logged in and NOT in the process of logging out
                 if (!currentUserId || !db || isLoggingOut) return;
 
-                // --- NEW: LOGOUT ON REFRESH/REOPEN FIX ---
-                // Remove the session storage flag on any page unload.
-                // This forces the "stale session" check to run on refresh/reopen.
-                sessionStorage.removeItem('isLoggedInThisTab');
-
                 // This is a "fire-and-forget" delete. We can't wait for it to finish.
                 // This instantly removes the user from "active_sessions"
                 // --- PATHS FIXED to v3.1 ---
@@ -1442,8 +1578,15 @@
 
             openAdminPanelButton.addEventListener('click', () => showPanel(adminPanel));
 
-            // --- UPDATED: Show lobby modal instead of joining first game ---
-            joinGameButton.addEventListener('click', showLobbyModal);
+            joinGameButton.addEventListener('click', () => {
+                // For now, just show the first available room, or create one
+                // This logic can be expanded to a "lobby"
+                if (firestoreGameRooms.length > 0) {
+                    joinGameRoom(firestoreGameRooms[0].id);
+                } else {
+                    showMessage("No game rooms available. An admin needs to create one.", "info");
+                }
+            });
 
             // --- Panel Navigation (Back Buttons) ---
             backToMenuFromAccount.addEventListener('click', () => showPanel(mainActionButtons));
@@ -1508,8 +1651,12 @@
                         name: name,
                         createdAt: serverTimestamp(),
                         hostId: currentUserId,
-                        players: [],
-                        gameState: { status: 'waiting' } // Initial game state
+                        players: [], // Array of UIDs
+                        gameState: {
+                            status: 'waiting',
+                            bets: {}, // Map of uid -> bet amount
+                            status: {} // Map of uid -> 'ready', 'folded', etc.
+                        }
                     });
                     showMessage(`Room '${name}' created!`, "success");
                     newRoomName.value = '';
@@ -1564,27 +1711,6 @@
                 if (e.key === 'Enter') sendGroupMessage();
             });
             closeGroupChatButton.addEventListener('click', () => groupChatModal.classList.add('hidden'));
-
-            // --- NEW Lobby Modal Listeners ---
-            document.getElementById('closeLobbyModalButton').addEventListener('click', hideLobbyModal);
-
-            lobbyModal.addEventListener('click', (e) => {
-                if (e.target === lobbyModal) { // Overlay click
-                    hideLobbyModal();
-                }
-            });
-
-            // Event delegation for the "Join" buttons in the lobby list
-            lobbyRoomList.addEventListener('click', (e) => {
-                // Use .closest() to catch clicks on the button or its icon/text
-                const joinButton = e.target.closest('.join-lobby-room-btn');
-                if (joinButton) {
-                    const roomId = joinButton.dataset.roomid;
-                    hideLobbyModal();
-                    joinGameRoom(roomId);
-                }
-            });
-            // --- END NEW Lobby Modal Listeners ---
 
         }); // End DOMContentLoaded
 
@@ -1701,6 +1827,7 @@
             const roleDoc = await getDoc(roleRef);
 
             let userRole = ROLES.PLAYER; // Default
+            // --- UPDATED to use list ---
             if (SUPER_ADMIN_UIDS.includes(uid)) {
                 userRole = ROLES.OWNER; // Super admin is always owner
             }
@@ -1716,6 +1843,7 @@
             } else {
                 console.log("setupUserProfile: Role doc already exists.");
                 // If user is super admin but doc says otherwise, fix it
+                // --- UPDATED to use list ---
                 if (SUPER_ADMIN_UIDS.includes(uid) && roleDoc.data().role !== ROLES.OWNER) {
                     console.warn("setupUserProfile: Correcting SUPER_ADMIN role in Firestore.");
                     batch.update(roleRef, { role: ROLES.OWNER });
@@ -1829,9 +1957,10 @@
                     firestoreGameRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     console.log("Firestore: Game Rooms snapshot. Count:", firestoreGameRooms.length);
                     if (!gameRoomManagementPanel.classList.contains('hidden')) renderGameRoomList();
-                    // --- NEW: Update lobby modal if it's open ---
-                    if (!lobbyModal.classList.contains('hidden')) {
-                        showLobbyModal();
+
+                    // --- NEW: Update game room if user is in it ---
+                    if (currentJoinedRoomId && !gameRoomViewPanel.classList.contains('hidden')) {
+                        renderGameRoomView(currentJoinedRoomId);
                     }
 
                     if (initialLoad) { initialLoad = false; resolve(); }
@@ -1900,6 +2029,7 @@
             const user = allFirebaseUsersData.find(u => u.uid === uid);
             if (!user) return;
 
+            // --- UPDATED: Use list ---
             const userRole = getCurrentUserRole(uid);
             // --- UPDATED: Get full session status ---
             const session = firestoreActiveSessions.find(s => s.id === uid);
@@ -1934,46 +2064,6 @@
         }
 
         // --- END NEW Standings Sidebar Functions ---
-
-        // --- NEW Lobby Modal Functions ---
-
-        /** Shows the modal with a list of available game rooms */
-        function showLobbyModal() {
-            lobbyRoomList.innerHTML = ''; // Clear list
-
-            // A room is joinable if its status is 'waiting'
-            const openRooms = firestoreGameRooms.filter(room => room.gameState.status === 'waiting');
-
-            if (openRooms.length === 0) {
-                lobbyRoomList.innerHTML = '<li class="list-item"><p>No game rooms are currently available.</p></li>';
-                lobbyModal.classList.remove('hidden');
-                return;
-            }
-
-            openRooms.forEach(room => {
-                const li = document.createElement('li');
-                li.className = 'list-item'; // Use existing style
-                li.innerHTML = `
-                    <div class="list-item-content">
-                        <strong>${room.name}</strong>
-                        <small> (${room.players.length} players)</small>
-                    </div>
-                    <div class="list-item-actions">
-                        <button class="btn btn-green btn-sm join-lobby-room-btn" data-roomid="${room.id}">Join</button>
-                    </div>
-                `;
-                lobbyRoomList.appendChild(li);
-            });
-
-            lobbyModal.classList.remove('hidden');
-        }
-
-        /** Hides the lobby modal */
-        function hideLobbyModal() {
-            lobbyModal.classList.add('hidden');
-        }
-
-        // --- END NEW Lobby Modal Functions ---
 
         // --- Admin: User Management Functions ---
 
@@ -2078,7 +2168,7 @@
                 batch.update(roleRef, { role: newRole });
 
                 // Update Profile (Chips)
-                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
+                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", uid);
                 batch.update(profileRef, { chip_count: newChips });
 
                 await batch.commit();
@@ -2176,19 +2266,46 @@
                 return;
             }
 
-            // Add player to room's player list
-            // --- PATHS FIXED to v3.1 ---
+            // --- UPDATED Data Structure ---
+            // Add player to room's player list (array of UIDs)
             const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
-            const playerInfo = {
-                uid: currentUserId,
-                name: formatDisplayName(currentUserData),
-                chips: currentUserData.chip_count,
-                status: 'joined' // 'joined', 'ready', 'folded', etc.
-            };
 
             try {
-                await updateDoc(roomRef, {
-                    players: arrayUnion(playerInfo)
+                // Use a transaction to safely add player and set initial state
+                await runTransaction(db, async (transaction) => {
+                    const roomDoc = await transaction.get(roomRef);
+                    if (!roomDoc.exists()) {
+                        throw "Room no longer exists.";
+                    }
+
+                    const roomData = roomDoc.data();
+                    const players = roomData.players || [];
+
+                    if (players.includes(currentUserId)) {
+                        console.log("User already in room, skipping join logic.");
+                        // Just show the room
+                    } else {
+                        // Add player
+                        const newPlayers = [...players, currentUserId];
+
+                        // Set initial game state for this player
+                        const newGameState = {
+                            ...roomData.gameState,
+                            bets: {
+                                ...roomData.gameState.bets,
+                                [currentUserId]: 0 // Initial bet
+                            },
+                            status: {
+                                ...roomData.gameState.status,
+                                [currentUserId]: 'pending' // Initial status
+                            }
+                        };
+
+                        transaction.update(roomRef, {
+                            players: newPlayers,
+                            gameState: newGameState
+                        });
+                    }
                 });
 
                 // --- PATHS FIXED to v3.1 ---
@@ -2216,18 +2333,36 @@
                 return;
             }
 
-            // Find this player's object in the array
-            const playerInfo = room.players.find(p => p.uid === currentUserId);
+            // --- UPDATED Data Structure ---
+            // Remove player from array of UIDs
+            // We also need to remove them from the gameState maps
 
             try {
-                // Remove player from room's player list
-                // --- PATHS FIXED to v3.1 ---
                 const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
-                if (playerInfo) {
-                    await updateDoc(roomRef, {
-                        players: arrayRemove(playerInfo)
+
+                // Use a transaction to safely remove player and their state
+                await runTransaction(db, async (transaction) => {
+                    const roomDoc = await transaction.get(roomRef);
+                    if (!roomDoc.exists()) {
+                        // Room is already gone, nothing to do
+                        return;
+                    }
+
+                    const roomData = roomDoc.data();
+
+                    // Remove from players array
+                    const newPlayers = (roomData.players || []).filter(uid => uid !== currentUserId);
+
+                    // Remove from gameState maps
+                    const newGameState = { ...roomData.gameState };
+                    if (newGameState.bets) delete newGameState.bets[currentUserId];
+                    if (newGameState.status) delete newGameState.status[currentUserId];
+
+                    transaction.update(roomRef, {
+                        players: newPlayers,
+                        gameState: newGameState
                     });
-                }
+                });
 
                 // --- PATHS FIXED to v3.1 ---
                 // Clear user's current room
@@ -2252,60 +2387,123 @@
                 return;
             }
 
+            // Set the panel title
             gameRoomName.textContent = room.name;
 
-            // This is a placeholder. A real game would have complex UI.
-            let playersHtml = '<h4>Players</h4><div style="display: flex; gap: 1rem; flex-wrap: wrap;">';
-            room.players.forEach(player => {
-                playersHtml += `
-                    <div style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; background: #f9f9f9;">
-                        <strong>${player.name}</strong><br>
-                        Chips: ${player.chips}<br>
-                        Status: ${player.status}
+            // --- Calculate Game State ---
+            const roomPlayers = room.players || [];
+            const roomBets = room.gameState.bets || {};
+            const roomStatus = room.gameState.status || {};
+
+            // Calculate total pot
+            let totalPot = 0;
+            for (const uid in roomBets) {
+                totalPot += (roomBets[uid] || 0);
+            }
+
+            // --- 1. Build the central "table" area ---
+            let centerHtml = `
+                <div class="game-table-center">
+                    <div class="pot-display">
+                        Total Pot
+                        <div class="pot-display-amount">${totalPot} 💎</div>
+                    </div>
+                    <div class="community-cards">
+                        (Community Cards Placeholder)
+                    </div>
+                </div>
+            `;
+
+            // --- 2. Build the player grid ---
+            let playerGridHtml = '<div class="player-grid">';
+            roomPlayers.forEach(uid => {
+                const player = allFirebaseUsersData.find(u => u.uid === uid);
+                if (!player) return; // Skip if profile isn't loaded
+
+                const isCurrentUser = (uid === currentUserId);
+                const bet = roomBets[uid] || 0;
+                const status = roomStatus[uid] || 'pending'; // 'pending', 'ready', 'folded', 'all-in'
+                const statusClass = status.replace('_', '-'); // e.g., 'all-in'
+
+                playerGridHtml += `
+                    <div class="player-seat ${isCurrentUser ? 'is-current-user' : ''}" data-uid="${uid}">
+                        <h5>${formatDisplayName(player)}</h5>
+                        <div class="chips">${player.chip_count || 0} 💎</div>
+                        <div class="bet">Bet: ${bet}</div>
+                        <div class="status ${statusClass}">${status}</div>
                     </div>
                 `;
             });
-            playersHtml += '</div>';
+            playerGridHtml += '</div>';
 
-            gameRoomContent.innerHTML = `
-                <p><strong>Game Status:</strong> ${room.gameState.status}</p>
-                ${playersHtml}
-                <div class="form-actions" style="margin-top: 2rem;">
+            // --- 3. Build the action bar ---
+            // (Note: We'll add input fields and more buttons later)
+            let actionBarHtml = `
+                <div class="game-action-bar">
                     <button id="readyUpButton" class="btn btn-green">Ready Up</button>
                     <button id="checkButton" class="btn btn-blue">Check</button>
                     <button id="foldButton" class="btn btn-red">Fold</button>
                 </div>
             `;
 
-            // Add listeners for game actions
+            // --- 4. Combine all parts into the game room content ---
+            gameRoomContent.innerHTML = `
+                <div class="game-table-container">
+                    ${centerHtml}
+                    ${playerGridHtml}
+                    ${actionBarHtml}
+                </div>
+            `;
+
+            // --- 5. Add event listeners for the new buttons ---
             gameRoomContent.querySelector('#readyUpButton').addEventListener('click', () => {
                 sendGameAction(roomId, 'set_ready');
             });
-            // Add more game action listeners...
+            gameRoomContent.querySelector('#checkButton').addEventListener('click', () => {
+                sendGameAction(roomId, 'check'); // Placeholder
+            });
+            gameRoomContent.querySelector('#foldButton').addEventListener('click', () => {
+                sendGameAction(roomId, 'fold'); // Placeholder
+            });
         }
 
-        /** Sends a game action to be processed (placeholder) */
+
+        /** Sends a game action to be processed */
         async function sendGameAction(roomId, action, payload = {}) {
-            // In a real app, this would update the game state
-            // For example, set player status to 'ready'
-            console.log(`Action: ${action}`, payload);
-            showMessage("Game actions are not fully implemented in this demo.", "info");
+            if (!currentUserId) return;
 
-            // Example: Set status to 'ready'
-            if (action === 'set_ready') {
-                const room = firestoreGameRooms.find(r => r.id === roomId);
-                const player = room.players.find(p => p.uid === currentUserId);
+            console.log(`Sending Action: ${action}`, payload);
+            const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
 
-                if (player && player.status !== 'ready') {
-                    // Create a new array with the updated player
-                    const newPlayers = room.players.map(p =>
-                        p.uid === currentUserId ? { ...p, status: 'ready' } : p
-                    );
+            try {
+                let updateData = {};
+                let actionMessage = "Action sent!";
 
-                    // --- PATHS FIXED to v3.1 ---
-                    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
-                    await updateDoc(roomRef, { players: newPlayers });
+                if (action === 'set_ready') {
+                    // Sets the player's status in the map
+                    updateData[`gameState.status.${currentUserId}`] = 'ready';
+                    actionMessage = "You are ready!";
+                } else if (action === 'fold') {
+                    updateData[`gameState.status.${currentUserId}`] = 'folded';
+                    actionMessage = "You have folded.";
+                } else if (action === 'check') {
+                    // "Check" is complex. For now, just log it.
+                    // A real "check" would only be valid if bet is 0 or matches current high bet.
+                    // We'll just set status to 'ready' as a placeholder.
+                    updateData[`gameState.status.${currentUserId}`] = 'ready';
+                    actionMessage = "You have checked.";
+                } else {
+                    showMessage("That action isn't implemented yet.", "info");
+                    return;
                 }
+
+                // Send the update to Firestore
+                await updateDoc(roomRef, updateData);
+                showMessage(actionMessage, "success");
+
+            } catch (error) {
+                console.error("Error sending game action:", error);
+                showMessage(`Error: ${error.message}`, "error");
             }
         }
 
@@ -2581,7 +2779,9 @@
          * @returns {boolean} True if user is Admin or Owner.
          */
         function hasAdminAccess(uid) {
-            if (SUPER_ADMIN_UIDS.includes(uid)) return true; // Super admin always has access            const roleData = allFirebaseRolesData.find(r => r.uid === uid);
+            // --- UPDATED to use list ---
+            if (SUPER_ADMIN_UIDS.includes(uid)) return true; // Super admin always has access
+            const roleData = allFirebaseRolesData.find(r => r.uid === uid);
             if (!roleData) return false;
             return roleData.role === ROLES.ADMIN || roleData.role === ROLES.OWNER;
         }
@@ -2592,6 +2792,7 @@
          * @returns {string} The user's role.
          */
         async function getCurrentUserRole(uid) {
+            // --- UPDATED to use list ---
             if (SUPER_ADMIN_UIDS.includes(uid)) return ROLES.OWNER; // Super admin is always owner
 
             // This function might be called before the listener is ready,
