@@ -1,345 +1,804 @@
-/*
- * Inter Font (from Google Fonts)
- * We'll import it here to ensure it's always available.
- */
+/* --- Imports & Base --- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/*
- * --- Base Styles (NEW DARK THEME) ---
- * Redefining the base look and feel.
- */
+/* --- CSS Reset & Base --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Inter', sans-serif;
-    /* A subtle dark gradient background for a more modern app feel */
-    background-color: #111827; /* (gray-900) */
-    background-image: linear-gradient(170deg, #1f2937 0%, #111827 100%); /* (gray-800 to gray-900) */
+    /* NEW: Light blue to light purple gradient */
+    background-color: #c2d2ff;
+    /* Fallback color */
+    background-image: linear-gradient(135deg, #a8c0ff 0%, #d8b4fe 100%);
     min-height: 100vh;
     margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    color: #d1d5db; /* Default text color (gray-300) */
+    color: #334155;
+    /* Default text color (slate-700) */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll */
 }
 
-/*
- * --- Main Content Container ---
- * This is the primary container for all content.
- * It's now transparent to let the body's gradient show through.
- * We keep 'align-items: center' to keep the single column of content
- * from collapsing and looking broken.
- */
-#mainContainer {
-    background-color: transparent;
-    padding: 2rem;
+/* --- New Header --- */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: rgba(255, 255, 255, 0.7);
+    /* Translucent white */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Safari support */
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    /* Stick to top */
+    top: 0;
+    left: 0;
     width: 100%;
-    min-height: 100vh;
+    z-index: 30;
+    /* Above most content */
+}
+
+.header-left,
+.header-center,
+.header-right {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    /* Each takes 1/3 space */
+}
+
+.header-center {
+    justify-content: center;
+}
+
+.header-right {
+    justify-content: flex-end;
+    position: relative;
+    /* For dropdown */
+}
+
+.header-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1f2937;
+    margin: 0;
+}
+
+.header-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #374151;
+    padding: 0.5rem;
+    border-radius: 99px;
+    transition: background-color 0.2s;
+}
+
+.header-icon-btn svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: block;
+    /* Fixes potential SVG alignment issues */
+}
+
+.header-icon-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* --- New Account Dropdown --- */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    /* Right below the button */
+    right: 0;
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    min-width: 180px;
+    z-index: 40;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #374151;
+    text-decoration: none;
+    transition: background-color 0.15s;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f3f4f6;
+}
+
+.dropdown-menu a#dropdownLogoutLink {
+    color: #dc3545;
+}
+
+/* --- New Sidebar --- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 280px;
+    background-color: #ffffff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    /* Topmost */
+    padding: 2rem 1rem;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(-100%);
     display: flex;
     flex-direction: column;
-    align-items: center; /* This keeps the content centered *within* the page */
-    transition: all 0.3s ease-in-out;
-    box-sizing: border-box;
+    gap: 0.5rem;
 }
 
-/*
- * --- General Button Styling (Enhanced) ---
- * We'll use Tailwind for most buttons, but these styles
- * will refine the panels.
- */
+.sidebar.show {
+    transform: translateX(0);
+}
 
-/*
- * --- Message Boxes (DARK THEME) ---
- * For showing success, error, or info messages.
- */
-.message-box {
-    padding: 1rem;
-    border-radius: 0.75rem;
-    margin-top: 1.5rem;
-    text-align: center;
+.sidebar a {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
     font-weight: 500;
-    border-width: 1px;
-    border-style: solid;
-    width: 100%;
-}
-.message-box.error {
-    background-color: #7f1d1d; /* (red-900) */
-    color: #fca5a5; /* (red-300) */
-    border-color: #b91c1c; /* (red-700) */
-}
-.message-box.success {
-    background-color: #064e3b; /* (green-900) */
-    color: #a7f3d0; /* (green-300) */
-    border-color: #065f46; /* (green-700) */
-}
-.message-box.info {
-    background-color: #1e3a8a; /* (blue-900) */
-    color: #bae6fd; /* (sky-300) */
-    border-color: #0c4a6e; /* (sky-700) */
+    color: #374151;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
 }
 
-/*
- * --- Panels (Admin, User, etc.) (DARK THEME) ---
- * Styling for the collapsible content sections.
- */
-.content-panel {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    background-color: #1f2937; /* (gray-800) */
-    border-radius: 1rem;
-    border: 1px solid #374151; /* (gray-700) */
+.sidebar a:hover {
+    background-color: #f3f4f6;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 45;
+    /* Below sidebar, above content */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.sidebar-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- New Standings Sidebar (Right) --- */
+.standings-sidebar {
+    display: none;
+    /* Hidden on mobile by default */
+}
+
+.standings-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.standings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.standings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: rgba(255, 255, 255, 0.4);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+}
+
+.standings-item:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.standings-item .name {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.standings-item .name .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #9ca3af;
+    /* Offline (gray) */
+}
+
+.standings-item .name .status-dot.online {
+    background-color: #22c55e;
+    /* Online (green) */
+}
+
+/* --- NEW: Idle Status Dot --- */
+.standings-item .name .status-dot.idle {
+    background-color: #f59e0b;
+    /* Idle (amber-500) */
+}
+
+.standings-item .chips {
+    font-weight: 500;
+    color: #007bff;
+    font-size: 0.9rem;
+}
+
+
+/* --- Utility --- */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
     text-align: center;
-    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 }
 
-/*
- * --- User Management Table (DARK THEME) ---
- */
-.user-table {
+/* --- Layout --- */
+#mainContainer {
+    width: 100%;
+    /* max-width: 1280px;  <- REMOVED to go full-width */
+    /* margin: 0 auto;       <- REMOVED to go full-width */
+    padding: 5rem 1rem 2rem 1rem;
+    /* UPDATED - Added 5rem top padding for fixed header */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center the panels in the main content area */
+    gap: 1.5rem;
+    /* Replaces all the separate margins */
+}
+
+/* --- Typography --- */
+h2 {
+    font-size: 1.5rem;
+    /* text-2xl */
+    font-weight: 600;
+    /* semibold */
+    color: #111827;
+    margin: 0 0 1rem 0;
+    text-align: center;
+}
+
+h4 {
+    font-size: 1.25rem;
+    /* text-xl */
+    font-weight: 600;
+    /* semibold */
+    color: #111827;
+    margin: 0 0 0.75rem 0;
+    text-align: center;
+}
+
+h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+}
+
+p {
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+/* --- Panels --- */
+.content-panel {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    /* rounded-xl */
+    padding: 1.5rem;
+    /* p-6 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 48rem;
+    /* max-w-3xl */
+    text-align: center;
+}
+
+/* --- NEW: Game Room Panel Override --- */
+/* Make game room panel wider and remove default padding */
+#gameRoomViewPanel {
+    max-width: 1200px;
+    padding: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+
+/* --- Buttons --- */
+.btn {
+    display: inline-flex;
+    /* Use inline-flex for icon alignment */
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    /* font-semibold */
+    padding: 0.875rem 1.5rem;
+    /* UPDATED: py-3.5 px-6 - Made buttons bigger */
+    border-radius: 0.75rem;
+    /* UPDATED: rounded-xl */
+    font-size: 1rem;
+    /* UPDATED: text-base */
+    line-height: 1.5rem;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    /* UPDATED: Added shadow and better transition */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease-out;
+    text-decoration: none;
+    /* For <a> tags styled as buttons */
+}
+
+.btn:hover {
+    /* UPDATED: Brighter transform/shadow on hover */
+    opacity: 1;
+    /* Reset opacity from old style if any */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+
+.btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+/* Button full width */
+.btn-full {
+    width: 100%;
+}
+
+/* Button half width */
+.btn-half {
+    width: 50%;
+}
+
+@media (min-width: 640px) {
+    .btn-half {
+        width: calc(50% - 0.5rem);
+        /* Adjust for gap */
+    }
+}
+
+/* Button Colors */
+.btn-blue {
+    background-color: #3b82f6;
+}
+
+/* blue-500 */
+.btn-green {
+    background-color: #22c55e;
+}
+
+/* green-500 */
+.btn-red {
+    background-color: #ef4444;
+}
+
+/* red-500 */
+.btn-gray {
+    background-color: #6b7280;
+}
+
+/* gray-500 */
+.btn-purple {
+    background-color: #8b5cf6;
+}
+
+/* violet-500 */
+.btn-google {
+    background-color: #db4437;
+}
+
+/* Google Red */
+
+/* --- Forms --- */
+.form-label {
+    display: block;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.form-input,
+.form-select {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+/* --- Tables --- */
+.data-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1.5rem;
     font-size: 0.875rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-radius: 0.75rem;
+    overflow: hidden;
 }
-.user-table th, .user-table td {
-    border: 1px solid #374151; /* (gray-700) */
-    padding: 0.75rem;
+
+.data-table th,
+.data-table td {
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem 1rem;
     text-align: left;
     vertical-align: middle;
 }
-.user-table th {
-    background-color: #374151; /* (gray-700) */
-    color: #0ea5e9; /* (sky-500) */
+
+.data-table th {
+    background-color: #f3f4f6;
+    color: #374151;
     font-weight: 600;
 }
-.user-table tr:nth-child(even) {
-    background-color: #1f2937; /* (gray-800) */
+
+.data-table tr:nth-child(even) {
+    background-color: #f9fafb;
 }
-.user-table tr:nth-child(odd) {
-    background-color: #111827; /* (gray-900) */
+
+.data-table tr:hover {
+    background-color: #f0f9ff;
 }
-.user-table select, .user-table input[type="number"] {
-    width: 100%;
+
+.data-table .form-select,
+.data-table .form-input {
+    width: auto;
+    min-width: 150px;
     padding: 0.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid #4b5563; /* (gray-600) */
-    background-color: #374151; /* (gray-700) */
-    color: #f3f4f6; /* (gray-100) */
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-.user-table select:focus, .user-table input[type="number"]:focus {
-    outline: none;
-    border-color: #3b82f6; /* (blue-500) */
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35); /* (blue-500 with alpha) */
-}
-.user-table button {
-    /* Basic styles for buttons inside the table */
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    border-radius: 0.375rem;
+    font-size: 0.875rem;
 }
 
-/*
- * --- Game Room Panel (DARK THEME) ---
- * Specific overrides for the game room view.
- * Now matches the new dark theme.
- */
-#gameRoomViewPanel {
-    background-color: #0f172a; /* (slate-900) */
-    border-radius: 1.5rem;
-    border: 1px solid #334155; /* (slate-700) */
-}
-#gameRoomViewPanel h3, #gameRoomViewPanel h4, #gameRoomViewPanel p, #gameRoomViewPanel label {
-    color: #f1f5f9; /* (slate-100) */
-}
-#gameRoomViewPanel .text-gray-300 { color: #d1d5db; }
-#gameRoomViewPanel .text-gray-400 { color: #9ca3af; }
-
-/* Game Room Player Cards */
-.player-card {
-    padding: 0.75rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid transparent;
-    transition: all 0.2s ease-in-out;
-    color: #ffffff;
-    position: relative;
-}
-/* Player Card Status Colors (applied from JavaScript) */
-.player-card-ready    { background-color: #047857; border-color: #06b6d4; } /* (emerald-700) (cyan-500) */
-.player-card-pending  { background-color: #ca8a04; border-color: #facc15; } /* (yellow-600) (yellow-400) */
-.player-card-folded   { background-color: #b91c1c; border-color: #f87171; } /* (red-700) (red-400) */
-.player-card-all-in   { background-color: #7e22ce; border-color: #c084fc; } /* (purple-700) (purple-400) */
-.player-card-default  { background-color: #374151; border-color: #6b7280; } /* (gray-700) (gray-500) */
-
-/* Lighter text for card details */
-.player-card .text-sm { color: #d1d5db; }
-.player-card .text-xs { color: #9ca3af; }
-
-/* Game Room Input (DARK THEME) */
-#playerBetInput {
-    background-color: #1e293b; /* (slate-800) */
-    border-color: #334155; /* (slate-700) */
-    color: #ffffff;
-}
-#playerBetInput:focus {
-     background-color: #334155; /* (slate-700) */
-     border-color: #3b82f6; /* (blue-500) */
-     outline: none;
-     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35); /* (blue-500 with alpha) */
-}
-
-/*
- * --- Main Title ---
- */
-.main-title {
-    font-size: 2rem; /* 3xl */
-    line-height: 2.5rem;
-    font-weight: 800; /* extra-bold */
-    color: #f1f5f9; /* slate-100 */
-    margin-bottom: 1.5rem; /* mb-6 */
-    text-shadow: 0 2px 4px rgba(0,0,0,0.25);
-}
-
-@media (min-width: 768px) {
-    .main-title {
-        font-size: 2.5rem; /* 4xl */
-        line-height: 1;
-    }
-}
-
-/*
- * --- Loading Indicator ---
- */
-.loading-indicator {
+/* --- List --- */
+.list-group {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    color: #9ca3af; /* gray-400 */
-}
-.loading-indicator svg {
-    /* The 'animate-spin' class in the HTML will use the @keyframes rule */
-    margin-right: 0.75rem; /* mr-3 */
-    height: 1.25rem; /* h-5 */
-    width: 1.25rem; /* w-5 */
-    color: #3b82f6; /* blue-500 */
-}
-/* Keyframes for spin animation (was in Tailwind) */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
 
-/* * --- Main Navigation Buttons ---
- * (These are the buttons NOT inside a panel)
- */
-.btn-nav {
-    width: 100%;
-    max-width: 48rem; /* Match the old max-width of the panels for consistency */
-    font-weight: 700; /* bold */
-    padding-top: 0.75rem; /* py-3 */
-    padding-bottom: 0.75rem;
-    padding-left: 1rem; /* px-4 */
-    padding-right: 1rem;
-    border-radius: 0.75rem; /* rounded-lg */
-    font-size: 1rem; /* text-base */
-    line-height: 1.5rem;
-    color: #ffffff; /* text-white */
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
+.list-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    margin-top: 1rem; /* Replaces mt-4 */
-}
-.btn-nav:hover {
-    transform: translateY(-2px); /* Lift effect */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.15);
-}
-.btn-nav:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.5); /* blue-300/50 focus ring */
-}
-.btn-nav svg {
-    width: 1.25rem; /* w-5 */
-    height: 1.25rem; /* h-5 */
-    margin-right: 0.5rem; /* mr-2 */
-}
-
-/* Button Color Modifiers */
-.btn-google {
-    background-color: #dc2626; /* red-600 */
-}
-.btn-google:hover {
-    background-color: #b91c1c; /* red-700 */
-}
-
-.btn-red {
-    background-color: #e11d48; /* rose-600 */
-}
-.btn-red:hover {
-    background-color: #be123c; /* rose-700 */
-}
-
-.btn-green {
-    background-color: #16a34a; /* green-600 */
-}
-.btn-green:hover {
-    background-color: #15803d; /* green-700 */
-}
-
-.btn-blue {
-    background-color: #2563eb; /* blue-600 */
-}
-.btn-blue:hover {
-    background-color: #1d4ed8; /* blue-700 */
-}
-
-.btn-purple {
-    background-color: #9333ea; /* purple-600 */
-}
-.btn-purple:hover {
-    background-color: #7e22ce; /* purple-700 */
-}
-
-.btn-orange {
-    background-color: #f97316; /* orange-600 */
-}
-.btn-orange:hover {
-    background-color: #ea580c; /* orange-700 */
-}
-
-/*
- * --- Log Entry Styling (Deprecated) ---
- * Kept from original file just in case.
- */
-.log-entry {
+    padding: 0.75rem 1rem;
     background-color: #f9fafb;
     border: 1px solid #e5e7eb;
-    padding: 8px;
-    margin-bottom: 4px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    color: #4b5563;
-    text-align: left;
+    border-radius: 0.5rem;
 }
-.log-entry strong {
+
+.list-item-content {
+    font-weight: 500;
     color: #1f2937;
 }
 
-/*
- * =========================================
- * =      TAILWIND REPLACEMENT STYLES      =
- * =========================================
- *
- * This is where we will manually add styles
- * to replace the old Tailwind classes.
- * We will need to add a LOT more here.
- *
- */
-
-/* Example: Re-create the .hidden class */
-.hidden {
-    display: none !important;
+.list-item-actions {
+    display: flex;
+    gap: 0.5rem;
 }
+
+.list-item-actions .btn {
+    width: auto;
+}
+
+@media (min-width: 640px) {
+    .list-item {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+/* --- Popups / Modals --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 0.375rem;
+    /* rounded-md */
+    background-color: white;
+    text-align: center;
+}
+
+/* --- NEW: Status Text Colors --- */
+.status-text.online {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.status-text.idle {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.status-text.offline {
+    color: #6b7280;
+}
+
+/* --- END NEW --- */
+
+.modal-content h3 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #111827;
+    /* text-gray-900 */
+}
+
+#groupPlayerList {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* --- Responsive Layout Adjustments --- */
+
+/* Large screens (lg: 1024px) */
+@media (min-width: 1024px) {
+
+    /* Show and pin the standings sidebar */
+    .standings-sidebar {
+        display: block;
+        position: fixed;
+        top: 65px;
+        /* Approx header height */
+        right: 0;
+        width: 280px;
+        height: calc(100vh - 65px);
+        background-color: rgba(255, 255, 255, 0.7);
+        /* Translucent white */
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        /* Safari support */
+        border-left: 1px solid rgba(200, 200, 200, 0.3);
+        z-index: 25;
+        /* Below header (30), above content */
+        padding: 1rem;
+        overflow-y: auto;
+    }
+
+    /* Add padding to main container to avoid overlap */
+    #mainContainer {
+        padding-right: 300px;
+        /* 280px sidebar + 20px gutter */
+    }
+}
+
+/* --- NEW: Game Room UI --- */
+/*
+    These styles are for the new game room layout,
+    replacing the simple list with a more visual "table".
+*/
+.game-table-container {
+    width: 100%;
+    background-color: #052e16;
+    /* Dark Green (green-950) */
+    border: 10px solid #5d4037;
+    /* Wood border (brown-700) */
+    border-radius: 9999px;
+    /* Full-on oval */
+    padding: 3rem 2rem;
+    margin-top: 1rem;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.4);
+    position: relative;
+}
+
+.game-table-center {
+    /* The "pot" and "community cards" area */
+    width: 60%;
+    margin: 0 auto;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 1rem;
+    padding: 1rem;
+    text-align: center;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.pot-display {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fef08a;
+    /* yellow-200 */
+    margin-bottom: 0.5rem;
+}
+
+.pot-display-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.community-cards {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 1rem;
+}
+
+.player-grid {
+    /* Holds all the player "seats" */
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.player-seat {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.player-seat.is-current-user {
+    border-color: #3b82f6;
+    /* blue-500 */
+    box-shadow: 0 0 15px #3b82f6;
+}
+
+.player-seat h5 {
+    /* Player name */
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 0.25rem 0;
+}
+
+.player-seat .chips {
+    /* Player chips */
+    font-size: 1rem;
+    font-weight: 500;
+    color: #fef08a;
+    /* yellow-200 */
+    margin-bottom: 0.5rem;
+}
+
+.player-seat .bet {
+    /* Player bet */
+    font-size: 0.8rem;
+    color: #d1d5db;
+    /* gray-300 */
+    margin-bottom: 0.75rem;
+}
+
+.player-seat .status {
+    /* Player status */
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 99px;
+    display: inline-block;
+}
+
+/* Status colors */
+.player-seat .status.ready {
+    background-color: #166534;
+    color: #bbf7d0;
+}
+
+/* green */
+.player-seat .status.folded {
+    background-color: #7f1d1d;
+    color: #fecaca;
+}
+
+/* red */
+.player-seat .status.pending {
+    background-color: #854d0e;
+    color: #fef08a;
+}
+
+/* amber */
+.player-seat .status.all-in {
+    background-color: #581c87;
+    color: #e9d5ff;
+}
+
+/* purple */
+
+.game-action-bar {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 0.75rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* --- END NEW Game Room UI --- */
