@@ -27,7 +27,7 @@
             font-family: 'Inter', sans-serif;
             /* NEW: Light blue to light purple gradient */
             background-color: #c2d2ff; /* Fallback color */
-            background-image: linear-gradient(135deg, #a8c0ff 0%, #d8b4fe 100%);
+            background-image: linear-gradielinear-gradientnt(135deg, #a8c0ff 0%, #d8b4fe 100%);
             min-height: 100vh;
             margin: 0;
             color: #334155; /* Default text color (slate-700) */
@@ -865,6 +865,7 @@
         let firebaseAuthReady = false;
         let dataLoadedAndListenersSetup = false;
         let isLoggingOut = false;
+        let isNewLogin = false; // <-- FIX FOR LOGOUT LOOP
         
         let allFirebaseUsersData = []; // Stores all user profile docs
         let allFirebaseRolesData = []; // Stores all user role docs
@@ -1000,7 +1001,10 @@
                 // --- NEW: Stale Session Logout ---
                 // Check if this is a "remembered" session in a new tab
                 const isLoggedInThisTab = sessionStorage.getItem('isLoggedInThisTab');
-                if (user && !isLoggedInThisTab && !isLoggingOut) {
+                
+                // --- LOGOUT LOOP FIX ---
+                // Added check for `!isNewLogin`
+                if (user && !isLoggedInThisTab && !isLoggingOut && !isNewLogin) {
                     console.warn("onAuthStateChanged: Stale session detected (user exists but tab flag is not set). Forcing logout to clean up.");
                     await handleLogout(); // This will clear the user and show login
                     showMessage("Your previous session was cleared. Please log in again.", "info");
@@ -1231,6 +1235,7 @@
 
             // --- Auth Buttons ---
             googleLoginButton.addEventListener('click', async () => {
+                isNewLogin = true; // <-- FIX FOR LOGOUT LOOP
                 const provider = new GoogleAuthProvider();
                 try {
                     await signInWithPopup(auth, provider);
@@ -1238,6 +1243,7 @@
                 } catch (error) {
                     console.error("Google Sign-In Error:", error);
                     showMessage(`Google Sign-In Error: ${error.message}`, "error");
+                    isNewLogin = false; // <-- Reset on error
                 }
             });
 
@@ -1398,6 +1404,7 @@
 
             // --- NEW: Set session storage flag ---
             sessionStorage.setItem('isLoggedInThisTab', 'true');
+            isNewLogin = false; // <-- FIX FOR LOGOUT LOOP
             
             try {
                 // Setup profile first, as presence might need role data
