@@ -27,7 +27,7 @@
             font-family: 'Inter', sans-serif;
             /* NEW: Light blue to light purple gradient */
             background-color: #c2d2ff; /* Fallback color */
-            background-image: linear-gradielinear-gradientnt(135deg, #a8c0ff 0%, #d8b4fe 100%);
+            background-image: linear-gradient(135deg, #a8c0ff 0%, #d8b4fe 100%);
             min-height: 100vh;
             margin: 0;
             color: #334155; /* Default text color (slate-700) */
@@ -438,6 +438,9 @@
         }
         .list-item-actions .btn {
             width: auto;
+            /* Make small buttons slightly bigger */
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
         }
         @media (min-width: 640px) {
             .list-item {
@@ -794,6 +797,24 @@
         </div>
         <!-- =================== USER INFO MODAL END =================== -->
 
+        <!-- 
+          ============================================================
+          =                NEW LOBBY MODAL START (Hidden)            =
+          ============================================================
+        -->
+        <div id="lobbyModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3>Game Lobby</h3>
+                <p>Select a room to join.</p>
+                <ul id="lobbyRoomList" class="list-group" style="margin-top: 1.5rem; max-height: 40vh; overflow-y: auto;">
+                    <!-- Room list will be populated here by JS -->
+                    <li class="list-item"><p>Loading rooms...</p></li>
+                </ul>
+                <button id="closeLobbyModalButton" class="btn btn-gray" style="margin-top: 1.5rem;">Close</button>
+            </div>
+        </div>
+        <!-- =================== NEW LOBBY MODAL END =================== -->
+
     </div> <!-- End of #mainContainer -->
     <!-- =================== MAIN CONTAINER END =================== -->
 
@@ -928,6 +949,11 @@
         const userInfoModal = document.getElementById('userInfoModal');
         const userInfoModalContent = document.getElementById('userInfoModalContent');
         // --- END NEW Standings Sidebar & Modal Elements ---
+
+        // --- NEW Lobby Modal Elements ---
+        const lobbyModal = document.getElementById('lobbyModal');
+        const lobbyRoomList = document.getElementById('lobbyRoomList');
+        // --- END NEW Lobby Modal Elements ---
 
         // Admin Panel
         const backToMenuFromAdmin = document.getElementById('backToMenuFromAdmin');
@@ -1213,6 +1239,11 @@
                 // Only run if user is logged in and NOT in the process of logging out
                 if (!currentUserId || !db || isLoggingOut) return; 
                 
+                // --- NEW: LOGOUT ON REFRESH/REOPEN FIX ---
+                // Remove the session storage flag on any page unload.
+                // This forces the "stale session" check to run on refresh/reopen.
+                sessionStorage.removeItem('isLoggedInThisTab');
+                
                 // This is a "fire-and-forget" delete. We can't wait for it to finish.
                 // This instantly removes the user from "active_sessions"
                 // --- PATHS FIXED to v3.1 ---
@@ -1260,15 +1291,8 @@
             
             openAdminPanelButton.addEventListener('click', () => showPanel(adminPanel));
             
-            joinGameButton.addEventListener('click', () => {
-                // For now, just show the first available room, or create one
-                // This logic can be expanded to a "lobby"
-                if (firestoreGameRooms.length > 0) {
-                    joinGameRoom(firestoreGameRooms[0].id);
-                } else {
-                    showMessage("No game rooms available. An admin needs to create one.", "info");
-                }
-            });
+            // --- UPDATED: Show lobby modal instead of joining first game ---
+            joinGameButton.addEventListener('click', showLobbyModal);
 
             // --- Panel Navigation (Back Buttons) ---
             backToMenuFromAccount.addEventListener('click', () => showPanel(mainActionButtons));
@@ -1389,6 +1413,27 @@
                 if (e.key === 'Enter') sendGroupMessage();
             });
             closeGroupChatButton.addEventListener('click', () => groupChatModal.classList.add('hidden'));
+
+            // --- NEW Lobby Modal Listeners ---
+            document.getElementById('closeLobbyModalButton').addEventListener('click', hideLobbyModal);
+            
+            lobbyModal.addEventListener('click', (e) => {
+                if (e.target === lobbyModal) { // Overlay click
+                    hideLobbyModal();
+                }
+            });
+            
+            // Event delegation for the "Join" buttons in the lobby list
+            lobbyRoomList.addEventListener('click', (e) => {
+                // Use .closest() to catch clicks on the button or its icon/text
+                const joinButton = e.target.closest('.join-lobby-room-btn');
+                if (joinButton) {
+                    const roomId = joinButton.dataset.roomid;
+                    hideLobbyModal();
+                    joinGameRoom(roomId);
+                }
+            });
+            // --- END NEW Lobby Modal Listeners ---
 
         }); // End DOMContentLoaded
 
@@ -1633,6 +1678,10 @@
                     firestoreGameRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     console.log("Firestore: Game Rooms snapshot. Count:", firestoreGameRooms.length);
                     if (!gameRoomManagementPanel.classList.contains('hidden')) renderGameRoomList();
+                    // --- NEW: Update lobby modal if it's open ---
+                    if (!lobbyModal.classList.contains('hidden')) {
+                        showLobbyModal();
+                    }
                     
                     if (initialLoad) { initialLoad = false; resolve(); }
                 }, (error) => { console.error("Firestore: Error listening to game rooms:", error); reject(error); });
@@ -1734,6 +1783,46 @@
         }
 
         // --- END NEW Standings Sidebar Functions ---
+        
+        // --- NEW Lobby Modal Functions ---
+        
+        /** Shows the modal with a list of available game rooms */
+        function showLobbyModal() {
+            lobbyRoomList.innerHTML = ''; // Clear list
+            
+            // A room is joinable if its status is 'waiting'
+            const openRooms = firestoreGameRooms.filter(room => room.gameState.status === 'waiting');
+            
+            if (openRooms.length === 0) {
+                lobbyRoomList.innerHTML = '<li class="list-item"><p>No game rooms are currently available.</p></li>';
+                lobbyModal.classList.remove('hidden');
+                return;
+            }
+
+            openRooms.forEach(room => {
+                const li = document.createElement('li');
+                li.className = 'list-item'; // Use existing style
+                li.innerHTML = `
+                    <div class="list-item-content">
+                        <strong>${room.name}</strong>
+                        <small> (${room.players.length} players)</small>
+                    </div>
+                    <div class="list-item-actions">
+                        <button class="btn btn-green btn-sm join-lobby-room-btn" data-roomid="${room.id}">Join</button>
+                    </div>
+                `;
+                lobbyRoomList.appendChild(li);
+            });
+            
+            lobbyModal.classList.remove('hidden');
+        }
+
+        /** Hides the lobby modal */
+        function hideLobbyModal() {
+            lobbyModal.classList.add('hidden');
+        }
+        
+        // --- END NEW Lobby Modal Functions ---
         
         // --- Admin: User Management Functions ---
         
@@ -1838,7 +1927,7 @@
                 batch.update(roleRef, { role: newRole });
                 
                 // Update Profile (Chips)
-                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", uid);
+                const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
                 batch.update(profileRef, { chip_count: newChips });
                 
                 await batch.commit();
