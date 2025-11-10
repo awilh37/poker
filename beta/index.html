@@ -207,6 +207,21 @@
 
         <!-- 
           ============================================================
+          =           PLAYER JOIN ROOM (LOBBY) (Hidden)            =
+          ============================================================
+        -->
+        <div id="playerJoinRoomPanel" class="content-panel hidden" style="max-width: 48rem;"> <!-- max-w-3xl -->
+            <button class="btn btn-gray" id="backToMenuFromLobby">← Back to Menu</button>
+            <h2>Available Game Rooms</h2>
+            <div id="availableRoomsListContainer" class="list-group"
+                style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
+                <!-- JS will populate this -->
+                <p>Loading rooms...</p>
+            </div>
+        </div>
+
+        <!-- 
+          ============================================================
           =             GAME ROOM VIEW (Hidden by default)           =
           ============================================================
         -->

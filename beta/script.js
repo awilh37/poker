@@ -92,6 +92,8 @@ const gameRoomManagementPanel = document.getElementById('gameRoomManagementPanel
 const gameRoomViewPanel = document.getElementById('gameRoomViewPanel');
 const userDirectoryPanel = document.getElementById('userDirectoryPanel');
 const createGroupPanel = document.getElementById('createGroupPanel');
+// NEW: Lobby Panel
+const playerJoinRoomPanel = document.getElementById('playerJoinRoomPanel');
 
 // Buttons
 const googleLoginButton = document.getElementById('googleLoginButton');
@@ -148,6 +150,10 @@ const backToAdminFromGame = document.getElementById('backToAdminFromGame');
 const newRoomName = document.getElementById('newRoomName');
 const createGameRoomButton = document.getElementById('createGameRoomButton');
 const gameRoomList = document.getElementById('gameRoomList');
+
+// NEW: Lobby Panel
+const backToMenuFromLobby = document.getElementById('backToMenuFromLobby');
+const availableRoomsListContainer = document.getElementById('availableRoomsListContainer');
 
 // Game Room View
 const leaveGameRoomButton = document.getElementById('leaveGameRoomButton');
@@ -459,13 +465,9 @@ document.addEventListener('DOMContentLoaded', () => {
     openAdminPanelButton.addEventListener('click', () => showPanel(adminPanel));
 
     joinGameButton.addEventListener('click', () => {
-        // For now, just show the first available room, or create one
-        // This logic can be expanded to a "lobby"
-        if (firestoreGameRooms.length > 0) {
-            joinGameRoom(firestoreGameRooms[0].id);
-        } else {
-            showMessage("No game rooms available. An admin needs to create one.", "info");
-        }
+        // --- UPDATED: Show Lobby Panel ---
+        renderAvailableRoomsList(); // New function
+        showPanel(playerJoinRoomPanel); // Show the new lobby panel
     });
 
     // --- Panel Navigation (Back Buttons) ---
@@ -476,6 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
     backToAdminFromGame.addEventListener('click', () => showPanel(adminPanel));
     backToAdminFromGroup.addEventListener('click', () => showPanel(adminPanel));
     leaveGameRoomButton.addEventListener('click', leaveGameRoom);
+    // NEW: Lobby back button
+    backToMenuFromLobby.addEventListener('click', () => showPanel(mainActionButtons));
 
 
     // --- Account Management ---
@@ -837,6 +841,8 @@ function setupDataListeners() {
             firestoreGameRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             console.log("Firestore: Game Rooms snapshot. Count:", firestoreGameRooms.length);
             if (!gameRoomManagementPanel.classList.contains('hidden')) renderGameRoomList();
+            // NEW: Update lobby if visible
+            if (!playerJoinRoomPanel.classList.contains('hidden')) renderAvailableRoomsList();
 
             // --- NEW: Update game room if user is in it ---
             if (currentJoinedRoomId && !gameRoomViewPanel.classList.contains('hidden')) {
@@ -1250,13 +1256,127 @@ async function leaveGameRoom() {
         await updateDoc(profileRef, { current_room: null });
 
         currentJoinedRoomId = null;
-        showPanel(mainActionButtons);
+        // --- UPDATED: Go back to lobby ---
+        showPanel(playerJoinRoomPanel);
+        renderAvailableRoomsList(); // Refresh lobby list
 
     } catch (error) {
         console.error("Error leaving room:", error);
         showMessage(`Error leaving room: ${error.message}`, "error");
     }
 }
+
+// --- NEW: Render Available Rooms (Lobby) ---
+/** Renders the list of available game rooms for the lobby panel */
+function renderAvailableRoomsList() {
+    if (!availableRoomsListContainer) return;
+    availableRoomsListContainer.innerHTML = ''; // Clear old list
+
+    const openRooms = firestoreGameRooms.filter(room => room.status !== 'closed'); // Show all non-closed rooms
+
+    if (openRooms.length === 0) {
+        availableRoomsListContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No game rooms are currently available.</p>';
+        return;
+    }
+
+    openRooms.forEach(room => {
+        const div = document.createElement('div');
+        div.className = 'room-list-item';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'room-list-info';
+        infoDiv.innerHTML = `
+            <div class="room-list-name">${room.name}</div>
+            <div class="room-list-players">Players: ${room.players?.length || 0}</div>
+        `;
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'room-list-actions';
+
+        const joinBtn = document.createElement('button');
+        joinBtn.className = 'btn btn-green btn-sm';
+        joinBtn.textContent = 'Join Room';
+        joinBtn.onclick = () => handleJoinRoom(room.id);
+
+        // Check if user is already in *any* room
+        const userInARoom = allFirebaseUsersData.find(u => u.uid === currentUserId)?.current_room;
+        if (userInARoom) {
+            if (userInARoom === room.id) {
+                joinBtn.textContent = 'Re-enter';
+                joinBtn.className = 'btn btn-blue btn-sm';
+            } else {
+                joinBtn.disabled = true;
+                joinBtn.title = "You are already in another room";
+            }
+        }
+
+        actionsDiv.appendChild(joinBtn);
+        div.appendChild(infoDiv);
+        div.appendChild(actionsDiv);
+        availableRoomsListContainer.appendChild(div);
+    });
+}
+
+// --- NEW: Handle Join Room ---
+/** Handles the logic for a player to join a room */
+async function handleJoinRoom(roomId) {
+    if (!currentUserId) return;
+
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) {
+        showMessage("That room no longer exists.", "error");
+        renderAvailableRoomsList();
+        return;
+    }
+
+    // Check if user is already in another room
+    const userProfile = allFirebaseUsersData.find(u => u.uid === currentUserId);
+    if (userProfile.current_room && userProfile.current_room !== roomId) {
+        showMessage("You must leave your current room before joining another.", "error");
+        return;
+    }
+
+    console.log(`User ${currentUserId} joining room ${roomId}`);
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
+
+    try {
+        // Use a transaction to safely add player
+        await runTransaction(db, async (transaction) => {
+            const roomDoc = await transaction.get(roomRef);
+            if (!roomDoc.exists()) throw "Room not found.";
+
+            const roomData = roomDoc.data();
+            const players = roomData.players || [];
+            if (players.includes(currentUserId)) {
+                // User is already in this room, just update their profile
+                transaction.update(profileRef, { current_room: roomId });
+            } else {
+                // Add user to room and update profile
+                const newPlayers = [...players, currentUserId];
+                const newGameState = {
+                    ...roomData.gameState,
+                    bets: { ...roomData.gameState.bets, [currentUserId]: 0 },
+                    status: { ...roomData.gameState.status, [currentUserId]: 'pending' }
+                };
+                transaction.update(roomRef, {
+                    players: newPlayers,
+                    gameState: newGameState
+                });
+                transaction.update(profileRef, { current_room: roomId });
+            }
+        });
+
+        currentJoinedRoomId = roomId;
+        renderGameRoomView(roomId);
+        showPanel(gameRoomViewPanel);
+
+    } catch (error) {
+        console.error("Error joining room:", error);
+        showMessage(`Error joining room: ${error.message}`, "error");
+    }
+}
+
 
 /** Renders the main game room view */
 function renderGameRoomView(roomId) {
@@ -1274,11 +1394,42 @@ function renderGameRoomView(roomId) {
     const roomPlayers = room.players || [];
     const roomBets = room.gameState.bets || {};
     const roomStatus = room.gameState.status || {};
+    // NEW: Get current user's profile and admin status
+    const currentUserProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
+    const currentUserChips = currentUserProfile?.chip_count || 0;
+    const currentUserIsAdmin = hasAdminAccess(currentUserId);
 
     // Calculate total pot
     let totalPot = 0;
     for (const uid in roomBets) {
         totalPot += (roomBets[uid] || 0);
+    }
+    // NEW: Calculate highest bet to call
+    const highestBet = Object.values(roomBets).reduce((max, bet) => Math.max(max, bet), 0);
+    const currentUserBet = roomBets[currentUserId] || 0;
+    const amountToCall = highestBet - currentUserBet;
+
+    // --- 0. Build Admin Controls (if admin) ---
+    let adminControlsHtml = '';
+    if (currentUserIsAdmin) {
+        adminControlsHtml = `
+            <div class="game-admin-controls">
+                <h5>Admin Controls</h5>
+                <button id="adminRoomResetButton" class="btn btn-purple btn-sm">Room Reset</button>
+                <button id="adminUpdateChipsButton" class="btn btn-blue btn-sm">Update Chips</button>
+            </div>
+            <!-- Hidden Update Chips Panel -->
+            <div id="updateChipsPanel" class="update-chips-panel hidden">
+                <h4>Update Player Chips (After Hand)</h4>
+                <div id="updateChipsPlayerList" class="update-chips-list">
+                    <!-- JS will populate this -->
+                </div>
+                <div class="update-chips-actions">
+                    <button id="cancelChipUpdate" class="btn btn-gray btn-sm">Cancel</button>
+                    <button id="submitChipUpdate" class="btn btn-green btn-sm">Submit & Reset</button>
+                </div>
+            </div>
+        `;
     }
 
     // --- 1. Build the central "table" area ---
@@ -1305,8 +1456,26 @@ function renderGameRoomView(roomId) {
         const status = roomStatus[uid] || 'pending'; // 'pending', 'ready', 'folded', 'all-in'
         const statusClass = status.replace('_', '-'); // e.g., 'all-in'
 
+        // NEW: Admin Menu for player card
+        let adminMenuHtml = '';
+        if (currentUserIsAdmin) {
+            const targetStatus = roomStatus[uid] || 'pending';
+            const canAct = targetStatus !== 'folded' && targetStatus !== 'all-in';
+            const notSelf = uid !== currentUserId;
+
+            adminMenuHtml = `
+                <button class="player-admin-menu-btn" data-uid="${uid}">⋮</button>
+                <div id="admin-menu-${uid}" class="player-admin-menu hidden">
+                    <button class="remove-player-btn" data-uid="${uid}" ${!notSelf ? 'disabled title="Cannot remove self"' : ''}>Remove Player</button>
+                    <button class="force-fold-btn" data-uid="${uid}" ${(!notSelf || !canAct) ? 'disabled title="Cannot fold self or inactive player"' : ''}>Force Fold</button>
+                    <button class="place-bet-for-player-btn" data-uid="${uid}" ${!canAct ? 'disabled title="Cannot bet for inactive player"' : ''}>Place Bet for...</button>
+                </div>
+            `;
+        }
+
         playerGridHtml += `
             <div class="player-seat ${isCurrentUser ? 'is-current-user' : ''}" data-uid="${uid}">
+                ${adminMenuHtml}
                 <h5>${formatDisplayName(player)}</h5>
                 <div class="chips">${player.chip_count || 0} 💎</div>
                 <div class="bet">Bet: ${bet}</div>
@@ -1317,17 +1486,31 @@ function renderGameRoomView(roomId) {
     playerGridHtml += '</div>';
 
     // --- 3. Build the action bar ---
-    // (Note: We'll add input fields and more buttons later)
-    let actionBarHtml = `
-        <div class="game-action-bar">
-            <button id="readyUpButton" class="btn btn-green">Ready Up</button>
-            <button id="checkButton" class="btn btn-blue">Check</button>
-            <button id="foldButton" class="btn btn-red">Fold</button>
-        </div>
-    `;
+    // NEW: Rebuilt action bar with v3.1 logic
+    const currentUserStatus = roomStatus[currentUserId] || 'pending';
+    const canPlayerAct = currentUserStatus !== 'folded' && currentUserStatus !== 'all-in';
+
+    let actionBarHtml = '<div class="game-action-bar">';
+    if (canPlayerAct) {
+        actionBarHtml += `
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="number" id="betAmountInput" class="form-input" placeholder="Bet Amount" min="0" max="${currentUserChips}">
+            </div>
+            <button id="placeBetButton" class="btn btn-blue btn-sm">Bet/Raise</button>
+            <button id="callButton" class="btn btn-green btn-sm">
+                ${amountToCall > 0 ? `Call (${amountToCall})` : 'Check'}
+            </button>
+            <button id="allInButton" class="btn btn-purple btn-sm">All-In (${currentUserChips})</button>
+            <button id="foldButton" class="btn btn-red btn-sm">Fold</button>
+        `;
+    } else {
+        actionBarHtml += `<p class="text-white font-semibold">You are ${currentUserStatus}</p>`;
+    }
+    actionBarHtml += '</div>';
 
     // --- 4. Combine all parts into the game room content ---
     gameRoomContent.innerHTML = `
+        ${adminControlsHtml} <!-- NEW -->
         <div class="game-table-container">
             ${centerHtml}
             ${playerGridHtml}
@@ -1336,56 +1519,383 @@ function renderGameRoomView(roomId) {
     `;
 
     // --- 5. Add event listeners for the new buttons ---
-    gameRoomContent.querySelector('#readyUpButton').addEventListener('click', () => {
-        sendGameAction(roomId, 'set_ready');
-    });
-    gameRoomContent.querySelector('#checkButton').addEventListener('click', () => {
-        sendGameAction(roomId, 'check'); // Placeholder
-    });
-    gameRoomContent.querySelector('#foldButton').addEventListener('click', () => {
-        sendGameAction(roomId, 'fold'); // Placeholder
-    });
+    // Remove old listeners
+    // gameRoomContent.querySelector('#readyUpButton').addEventListener('click', () => {
+    //     sendGameAction(roomId, 'set_ready');
+    // });
+    // gameRoomContent.querySelector('#checkButton').addEventListener('click', () => {
+    //     sendGameAction(roomId, 'check'); // Placeholder
+    // });
+    // gameRoomContent.querySelector('#foldButton').addEventListener('click', () => {
+    //     sendGameAction(roomId, 'fold'); // Placeholder
+    // });
+
+    // NEW: Add listeners for v3.1 actions
+    if (canPlayerAct) {
+        gameRoomContent.querySelector('#placeBetButton').addEventListener('click', () => {
+            const amount = parseInt(gameRoomContent.querySelector('#betAmountInput').value, 10);
+            handlePlaceBet(roomId, amount);
+        });
+        gameRoomContent.querySelector('#callButton').addEventListener('click', () => handleCallBet(roomId));
+        gameRoomContent.querySelector('#foldButton').addEventListener('click', () => handleFold(roomId));
+        gameRoomContent.querySelector('#allInButton').addEventListener('click', () => handleAllIn(roomId));
+    }
+
+    // NEW: Add listeners for Admin controls
+    if (currentUserIsAdmin) {
+        gameRoomContent.querySelector('#adminRoomResetButton').addEventListener('click', () => adminRoomReset(roomId));
+        gameRoomContent.querySelector('#adminUpdateChipsButton').addEventListener('click', () => toggleUpdateChipsPanel(roomId, true));
+        gameRoomContent.querySelector('#cancelChipUpdate').addEventListener('click', () => toggleUpdateChipsPanel(roomId, false));
+        gameRoomContent.querySelector('#submitChipUpdate').addEventListener('click', () => handleSubmitChipUpdate(roomId));
+
+        // Listeners for player card admin menus (using event delegation)
+        gameRoomContent.addEventListener('click', (e) => {
+            const target = e.target;
+            // Toggle menu visibility
+            if (target.classList.contains('player-admin-menu-btn')) {
+                const uid = target.dataset.uid;
+                const menu = gameRoomContent.querySelector(`#admin-menu-${uid}`);
+                if (menu) {
+                    menu.classList.toggle('hidden');
+                }
+            }
+            // Handle menu actions
+            else if (target.classList.contains('remove-player-btn')) {
+                const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
+                adminRemovePlayer(roomId, target.dataset.uid, formatDisplayName(player));
+            } else if (target.classList.contains('force-fold-btn')) {
+                const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
+                adminForceFoldPlayer(roomId, target.dataset.uid, formatDisplayName(player));
+            } else if (target.classList.contains('place-bet-for-player-btn')) {
+                const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
+                adminPlaceBetForPlayer(roomId, target.dataset.uid, formatDisplayName(player), player?.chip_count || 0);
+            }
+            // Hide menus if clicking elsewhere
+            else if (!target.closest('.player-admin-menu') && !target.classList.contains('player-admin-menu-btn')) {
+                gameRoomContent.querySelectorAll('.player-admin-menu').forEach(menu => menu.classList.add('hidden'));
+            }
+        });
+    }
 }
 
 
-/** Sends a game action to be processed */
-async function sendGameAction(roomId, action, payload = {}) {
-    if (!currentUserId) return;
+/** (REMOVED) Sends a game action to be processed */
+// async function sendGameAction(roomId, action, payload = {}) {
+// ... (whole function removed) ...
+// }
 
-    console.log(`Sending Action: ${action}`, payload);
+// --- NEW: v3.1 Game Logic Functions ---
+
+/** (Admin) Removes a player from the game room */
+async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
+    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    if (targetPlayerId === currentUserId) return showMessage("Cannot remove self.", "error");
+
+    console.log(`Admin removing ${targetPlayerName} from room ${roomId}`);
+
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", targetPlayerId);
 
     try {
-        let updateData = {};
-        let actionMessage = "Action sent!";
+        await runTransaction(db, async (transaction) => {
+            const roomDoc = await transaction.get(roomRef);
+            if (!roomDoc.exists()) throw "Room not found.";
 
-        if (action === 'set_ready') {
-            // Sets the player's status in the map
-            updateData[`gameState.status.${currentUserId}`] = 'ready';
-            actionMessage = "You are ready!";
-        } else if (action === 'fold') {
-            updateData[`gameState.status.${currentUserId}`] = 'folded';
-            actionMessage = "You have folded.";
-        } else if (action === 'check') {
-            // "Check" is complex. For now, just log it.
-            // A real "check" would only be valid if bet is 0 or matches current high bet.
-            // We'll just set status to 'ready' as a placeholder.
-            updateData[`gameState.status.${currentUserId}`] = 'ready';
-            actionMessage = "You have checked.";
-        } else {
-            showMessage("That action isn't implemented yet.", "info");
-            return;
-        }
+            const roomData = roomDoc.data();
+            const newPlayers = (roomData.players || []).filter(uid => uid !== targetPlayerId);
+            const newGameState = { ...roomData.gameState };
+            if (newGameState.bets) delete newGameState.bets[targetPlayerId];
+            if (newGameState.status) delete newGameState.status[targetPlayerId];
 
-        // Send the update to Firestore
-        await updateDoc(roomRef, updateData);
-        showMessage(actionMessage, "success");
-
+            transaction.update(roomRef, {
+                players: newPlayers,
+                gameState: newGameState
+            });
+            transaction.update(profileRef, { current_room: null });
+        });
+        showMessage(`${targetPlayerName} has been removed from the room.`, "success");
     } catch (error) {
-        console.error("Error sending game action:", error);
+        console.error("Error removing player:", error);
+        showMessage(`Error removing player: ${error.message}`, "error");
+    }
+}
+
+/** (Admin) Forces a player to fold */
+async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
+    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    console.log(`Admin forcing fold for ${targetPlayerName}`);
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        await updateDoc(roomRef, {
+            [`gameState.status.${targetPlayerId}`]: 'folded'
+        });
+        showMessage(`${targetPlayerName} has been folded.`, "success");
+    } catch (error) {
+        console.error("Error forcing fold:", error);
         showMessage(`Error: ${error.message}`, "error");
     }
 }
+
+/** (Admin) Places a bet for a player */
+async function adminPlaceBetForPlayer(roomId, targetPlayerId, targetPlayerName, playerChips) {
+    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    
+    const betAmountStr = prompt(`Enter bet for ${targetPlayerName} (has ${playerChips} chips):`);
+    if (!betAmountStr) return; // User cancelled
+
+    const betAmount = parseInt(betAmountStr, 10);
+    if (isNaN(betAmount) || betAmount < 0) return showMessage("Invalid amount.", "error");
+    if (betAmount > playerChips) return showMessage("Amount exceeds player's chips.", "error");
+    
+    console.log(`Admin betting ${betAmount} for ${targetPlayerName}`);
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        const newStatus = (betAmount === playerChips) ? 'all-in' : 'ready';
+        await updateDoc(roomRef, {
+            [`gameState.bets.${targetPlayerId}`]: betAmount,
+            [`gameState.status.${targetPlayerId}`]: newStatus
+        });
+        showMessage(`Bet of ${betAmount} placed for ${targetPlayerName}.`, "success");
+    } catch (error) {
+        console.error("Error placing bet for player:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+/** (Admin) Resets all bets and statuses in the room */
+async function adminRoomReset(roomId) {
+    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    console.log(`Admin resetting room ${roomId}`);
+
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) return showMessage("Room not found.", "error");
+
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        const newBets = {};
+        const newStatus = {};
+        for (const uid of room.players) {
+            newBets[uid] = 0;
+            newStatus[uid] = 'pending';
+        }
+        await updateDoc(roomRef, {
+            "gameState.bets": newBets,
+            "gameState.status": newStatus,
+            // Add other game state resets here (e.g., community cards, pot)
+        });
+        showMessage("Room has been reset.", "success");
+    } catch (error) {
+        console.error("Error resetting room:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+/** (Admin) Toggles the Update Chips panel */
+function toggleUpdateChipsPanel(roomId, show) {
+    const panel = gameRoomContent.querySelector('#updateChipsPanel');
+    if (!panel) return;
+
+    if (show) {
+        populateUpdateChipsPanel(roomId);
+        panel.classList.remove('hidden');
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
+/** (Admin) Populates the Update Chips panel with players */
+function populateUpdateChipsPanel(roomId) {
+    const listEl = gameRoomContent.querySelector('#updateChipsPlayerList');
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!listEl || !room) return;
+
+    listEl.innerHTML = '';
+    const roomStatus = room.gameState.status || {};
+
+    room.players.forEach(uid => {
+        const player = allFirebaseUsersData.find(p => p.uid === uid);
+        const status = roomStatus[uid] || 'pending';
+        
+        // Only add non-folded players
+        if (status !== 'folded') {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'update-chips-item';
+            itemDiv.innerHTML = `
+                <span>${formatDisplayName(player)}</span>
+                <select class="form-select" data-uid="${uid}" style="width: auto;">
+                    <option value="0">No Win / Lose</option>
+                    <option value="1">1st Place</option>
+                    <option value="2">2nd Place</option>
+                    <option value="3">3rd Place</option>
+                </select>
+            `;
+            listEl.appendChild(itemDiv);
+        }
+    });
+}
+
+/** (Admin) Handles submission of chip updates and pot distribution */
+async function handleSubmitChipUpdate(roomId) {
+    console.log("Submitting chip update...");
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) return showMessage("Room data not found.", "error");
+
+    const listEl = gameRoomContent.querySelector('#updateChipsPlayerList');
+    const selects = listEl.querySelectorAll('select[data-uid]');
+    
+    const players = [];
+    let totalPot = 0;
+    const roomBets = room.gameState.bets || {};
+    
+    room.players.forEach(uid => {
+        const playerProfile = allFirebaseUsersData.find(p => p.uid === uid);
+        const bet = roomBets[uid] || 0;
+        totalPot += bet;
+
+        players.push({
+            id: uid,
+            bet: bet,
+            chips: playerProfile?.chip_count || 0,
+            status: room.gameState.status[uid] || 'pending',
+            winnings: 0
+        });
+    });
+
+    // Get rankings from UI
+    const rankings = [];
+    selects.forEach(s => {
+        rankings.push({ id: s.dataset.uid, rank: parseInt(s.value, 10) });
+    });
+
+    // Simple distribution: 1st place gets all.
+    // This is a placeholder for the complex v3.1 logic.
+    const winners = rankings.filter(r => r.rank === 1);
+    if (winners.length > 0) {
+        const share = totalPot / winners.length;
+        winners.forEach(winner => {
+            const player = players.find(p => p.id === winner.id);
+            if (player) {
+                player.winnings = share;
+            }
+        });
+    }
+    // Note: This simple logic doesn't handle side pots or complex betting.
+
+    // 7. If available_pot is not 0 (in this simple case, it always is)
+    // We'll skip the error check for this placeholder.
+
+    // 8. Update Firestore
+    const batch = writeBatch(db);
+    players.forEach(player => {
+        const playerProfileRef = doc(db, "artifacts", appId, "public/data/user_profiles", player.id);
+        // Player's new chips = current chips - their bet + their winnings
+        const newChipCount = player.chips - player.bet + player.winnings;
+        batch.update(playerProfileRef, { chip_count: newChipCount });
+    });
+    
+    try {
+        await batch.commit();
+        showMessage("Chips updated and pot distributed!", "success");
+        adminRoomReset(roomId); // Reset the room for the next hand
+        toggleUpdateChipsPanel(roomId, false); // Hide the panel
+    } catch (error) {
+        console.error("Error updating chips:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+/** (Player) Handles placing a bet or raise */
+async function handlePlaceBet(roomId, amount) {
+    if (isNaN(amount) || amount <= 0) return showMessage("Invalid bet amount.", "error");
+
+    const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
+    const playerChips = playerProfile?.chip_count || 0;
+    if (amount > playerChips) return showMessage("You don't have enough chips.", "error");
+
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) return showMessage("Room not found.", "error");
+
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    const newStatus = (amount === playerChips) ? 'all-in' : 'ready';
+
+    try {
+        await updateDoc(roomRef, {
+            [`gameState.bets.${currentUserId}`]: amount,
+            [`gameState.status.${currentUserId}`]: newStatus
+        });
+        showMessage(`You bet ${amount}.`, "success");
+    } catch (error) {
+        console.error("Error placing bet:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+/** (Player) Handles calling the current highest bet */
+async function handleCallBet(roomId) {
+    const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
+    const playerChips = playerProfile?.chip_count || 0;
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) return showMessage("Room not found.", "error");
+
+    const roomBets = room.gameState.bets || {};
+    const highestBet = Object.values(roomBets).reduce((max, bet) => Math.max(max, bet), 0);
+    const currentUserBet = roomBets[currentUserId] || 0;
+    const amountToCall = highestBet - currentUserBet;
+
+    if (amountToCall === 0) { // This is a "Check"
+        showMessage("You checked.", "success");
+        return; // No DB update needed if status is already 'ready'
+    }
+
+    if (playerChips < amountToCall) { // Not enough chips to call, go all-in
+        return handleAllIn(roomId);
+    }
+
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        await updateDoc(roomRef, {
+            [`gameState.bets.${currentUserId}`]: highestBet, // Call by matching the highest bet
+            [`gameState.status.${currentUserId}`]: 'ready'
+        });
+        showMessage(`You called ${highestBet}.`, "success");
+    } catch (error) {
+        console.error("Error calling bet:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+/** (Player) Handles folding the hand */
+async function handleFold(roomId) {
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        await updateDoc(roomRef, {
+            [`gameState.status.${currentUserId}`]: 'folded'
+        });
+        showMessage("You folded.", "success");
+    } catch (error) {
+        console.error("Error folding:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+/** (Player) Handles going all-in */
+async function handleAllIn(roomId) {
+    const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
+    const playerChips = playerProfile?.chip_count || 0;
+    
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        await updateDoc(roomRef, {
+            [`gameState.bets.${currentUserId}`]: playerChips, // Bet all chips
+            [`gameState.status.${currentUserId}`]: 'all-in'
+        });
+        showMessage(`You are All-In with ${playerChips}!`, "success");
+    } catch (error) {
+        console.error("Error going all-in:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
 
 // --- User Directory Functions ---
 
@@ -1600,7 +2110,8 @@ function showPanel(panelToShow) {
         gameRoomManagementPanel,
         gameRoomViewPanel,
         userDirectoryPanel,
-        createGroupPanel
+        createGroupPanel,
+        playerJoinRoomPanel // NEW: Add lobby panel
     ];
 
     // Hide all panels

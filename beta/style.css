@@ -709,15 +709,18 @@ p {
     /* Holds all the player "seats" */
     margin-top: 2rem;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    /* UPDATED: Smaller minmax for smaller cards */
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 1rem;
 }
 
 .player-seat {
+    position: relative; /* For admin menu positioning */
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: 0.75rem;
     border: 2px solid rgba(255, 255, 255, 0.1);
-    padding: 1rem;
+    /* UPDATED: Smaller padding */
+    padding: 0.75rem;
     text-align: center;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -799,6 +802,166 @@ p {
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
+}
+
+/* --- NEW: Styles for v3.1 Port --- */
+
+/* Lobby Room List Item */
+.room-list-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+}
+.room-list-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    border-color: #d1d5db;
+}
+.room-list-info {
+    flex-grow: 1;
+}
+.room-list-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+.room-list-players {
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+.room-list-actions {
+    flex-shrink: 0;
+}
+@media (min-width: 640px) {
+    .room-list-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+
+/* Game Admin Controls (at top of room) */
+.game-admin-controls {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    margin: 1rem 1rem 0 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+.game-admin-controls h5 {
+    width: 100%;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin: 0 0 0.25rem 0;
+}
+
+/* Player Card Admin Menu */
+.player-admin-menu-btn {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: none;
+    border-radius: 99px;
+    width: 1.75rem;
+    height: 1.75rem;
+    font-weight: 800;
+    line-height: 1.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 1.25rem;
+}
+.player-admin-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+.player-admin-menu {
+    position: absolute;
+    top: 2.25rem;
+    right: 0.25rem;
+    background-color: #374151; /* gray-700 */
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    overflow: hidden;
+    min-width: 160px;
+}
+.player-admin-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.player-admin-menu button:hover {
+    background-color: #4b5563; /* gray-600 */
+}
+.player-admin-menu button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: none;
+}
+
+/* Update Chips Panel */
+.update-chips-panel {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1rem;
+    color: white;
+}
+.update-chips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 1rem 0;
+    padding: 0.5rem;
+}
+.update-chips-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+}
+.update-chips-item select {
+    background-color: #4b5563;
+    border: 1px solid #6b7280;
+    color: white;
+}
+.update-chips-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+/* Game Action Bar Inputs */
+.game-action-bar .form-input {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #1f2937;
+    border-color: rgba(0, 0, 0, 0.1);
+    max-width: 150px; /* Keep bet input from getting huge */
+}
+.game-action-bar .form-input::placeholder {
+    color: #6b7280;
 }
 
 /* --- END NEW Game Room UI --- */
