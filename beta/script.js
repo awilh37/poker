@@ -1258,8 +1258,8 @@ async function leaveGameRoom() {
 
         currentJoinedRoomId = null;
         // --- UPDATED: Go back to lobby ---
-        showPanel(playerJoinRoomPanel);
-        renderAvailableRoomsList(); // Refresh lobby list
+    showPanel(playerJoinRoomPanel);
+    renderAvailableRoomsList(); // Refresh lobby list
 
     } catch (error) {
         console.error("Error leaving room:", error);
@@ -1413,11 +1413,14 @@ function renderGameRoomView(roomId) {
     // --- 0. Build Admin Controls (if admin) ---
     let adminControlsHtml = '';
     if (currentUserIsAdmin) {
+        // NOTE: This HTML is now placed in the 'actions' column
         adminControlsHtml = `
             <div class="game-admin-controls">
-                <h5>Admin Controls</h5>
-                <button id="adminRoomResetButton" class="btn btn-purple btn-sm">Room Reset</button>
-                <button id="adminUpdateChipsButton" class="btn btn-blue btn-sm">Update Chips</button>
+                <h4>Admin Controls</h4>
+                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                    <button id="adminRoomResetButton" class="btn btn-purple btn-sm">Room Reset</button>
+                    <button id="adminUpdateChipsButton" class="btn btn-blue btn-sm">Update Chips</button>
+                </div>
             </div>
             <!-- Hidden Update Chips Panel -->
             <div id="updateChipsPanel" class="update-chips-panel hidden">
@@ -1433,21 +1436,25 @@ function renderGameRoomView(roomId) {
         `;
     }
 
-    // --- 1. Build the central "table" area ---
-    let centerHtml = `
-        <div class="game-table-center">
+    // --- 1. Build the info column (Pot & Cards) ---
+    let infoColumnHtml = `
+        <div class="gr-box gr-info-box">
+            <h4>Game Info</h4>
             <div class="pot-display">
                 Total Pot
                 <div class="pot-display-amount">${totalPot} 💎</div>
             </div>
             <div class="community-cards">
-                (Community Cards Placeholder)
+                (Community Cards)
+            </div>
+            <div style="margin-top: 1rem; font-size: 0.9rem; color: #4b5563;">
+                <strong>Highest Bet:</strong> ${highestBet} 💎
             </div>
         </div>
     `;
 
-    // --- 2. Build the player grid ---
-    let playerGridHtml = '<div class="player-grid">';
+    // --- 2. Build the player list column ---
+    let playerColumnHtml = '<div class="gr-box"><h4 style="margin-bottom: 0.75rem;">Players</h4><div class="game-players-column">';
     roomPlayers.forEach(uid => {
         const player = allFirebaseUsersData.find(u => u.uid === uid);
         if (!player) return; // Skip if profile isn't loaded
@@ -1474,63 +1481,69 @@ function renderGameRoomView(roomId) {
             `;
         }
 
-        playerGridHtml += `
-            <div class="player-seat ${isCurrentUser ? 'is-current-user' : ''}" data-uid="${uid}">
+        playerColumnHtml += `
+            <div class="gr-player-card ${isCurrentUser ? 'is-current-user' : ''}" data-uid="${uid}">
                 ${adminMenuHtml}
                 <h5>${formatDisplayName(player)}</h5>
-                <div class="chips">${player.chip_count || 0} 💎</div>
-                <div class="bet">Bet: ${bet}</div>
-                <div class="status ${statusClass}">${status}</div>
+                <div class="chips"><span>${player.chip_count || 0} 💎</span></div>
+                <div class="bet-status">
+                    <div class="bet">Bet: ${bet}</div>
+                    <div class="status ${statusClass}">${status}</div>
+                </div>
             </div>
         `;
     });
-    playerGridHtml += '</div>';
+    playerColumnHtml += '</div></div>'; // Close game-players-column and gr-box
 
-    // --- 3. Build the action bar ---
-    // NEW: Rebuilt action bar with v3.1 logic
+    // --- 3. Build the action bar column ---
     const currentUserStatus = roomStatus[currentUserId] || 'pending';
     const canPlayerAct = currentUserStatus !== 'folded' && currentUserStatus !== 'all-in';
 
-    let actionBarHtml = '<div class="game-action-bar">';
+    let actionColumnHtml = '';
     if (canPlayerAct) {
-        actionBarHtml += `
-            <div class="form-group" style="margin-bottom: 0;">
-                <input type="number" id="betAmountInput" class="form-input" placeholder="Bet Amount" min="0" max="${currentUserChips}">
+        actionColumnHtml = `
+            <div class="gr-box gr-action-box">
+                <h4>Your Action</h4>
+                <div class="form-group">
+                    <label class="form-label" for="betAmountInput">Bet Amount (Max: ${currentUserChips})</label>
+                    <input type="number" id="betAmountInput" class="form-input" placeholder="0" min="0" max="${currentUserChips}">
+                </div>
+                <div class="action-buttons">
+                    <button id="placeBetButton" class="btn btn-blue btn-sm">Bet/Raise</button>
+                    <button id="callButton" class="btn btn-green btn-sm">
+                        ${amountToCall > 0 ? `Call (${amountToCall})` : 'Check'}
+                    </button>
+                    <button id="allInButton" class="btn btn-purple btn-sm btn-full-span">All-In (${currentUserChips})</button>
+                    <button id="foldButton" class="btn btn-red btn-sm btn-full-span">Fold</button>
+                </div>
             </div>
-            <button id="placeBetButton" class="btn btn-blue btn-sm">Bet/Raise</button>
-            <button id="callButton" class="btn btn-green btn-sm">
-                ${amountToCall > 0 ? `Call (${amountToCall})` : 'Check'}
-            </button>
-            <button id="allInButton" class="btn btn-purple btn-sm">All-In (${currentUserChips})</button>
-            <button id="foldButton" class="btn btn-red btn-sm">Fold</button>
         `;
     } else {
-        actionBarHtml += `<p class="text-white font-semibold">You are ${currentUserStatus}</p>`;
+        actionColumnHtml = `
+            <div class="gr-box gr-action-box">
+                <h4>Your Action</h4>
+                <p class="text-center font-semibold text-lg">You are ${currentUserStatus}</p>
+            </div>
+        `;
     }
-    actionBarHtml += '</div>';
 
     // --- 4. Combine all parts into the game room content ---
     gameRoomContent.innerHTML = `
-        <div class="game-table-container">
-            ${adminControlsHtml} <!-- MOVED INSIDE -->
-            ${centerHtml}
-            ${playerGridHtml}
-            ${actionBarHtml}
+        <div class="game-room-layout">
+            <div class="game-players-column">
+                ${playerColumnHtml}
+            </div>
+            <div class="game-info-column">
+                ${infoColumnHtml}
+            </div>
+            <div class="game-actions-column">
+                ${actionColumnHtml}
+                ${adminControlsHtml}
+            </div>
         </div>
     `;
 
     // --- 5. Add event listeners for the new buttons ---
-    // Remove old listeners
-    // gameRoomContent.querySelector('#readyUpButton').addEventListener('click', () => {
-    //     sendGameAction(roomId, 'set_ready');
-    // });
-    // gameRoomContent.querySelector('#checkButton').addEventListener('click', () => {
-    //     sendGameAction(roomId, 'check'); // Placeholder
-    // });
-    // gameRoomContent.querySelector('#foldButton').addEventListener('click', () => {
-    //     sendGameAction(roomId, 'fold'); // Placeholder
-    // });
-
     // NEW: Add listeners for v3.1 actions
     if (canPlayerAct) {
         gameRoomContent.querySelector('#placeBetButton').addEventListener('click', () => {
