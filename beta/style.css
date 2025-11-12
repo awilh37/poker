@@ -715,7 +715,8 @@ p {
 }
 
 .player-seat {
-    position: relative; /* For admin menu positioning */
+    position: relative;
+    /* For admin menu positioning */
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: 0.75rem;
     border: 2px solid rgba(255, 255, 255, 0.1);
@@ -817,25 +818,31 @@ p {
     border-radius: 0.75rem;
     transition: all 0.2s ease;
 }
+
 .room-list-item:hover {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
     border-color: #d1d5db;
 }
+
 .room-list-info {
     flex-grow: 1;
 }
+
 .room-list-name {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2937;
 }
+
 .room-list-players {
     font-size: 0.9rem;
     color: #4b5563;
 }
+
 .room-list-actions {
     flex-shrink: 0;
 }
+
 @media (min-width: 640px) {
     .room-list-item {
         flex-direction: row;
@@ -863,16 +870,19 @@ p {
         flex-direction: row;
         align-items: flex-start;
     }
+
     .game-players-column {
         flex: 1;
         /* Takes 1/3 */
         order: 1;
     }
+
     .game-info-column {
         flex: 1;
         /* Takes 1/3 */
         order: 2;
     }
+
     .game-actions-column {
         flex: 1;
         /* Takes 1/3 */
@@ -971,14 +981,17 @@ p {
     background-color: #dcfce7;
     color: #166534;
 }
+
 .gr-player-card .status.folded {
     background-color: #fee2e2;
     color: #991b1b;
 }
+
 .gr-player-card .status.pending {
     background-color: #fef9c3;
     color: #854d0e;
 }
+
 .gr-player-card .status.all-in {
     background-color: #f3e8ff;
     color: #581c87;
@@ -1185,6 +1198,54 @@ p {
     /* Hiding the old sub-title */
     display: none;
 }
-/* ... rest of admin styles like .update-chips-panel are okay ... */
+
+/* --- NEW: Update Chips Modal Styles (from v3.1) --- */
+.update-chips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1rem 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.update-chips-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    /* gray-200 */
+}
+
+.update-chips-item:last-child {
+    border-bottom: none;
+}
+
+.update-chips-item span {
+    font-weight: 500;
+    color: #1f2937;
+    /* gray-800 */
+}
+
+.update-chips-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    /* gray-200 */
+    padding-top: 1rem;
+}
+
+/* --- END NEW: Update Chips Modal Styles --- */
+
 
 /* --- END NEW Game Room UI --- */

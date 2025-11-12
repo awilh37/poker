@@ -14,7 +14,7 @@
       All styles have been moved to style.css and are
       linked here.
     -->
-    <link rel="stylesheet" href="style.css?v=3.2.5">
+    <link rel="stylesheet" href="style.css?v=3.2.6">
 </head>
 
 <body>
@@ -313,6 +313,26 @@
         </div>
         <!-- =================== USER INFO MODAL END =================== -->
 
+        <!-- 
+          ============================================================
+          =            UPDATE CHIPS MODAL START (Hidden)             =
+          ============================================================
+        -->
+        <div id="updateChipsModal" class="modal-overlay hidden">
+            <div class="modal-content" id="updateChipsModalContent" style="max-width: 600px;">
+                <h4>Update Player Chips (After Hand)</h4>
+                <div id="updateChipsPlayerList" class="update-chips-list">
+                    <!-- JS will populate this -->
+                    <p>Loading players...</p>
+                </div>
+                <div class="update-chips-actions">
+                    <button id="cancelChipUpdate" class="btn btn-gray btn-sm">Cancel</button>
+                    <button id="submitChipUpdate" class="btn btn-green btn-sm">Submit & Reset</button>
+                </div>
+            </div>
+        </div>
+        <!-- =================== UPDATE CHIPS MODAL END =================== -->
+
     </div> <!-- End of #mainContainer -->
     <!-- =================== MAIN CONTAINER END =================== -->
 
@@ -325,7 +345,7 @@
       is linked here. It's a "module" to support
       Firebase imports.
     -->
-    <script type="module" src="script.js?v=3.2.5"></script>
+    <script type="module" src="script.js?v=3.2.6"></script>
 </body>
 
 </html>

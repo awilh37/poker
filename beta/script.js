@@ -95,6 +95,8 @@ const userDirectoryPanel = document.getElementById('userDirectoryPanel');
 const createGroupPanel = document.getElementById('createGroupPanel');
 // NEW: Lobby Panel
 const playerJoinRoomPanel = document.getElementById('playerJoinRoomPanel');
+// NEW: Update Chips Modal
+const updateChipsModal = document.getElementById('updateChipsModal');
 
 // Buttons
 const googleLoginButton = document.getElementById('googleLoginButton');
@@ -598,7 +600,94 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     closeGroupChatButton.addEventListener('click', () => groupChatModal.classList.add('hidden'));
 
+    // --- NEW: Attach all delegated game room listeners ---
+    attachGameRoomListeners();
+
 }); // End DOMContentLoaded
+
+
+/**
+ * Attaches all event listeners for the game room panel.
+ * Uses event delegation to avoid listeners being lost on re-render.
+ */
+function attachGameRoomListeners() {
+    gameRoomViewPanel.addEventListener('click', (e) => {
+        // Get the current room ID from the global variable
+        const roomId = currentJoinedRoomId;
+        if (!roomId) return; // Don't do anything if not in a room
+
+        const target = e.target;
+        const targetId = target.id;
+        const targetClassList = target.classList;
+
+        // --- Player Actions ---
+        if (targetId === 'placeBetButton') {
+            const amountInput = gameRoomContent.querySelector('#betAmountInput');
+            const amount = amountInput ? parseInt(amountInput.value, 10) : 0;
+            handlePlaceBet(roomId, amount);
+        } else if (targetId === 'callButton') {
+            handleCallBet(roomId);
+        } else if (targetId === 'foldButton') {
+            handleFold(roomId);
+        } else if (targetId === 'allInButton') {
+            handleAllIn(roomId);
+        }
+
+        // --- Admin Panel Actions ---
+        else if (targetId === 'adminRoomResetButton') {
+            adminRoomReset(roomId);
+        } else if (targetId === 'adminUpdateChipsButton') {
+            toggleUpdateChipsPanel(roomId, true);
+        } else if (targetId === 'adminPostBlindsButton') {
+            adminPostBlinds(roomId);
+        }
+
+        // --- Update Chips Modal Actions ---
+        else if (targetId === 'cancelChipUpdate') {
+            toggleUpdateChipsPanel(roomId, false);
+        } else if (targetId === 'submitChipUpdate') {
+            handleSubmitChipUpdate(roomId);
+        }
+
+        // --- Player Card Admin Menu ---
+        else if (targetClassList.contains('player-admin-menu-btn')) {
+            const uid = target.dataset.uid;
+            const menu = gameRoomContent.querySelector(`#admin-menu-${uid}`);
+            if (menu) {
+                // Hide all other menus
+                gameRoomContent.querySelectorAll('.player-admin-menu').forEach(m => {
+                    if (m !== menu) m.classList.add('hidden');
+                });
+                // Toggle this one
+                menu.classList.toggle('hidden');
+            }
+        } else if (targetClassList.contains('remove-player-btn')) {
+            const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
+            adminRemovePlayer(roomId, target.dataset.uid, formatDisplayName(player));
+        } else if (targetClassList.contains('force-fold-btn')) {
+            const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
+            adminForceFoldPlayer(roomId, target.dataset.uid, formatDisplayName(player));
+        } else if (targetClassList.contains('place-bet-for-player-btn')) {
+            const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
+            adminPlaceBetForPlayer(roomId, target.dataset.uid, formatDisplayName(player), player?.chip_count || 0);
+        }
+
+        // --- Click-away to close player menus ---
+        else if (!target.closest('.player-admin-menu') && !target.classList.contains('player-admin-menu-btn')) {
+            gameRoomContent.querySelectorAll('.player-admin-menu').forEach(menu => menu.classList.add('hidden'));
+        }
+    });
+
+    // Also handle closing the modal if the overlay is clicked
+    if (updateChipsModal) {
+        updateChipsModal.addEventListener('click', (e) => {
+            if (e.target === updateChipsModal) {
+                toggleUpdateChipsPanel(null, false);
+            }
+        });
+    }
+}
+
 
 // --- Core Functions ---
 
@@ -1259,8 +1348,8 @@ async function leaveGameRoom() {
 
         currentJoinedRoomId = null;
         // --- UPDATED: Go back to lobby ---
-    showPanel(playerJoinRoomPanel);
-    renderAvailableRoomsList(); // Refresh lobby list
+        showPanel(playerJoinRoomPanel);
+        renderAvailableRoomsList(); // Refresh lobby list
 
     } catch (error) {
         console.error("Error leaving room:", error);
@@ -1425,17 +1514,7 @@ function renderGameRoomView(roomId) {
                     <button id="adminPostBlindsButton" class="btn btn-purple btn-sm" style="margin-top: 0.5rem;">Post Blinds</button>
                 </div>
             </div>
-            <!-- Hidden Update Chips Panel -->
-            <div id="updateChipsPanel" class="update-chips-panel hidden">
-                <h4>Update Player Chips (After Hand)</h4>
-                <div id="updateChipsPlayerList" class="update-chips-list">
-                    <!-- JS will populate this -->
-                </div>
-                <div class="update-chips-actions">
-                    <button id="cancelChipUpdate" class="btn btn-gray btn-sm">Cancel</button>
-                    <button id="submitChipUpdate" class="btn btn-green btn-sm">Submit & Reset</button>
-                </div>
-            </div>
+            <!-- REMOVED: Hidden Update Chips Panel HTML -->
         `;
     }
 
@@ -1568,54 +1647,7 @@ function renderGameRoomView(roomId) {
     `;
 
     // --- 5. Add event listeners for the new buttons ---
-    // NEW: Add listeners for v3.1 actions
-    if (canPlayerAct) {
-        gameRoomContent.querySelector('#placeBetButton').addEventListener('click', () => {
-            const amount = parseInt(gameRoomContent.querySelector('#betAmountInput').value, 10);
-            handlePlaceBet(roomId, amount);
-        });
-        gameRoomContent.querySelector('#callButton').addEventListener('click', () => handleCallBet(roomId));
-        gameRoomContent.querySelector('#foldButton').addEventListener('click', () => handleFold(roomId));
-        gameRoomContent.querySelector('#allInButton').addEventListener('click', () => handleAllIn(roomId));
-    }
-
-    // NEW: Add listeners for Admin controls
-    if (currentUserIsAdmin) {
-        gameRoomContent.querySelector('#adminRoomResetButton').addEventListener('click', () => adminRoomReset(roomId));
-        gameRoomContent.querySelector('#adminUpdateChipsButton').addEventListener('click', () => toggleUpdateChipsPanel(roomId, true));
-        gameRoomContent.querySelector('#cancelChipUpdate').addEventListener('click', () => toggleUpdateChipsPanel(roomId, false));
-        gameRoomContent.querySelector('#submitChipUpdate').addEventListener('click', () => handleSubmitChipUpdate(roomId));
-        // NEW: Add listener for Post Blinds
-        gameRoomContent.querySelector('#adminPostBlindsButton').addEventListener('click', () => adminPostBlinds(roomId));
-
-        // Listeners for player card admin menus (using event delegation)
-        gameRoomContent.addEventListener('click', (e) => {
-            const target = e.target;
-            // Toggle menu visibility
-            if (target.classList.contains('player-admin-menu-btn')) {
-                const uid = target.dataset.uid;
-                const menu = gameRoomContent.querySelector(`#admin-menu-${uid}`);
-                if (menu) {
-                    menu.classList.toggle('hidden');
-                }
-            }
-            // Handle menu actions
-            else if (target.classList.contains('remove-player-btn')) {
-                const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
-                adminRemovePlayer(roomId, target.dataset.uid, formatDisplayName(player));
-            } else if (target.classList.contains('force-fold-btn')) {
-                const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
-                adminForceFoldPlayer(roomId, target.dataset.uid, formatDisplayName(player));
-            } else if (target.classList.contains('place-bet-for-player-btn')) {
-                const player = allFirebaseUsersData.find(p => p.uid === target.dataset.uid);
-                adminPlaceBetForPlayer(roomId, target.dataset.uid, formatDisplayName(player), player?.chip_count || 0);
-            }
-            // Hide menus if clicking elsewhere
-            else if (!target.closest('.player-admin-menu') && !target.classList.contains('player-admin-menu-btn')) {
-                gameRoomContent.querySelectorAll('.player-admin-menu').forEach(menu => menu.classList.add('hidden'));
-            }
-        });
-    }
+    // ALL LISTENERS REMOVED (Moved to attachGameRoomListeners)
 }
 
 /** (Admin) Posts blinds for SB/BB and rotates the dealer button */
@@ -1715,14 +1747,14 @@ async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
 /** (Admin) Places a bet for a player */
 async function adminPlaceBetForPlayer(roomId, targetPlayerId, targetPlayerName, playerChips) {
     if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
-    
+
     const betAmountStr = prompt(`Enter bet for ${targetPlayerName} (has ${playerChips} chips):`);
     if (!betAmountStr) return; // User cancelled
 
     const betAmount = parseInt(betAmountStr, 10);
     if (isNaN(betAmount) || betAmount < 0) return showMessage("Invalid amount.", "error");
     if (betAmount > playerChips) return showMessage("Amount exceeds player's chips.", "error");
-    
+
     console.log(`Admin betting ${betAmount} for ${targetPlayerName}`);
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
     try {
@@ -1768,20 +1800,21 @@ async function adminRoomReset(roomId) {
 
 /** (Admin) Toggles the Update Chips panel */
 function toggleUpdateChipsPanel(roomId, show) {
-    const panel = gameRoomContent.querySelector('#updateChipsPanel');
-    if (!panel) return;
+    // UPDATED: Target the modal instead of an inline panel
+    if (!updateChipsModal) return;
 
     if (show) {
         populateUpdateChipsPanel(roomId);
-        panel.classList.remove('hidden');
+        updateChipsModal.classList.remove('hidden');
     } else {
-        panel.classList.add('hidden');
+        updateChipsModal.classList.add('hidden');
     }
 }
 
 /** (Admin) Populates the Update Chips panel with players */
 function populateUpdateChipsPanel(roomId) {
-    const listEl = gameRoomContent.querySelector('#updateChipsPlayerList');
+    // UPDATED: Target the list inside the modal
+    const listEl = updateChipsModal.querySelector('#updateChipsPlayerList');
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!listEl || !room) return;
 
@@ -1791,7 +1824,7 @@ function populateUpdateChipsPanel(roomId) {
     room.players.forEach(uid => {
         const player = allFirebaseUsersData.find(p => p.uid === uid);
         const status = roomStatus[uid] || 'pending';
-        
+
         // Only add non-folded players
         if (status !== 'folded') {
             const itemDiv = document.createElement('div');
@@ -1816,13 +1849,14 @@ async function handleSubmitChipUpdate(roomId) {
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room) return showMessage("Room data not found.", "error");
 
-    const listEl = gameRoomContent.querySelector('#updateChipsPlayerList');
+    // UPDATED: Target the list inside the modal
+    const listEl = updateChipsModal.querySelector('#updateChipsPlayerList');
     const selects = listEl.querySelectorAll('select[data-uid]');
-    
+
     const players = [];
     let totalPot = 0;
     const roomBets = room.gameState.bets || {};
-    
+
     room.players.forEach(uid => {
         const playerProfile = allFirebaseUsersData.find(p => p.uid === uid);
         const bet = roomBets[uid] || 0;
@@ -1868,7 +1902,7 @@ async function handleSubmitChipUpdate(roomId) {
         const newChipCount = player.chips - player.bet + player.winnings;
         batch.update(playerProfileRef, { chip_count: newChipCount });
     });
-    
+
     try {
         await batch.commit();
         showMessage("Chips updated and pot distributed!", "success");
@@ -1958,7 +1992,7 @@ async function handleFold(roomId) {
 async function handleAllIn(roomId) {
     const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
     const playerChips = playerProfile?.chip_count || 0;
-    
+
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
     try {
         await updateDoc(roomRef, {
