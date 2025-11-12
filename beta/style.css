@@ -882,10 +882,11 @@ p {
 
 /* Styling for the boxes within the columns */
 .gr-box {
-    background-color: #f9fafb;
-    /* gray-50 */
-    border: 1px solid #e5e7eb;
-    /* gray-200 */
+    /* UPDATED: Use light indigo for theme */
+    background-color: #eef2ff;
+    /* indigo-50 */
+    border: 1px solid #c7d2fe;
+    /* indigo-200 */
     border-radius: 0.75rem;
     padding: 1rem;
 }
@@ -893,10 +894,14 @@ p {
 .gr-box h4 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #1f2937;
+    /* UPDATED: Use indigo for theme */
+    color: #4338ca;
+    /* indigo-700 */
     margin: 0 0 1rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    /* UPDATED: Use indigo for theme */
+    border-bottom: 1px solid #c7d2fe;
+    /* indigo-200 */
     text-align: center;
 }
 
@@ -979,6 +984,79 @@ p {
     color: #581c87;
 }
 
+/* NEW: Admin menu on player card */
+.player-admin-menu-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #eef2ff;
+    /* indigo-50 */
+    border: 1px solid #c7d2fe;
+    /* indigo-200 */
+    border-radius: 99px;
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1.1rem;
+    line-height: 1.5rem;
+    color: #4338ca;
+    /* indigo-700 */
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 5;
+    /* Ensure it's clickable */
+}
+
+.player-admin-menu-btn:hover {
+    background: #e0e7ff;
+    /* indigo-100 */
+    border-color: #a5b4fc;
+    /* indigo-300 */
+}
+
+.player-admin-menu {
+    position: absolute;
+    top: 2.5rem;
+    /* Below the button */
+    right: 0.5rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    min-width: 150px;
+    overflow: hidden;
+}
+
+.player-admin-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+    /* gray-700 */
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.player-admin-menu button:hover {
+    background-color: #f3f4f6;
+    /* gray-100 */
+}
+
+.player-admin-menu button:disabled {
+    background-color: #f9fafb;
+    /* gray-50 */
+    color: #9ca3af;
+    /* gray-400 */
+    cursor: not-allowed;
+}
+
+/* --- END NEW Admin menu --- */
+
 /* Info Column */
 .game-info-column {
     display: flex;
@@ -1056,8 +1134,11 @@ p {
 /* Re-using admin styles from old layout */
 .game-admin-controls {
     /* Now a box in the column */
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
+    /* UPDATED: Use theme colors */
+    background-color: #eef2ff;
+    /* indigo-50 */
+    border: 1px solid #c7d2fe;
+    /* indigo-200 */
     border-radius: 0.75rem;
     padding: 1rem;
 }
@@ -1066,10 +1147,14 @@ p {
     /* New title for the box */
     font-size: 1.25rem;
     font-weight: 600;
-    color: #1f2937;
+    /* UPDATED: Use theme colors */
+    color: #4338ca;
+    /* indigo-700 */
     margin: 0 0 1rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    /* UPDATED: Use theme colors */
+    border-bottom: 1px solid #c7d2fe;
+    /* indigo-200 */
     text-align: center;
 }
 
