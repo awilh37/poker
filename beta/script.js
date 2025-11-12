@@ -54,7 +54,6 @@ const firebaseConfig = {
 // --- UPDATED to be a list ---
 const SUPER_ADMIN_UIDS = [
     "Qr3XI0uNYrZ3AECim6XtRvp12MJ2",
-    "M2Q55lfqYNawAKYinXsTbrXDuMw1"
 ];
 
 // --- Global Variables ---
