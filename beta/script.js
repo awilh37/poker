@@ -1510,8 +1510,8 @@ function renderGameRoomView(roomId) {
 
     // --- 4. Combine all parts into the game room content ---
     gameRoomContent.innerHTML = `
-        ${adminControlsHtml} <!-- NEW -->
         <div class="game-table-container">
+            ${adminControlsHtml} <!-- MOVED INSIDE -->
             ${centerHtml}
             ${playerGridHtml}
             ${actionBarHtml}

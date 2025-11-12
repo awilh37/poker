@@ -710,7 +710,7 @@ p {
     margin-top: 2rem;
     display: grid;
     /* UPDATED: Smaller minmax for smaller cards */
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 1rem;
 }
 
@@ -720,7 +720,7 @@ p {
     border-radius: 0.75rem;
     border: 2px solid rgba(255, 255, 255, 0.1);
     /* UPDATED: Smaller padding */
-    padding: 0.75rem;
+    padding: 0.5rem;
     text-align: center;
     transition: all 0.2s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -734,7 +734,7 @@ p {
 
 .player-seat h5 {
     /* Player name */
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #ffffff;
     margin: 0 0 0.25rem 0;
@@ -742,7 +742,7 @@ p {
 
 .player-seat .chips {
     /* Player chips */
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: #fef08a;
     /* yellow-200 */
@@ -751,7 +751,7 @@ p {
 
 .player-seat .bet {
     /* Player bet */
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #d1d5db;
     /* gray-300 */
     margin-bottom: 0.75rem;
@@ -759,7 +759,7 @@ p {
 
 .player-seat .status {
     /* Player status */
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 600;
     padding: 0.25rem 0.5rem;
     border-radius: 99px;
@@ -847,10 +847,11 @@ p {
 
 /* Game Admin Controls (at top of room) */
 .game-admin-controls {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0.75rem 1rem;
     border-radius: 0.75rem;
-    margin: 1rem 1rem 0 1rem;
+    margin-bottom: 1rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
