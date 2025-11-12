@@ -537,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 createdAt: serverTimestamp(),
                 hostId: currentUserId,
                 players: [], // Array of UIDs
+                dealerPosition: 0, // NEW: Add dealer position
                 gameState: {
                     status: 'waiting',
                     bets: {}, // Map of uid -> bet amount
@@ -1417,9 +1418,11 @@ function renderGameRoomView(roomId) {
         adminControlsHtml = `
             <div class="game-admin-controls">
                 <h4>Admin Controls</h4>
-                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
                     <button id="adminRoomResetButton" class="btn btn-purple btn-sm">Room Reset</button>
                     <button id="adminUpdateChipsButton" class="btn btn-blue btn-sm">Update Chips</button>
+                    <!-- NEW: Post Blinds Button -->
+                    <button id="adminPostBlindsButton" class="btn btn-purple btn-sm" style="margin-top: 0.5rem;">Post Blinds</button>
                 </div>
             </div>
             <!-- Hidden Update Chips Panel -->
@@ -1444,9 +1447,7 @@ function renderGameRoomView(roomId) {
                 Total Pot
                 <div class="pot-display-amount">${totalPot} 💎</div>
             </div>
-            <div class="community-cards">
-                (Community Cards)
-            </div>
+            <!-- REMOVED: Community Cards Div -->
             <div style="margin-top: 1rem; font-size: 0.9rem; color: #4b5563;">
                 <strong>Highest Bet:</strong> ${highestBet} 💎
             </div>
@@ -1455,14 +1456,29 @@ function renderGameRoomView(roomId) {
 
     // --- 2. Build the player list column ---
     let playerColumnHtml = '<div class="gr-box"><h4 style="margin-bottom: 0.75rem;">Players</h4><div class="game-players-column">';
-    roomPlayers.forEach(uid => {
+    // NEW: Get dealer position
+    const dealerPosition = room.dealerPosition || 0;
+
+    roomPlayers.forEach((uid, index) => {
         const player = allFirebaseUsersData.find(u => u.uid === uid);
         if (!player) return; // Skip if profile isn't loaded
 
         const isCurrentUser = (uid === currentUserId);
         const bet = roomBets[uid] || 0;
-        const status = roomStatus[uid] || 'pending'; // 'pending', 'ready', 'folded', 'all-in'
-        const statusClass = status.replace('_', '-'); // e.g., 'all-in'
+        const dbStatus = roomStatus[uid] || 'pending'; // 'pending', 'ready', 'folded', 'all-in'
+
+        // --- NEW: Smart Status Logic ---
+        // If player is 'ready' but their bet is less than the highest, show 'pending'
+        let finalStatus = dbStatus;
+        if (finalStatus !== 'folded' && finalStatus !== 'all-in' && bet < highestBet) {
+            finalStatus = 'pending';
+        }
+        const statusClass = finalStatus.replace('_', '-');
+        // --- END Smart Status ---
+
+        // NEW: Check if this player is the dealer
+        const isDealer = (index === dealerPosition);
+        let dealerBadgeHtml = isDealer ? '<div class="gr-dealer-badge">D</div>' : '';
 
         // NEW: Admin Menu for player card
         let adminMenuHtml = '';
@@ -1483,12 +1499,13 @@ function renderGameRoomView(roomId) {
 
         playerColumnHtml += `
             <div class="gr-player-card ${isCurrentUser ? 'is-current-user' : ''}" data-uid="${uid}">
+                ${dealerBadgeHtml} <!-- NEW: Show dealer badge -->
                 ${adminMenuHtml}
                 <h5>${formatDisplayName(player)}</h5>
                 <div class="chips"><span>${player.chip_count || 0} 💎</span></div>
                 <div class="bet-status">
                     <div class="bet">Bet: ${bet}</div>
-                    <div class="status ${statusClass}">${status}</div>
+                    <div class="status ${statusClass}">${finalStatus}</div> <!-- UPDATED: Use finalStatus -->
                 </div>
             </div>
         `;
@@ -1496,8 +1513,15 @@ function renderGameRoomView(roomId) {
     playerColumnHtml += '</div></div>'; // Close game-players-column and gr-box
 
     // --- 3. Build the action bar column ---
-    const currentUserStatus = roomStatus[currentUserId] || 'pending';
-    const canPlayerAct = currentUserStatus !== 'folded' && currentUserStatus !== 'all-in';
+    const currentUserDbStatus = roomStatus[currentUserId] || 'pending';
+
+    // --- NEW: Use Smart Status for canPlayerAct ---
+    let currentUserFinalStatus = currentUserDbStatus;
+    if (currentUserFinalStatus !== 'folded' && currentUserFinalStatus !== 'all-in' && currentUserBet < highestBet) {
+        currentUserFinalStatus = 'pending';
+    }
+    const canPlayerAct = currentUserFinalStatus !== 'folded' && currentUserFinalStatus !== 'all-in';
+    // --- END NEW ---
 
     let actionColumnHtml = '';
     if (canPlayerAct) {
@@ -1522,7 +1546,7 @@ function renderGameRoomView(roomId) {
         actionColumnHtml = `
             <div class="gr-box gr-action-box">
                 <h4>Your Action</h4>
-                <p class="text-center font-semibold text-lg">You are ${currentUserStatus}</p>
+                <p class="text-center font-semibold text-lg">You are ${currentUserFinalStatus}</p> <!-- UPDATED: Use finalStatus -->
             </div>
         `;
     }
@@ -1561,6 +1585,8 @@ function renderGameRoomView(roomId) {
         gameRoomContent.querySelector('#adminUpdateChipsButton').addEventListener('click', () => toggleUpdateChipsPanel(roomId, true));
         gameRoomContent.querySelector('#cancelChipUpdate').addEventListener('click', () => toggleUpdateChipsPanel(roomId, false));
         gameRoomContent.querySelector('#submitChipUpdate').addEventListener('click', () => handleSubmitChipUpdate(roomId));
+        // NEW: Add listener for Post Blinds
+        gameRoomContent.querySelector('#adminPostBlindsButton').addEventListener('click', () => adminPostBlinds(roomId));
 
         // Listeners for player card admin menus (using event delegation)
         gameRoomContent.addEventListener('click', (e) => {
@@ -1592,13 +1618,49 @@ function renderGameRoomView(roomId) {
     }
 }
 
+/** (Admin) Posts blinds for SB/BB and rotates the dealer button */
+async function adminPostBlinds(roomId) {
+    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
 
-/** (REMOVED) Sends a game action to be processed */
-// async function sendGameAction(roomId, action, payload = {}) {
-// ... (whole function removed) ...
-// }
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room || !room.players || room.players.length < 2) {
+        return showMessage("Not enough players to post blinds.", "info");
+    }
 
-// --- NEW: v3.1 Game Logic Functions ---
+    console.log("Admin posting blinds...");
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    const players = room.players;
+    const pCount = players.length;
+    const currentDealerPos = room.dealerPosition || 0;
+
+    // Determine SB and BB
+    const sbIndex = (currentDealerPos + 1) % pCount;
+    const bbIndex = (currentDealerPos + 2) % pCount;
+    const sbPlayerId = players[sbIndex];
+    const bbPlayerId = players[bbIndex];
+
+    // Define blind amounts
+    const sbAmount = 1;
+    const bbAmount = 2;
+
+    // Rotate dealer for the *next* hand
+    const newDealerPosition = (currentDealerPos + 1) % pCount;
+
+    try {
+        await updateDoc(roomRef, {
+            "dealerPosition": newDealerPosition,
+            [`gameState.bets.${sbPlayerId}`]: sbAmount,
+            [`gameState.bets.${bbPlayerId}`]: bbAmount,
+            [`gameState.status.${sbPlayerId}`]: 'ready',
+            [`gameState.status.${bbPlayerId}`]: 'ready'
+        });
+        showMessage("Blinds posted and dealer button rotated.", "success");
+    } catch (error) {
+        console.error("Error posting blinds:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
 
 /** (Admin) Removes a player from the game room */
 async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {

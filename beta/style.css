@@ -984,6 +984,26 @@ p {
     color: #581c87;
 }
 
+/* NEW: Dealer Badge on player card */
+.gr-player-card .gr-dealer-badge {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    background-color: #f59e0b;
+    /* amber-500 */
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* NEW: Admin menu on player card */
 .player-admin-menu-btn {
     position: absolute;
@@ -1084,6 +1104,8 @@ p {
     margin: 0.25rem 0;
 }
 
+/* REMOVED: .community-cards style is no longer needed */
+/*
 .gr-info-box .community-cards {
     min-height: 80px;
     background-color: #ffffff;
@@ -1096,6 +1118,7 @@ p {
     font-style: italic;
     margin-top: 1rem;
 }
+*/
 
 /* Actions Column */
 .game-actions-column {
