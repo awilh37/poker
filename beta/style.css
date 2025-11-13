@@ -312,7 +312,7 @@ h5 {
 
 p {
     line-height: 1.6;
-    margin-bottom: 1rem;
+    /* Removed margin-bottom: 1rem; to avoid conflicts */
 }
 
 /* --- Panels --- */
@@ -381,6 +381,12 @@ p {
     width: 1.25rem;
     height: 1.25rem;
     margin-right: 0.5rem;
+}
+
+/* Button small (for modals, etc) */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
 }
 
 /* Button full width */
@@ -647,207 +653,6 @@ p {
     #mainContainer {
         padding-right: 300px;
         /* 280px sidebar + 20px gutter */
-    }
-}
-
-/* --- NEW: Game Room UI --- */
-/*
-    These styles are for the new game room layout,
-    replacing the simple list with a more visual "table".
-*/
-.game-table-container {
-    width: 100%;
-    background-color: #052e16;
-    /* Dark Green (green-950) */
-    border: 10px solid #5d4037;
-    /* Wood border (brown-700) */
-    border-radius: 9999px;
-    /* Full-on oval */
-    padding: 3rem 2rem;
-    margin-top: 1rem;
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.4);
-    position: relative;
-}
-
-.game-table-center {
-    /* The "pot" and "community cards" area */
-    width: 60%;
-    margin: 0 auto;
-    background-color: rgba(0, 0, 0, 0.2);
-    border: 2px dashed rgba(255, 255, 255, 0.2);
-    border-radius: 1rem;
-    padding: 1rem;
-    text-align: center;
-    min-height: 150px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.pot-display {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #fef08a;
-    /* yellow-200 */
-    margin-bottom: 0.5rem;
-}
-
-.pot-display-amount {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #ffffff;
-}
-
-.community-cards {
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 1rem;
-}
-
-.player-grid {
-    /* Holds all the player "seats" */
-    margin-top: 2rem;
-    display: grid;
-    /* UPDATED: Smaller minmax for smaller cards */
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-}
-
-.player-seat {
-    position: relative;
-    /* For admin menu positioning */
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 0.75rem;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    /* UPDATED: Smaller padding */
-    padding: 0.5rem;
-    text-align: center;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.player-seat.is-current-user {
-    border-color: #3b82f6;
-    /* blue-500 */
-    box-shadow: 0 0 15px #3b82f6;
-}
-
-.player-seat h5 {
-    /* Player name */
-    font-size: 1rem;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0 0 0.25rem 0;
-}
-
-.player-seat .chips {
-    /* Player chips */
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #fef08a;
-    /* yellow-200 */
-    margin-bottom: 0.5rem;
-}
-
-.player-seat .bet {
-    /* Player bet */
-    font-size: 0.75rem;
-    color: #d1d5db;
-    /* gray-300 */
-    margin-bottom: 0.75rem;
-}
-
-.player-seat .status {
-    /* Player status */
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    border-radius: 99px;
-    display: inline-block;
-}
-
-/* Status colors */
-.player-seat .status.ready {
-    background-color: #166534;
-    color: #bbf7d0;
-}
-
-/* green */
-.player-seat .status.folded {
-    background-color: #7f1d1d;
-    color: #fecaca;
-}
-
-/* red */
-.player-seat .status.pending {
-    background-color: #854d0e;
-    color: #fef08a;
-}
-
-/* amber */
-.player-seat .status.all-in {
-    background-color: #581c87;
-    color: #e9d5ff;
-}
-
-/* purple */
-
-.game-action-bar {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 0.75rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-/* --- NEW: Styles for v3.1 Port --- */
-
-/* Lobby Room List Item */
-.room-list-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.75rem;
-    transition: all 0.2s ease;
-}
-
-.room-list-item:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-    border-color: #d1d5db;
-}
-
-.room-list-info {
-    flex-grow: 1;
-}
-
-.room-list-name {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.room-list-players {
-    font-size: 0.9rem;
-    color: #4b5563;
-}
-
-.room-list-actions {
-    flex-shrink: 0;
-}
-
-@media (min-width: 640px) {
-    .room-list-item {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
     }
 }
 
@@ -1118,20 +923,7 @@ p {
 }
 
 /* REMOVED: .community-cards style is no longer needed */
-/*
-.gr-info-box .community-cards {
-    min-height: 80px;
-    background-color: #ffffff;
-    border: 2px dashed #d1d5db;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #6b7280;
-    font-style: italic;
-    margin-top: 1rem;
-}
-*/
+
 
 /* Actions Column */
 .game-actions-column {
@@ -1247,5 +1039,59 @@ p {
 
 /* --- END NEW: Update Chips Modal Styles --- */
 
+
+/* --- NEW: Set Order Modal Styles --- */
+.set-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: left;
+    min-height: 100px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    cursor: grab;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.order-item:active {
+    cursor: grabbing;
+}
+
+.order-item .drag-handle {
+    margin-right: 0.75rem;
+    color: #9ca3af;
+    /* gray-400 */
+    cursor: grab;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.order-item:active .drag-handle {
+    cursor: grabbing;
+}
+
+.order-item.dragging {
+    opacity: 0.5;
+    background-color: #eef2ff;
+    /* indigo-50 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* --- END NEW Set Order Modal Styles --- */
 
 /* --- END NEW Game Room UI --- */

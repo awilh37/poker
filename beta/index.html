@@ -14,7 +14,7 @@
       All styles have been moved to style.css and are
       linked here.
     -->
-    <link rel="stylesheet" href="style.css?v=3.2.6">
+    <link rel="stylesheet" href="style.css?v=3.2.7">
 </head>
 
 <body>
@@ -333,6 +333,28 @@
         </div>
         <!-- =================== UPDATE CHIPS MODAL END =================== -->
 
+        <!-- 
+          ============================================================
+          =             SET ORDER MODAL START (Hidden)               =
+          ============================================================
+        -->
+        <div id="setOrderModal" class="modal-overlay hidden">
+            <div class="modal-content" id="setOrderModalContent" style="max-width: 400px;">
+                <h4>Set Player Order</h4>
+                <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 1rem;">Drag and drop players to set the turn order. The first player will be the dealer.</p>
+                <div id="setOrderPlayerList" class="set-order-list">
+                    <!-- JS will populate this -->
+                    <p>Loading players...</p>
+                </div>
+                <div class="update-chips-actions">
+                    <!-- Re-using update-chips-actions for styling -->
+                    <button id="cancelSetOrder" class="btn btn-gray btn-sm">Cancel</button>
+                    <button id="saveSetOrder" class="btn btn-green btn-sm">Save Order</button>
+                </div>
+            </div>
+        </div>
+        <!-- =================== SET ORDER MODAL END =================== -->
+
     </div> <!-- End of #mainContainer -->
     <!-- =================== MAIN CONTAINER END =================== -->
 
@@ -345,7 +367,7 @@
       is linked here. It's a "module" to support
       Firebase imports.
     -->
-    <script type="module" src="script.js?v=3.2.6"></script>
+    <script type="module" src="script.js?v=3.2.7"></script>
 </body>
 
 </html>

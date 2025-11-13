@@ -649,6 +649,13 @@ function attachGameRoomListeners() {
             handleSubmitChipUpdate(roomId);
         }
 
+        // --- NEW: Set Order Modal Actions ---
+        else if (targetId === 'cancelSetOrder') {
+            setOrderModal.classList.add('hidden');
+        } else if (targetId === 'saveSetOrder') {
+            handleSavePlayerOrder(roomId);
+        }
+
         // --- Player Card Admin Menu ---
         else if (targetClassList.contains('player-admin-menu-btn')) {
             const uid = target.dataset.uid;
@@ -686,8 +693,15 @@ function attachGameRoomListeners() {
             }
         });
     }
+    // NEW: Also handle closing the set order modal
+    if (setOrderModal) {
+        setOrderModal.addEventListener('click', (e) => {
+            if (e.target === setOrderModal) {
+                setOrderModal.classList.add('hidden');
+            }
+        });
+    }
 }
-
 
 // --- Core Functions ---
 
