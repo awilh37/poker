@@ -641,6 +641,10 @@ function attachGameRoomListeners() {
         } else if (targetId === 'adminPostBlindsButton') {
             adminPostBlinds(roomId);
         }
+        // NEW: Set Order Button
+        else if (targetId === 'adminSetOrderButton') {
+            openSetOrderModal(roomId);
+        }
 
         // --- Update Chips Modal Actions ---
         else if (targetId === 'cancelChipUpdate') {
@@ -1524,6 +1528,8 @@ function renderGameRoomView(roomId) {
                 <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
                     <button id="adminRoomResetButton" class="btn btn-purple btn-sm">Room Reset</button>
                     <button id="adminUpdateChipsButton" class="btn btn-blue btn-sm">Update Chips</button>
+                    <!-- NEW: Set Order Button -->
+                    <button id="adminSetOrderButton" class="btn btn-blue btn-sm" style="margin-top: 0.5rem;">Set Player Order</button>
                     <!-- NEW: Post Blinds Button -->
                     <button id="adminPostBlindsButton" class="btn btn-purple btn-sm" style="margin-top: 0.5rem;">Post Blinds</button>
                 </div>
