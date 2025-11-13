@@ -603,6 +603,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     closeGroupChatButton.addEventListener('click', () => groupChatModal.classList.add('hidden'));
 
+    // --- *** FIX ***: Set Order Modal Button Listeners ---
+    // These were incorrectly placed inside the gameRoomViewPanel delegation.
+    // We attach them directly to the modal's buttons.
+    const setOrderSaveButton = document.getElementById('saveSetOrder');
+    const setOrderCancelButton = document.getElementById('cancelSetOrder');
+
+    if (setOrderSaveButton) {
+        setOrderSaveButton.addEventListener('click', () => {
+            // We get the roomId from the global variable
+            if (currentJoinedRoomId) {
+                handleSavePlayerOrder(currentJoinedRoomId);
+            } else {
+                console.warn("Save Order clicked, but no room ID is set.");
+            }
+        });
+    }
+
+    if (setOrderCancelButton) {
+        setOrderCancelButton.addEventListener('click', () => {
+            if (setOrderModal) {
+                setOrderModal.classList.add('hidden');
+            }
+        });
+    }
+    // --- *** END FIX *** ---
+
     // --- NEW: Attach all delegated game room listeners ---
     attachGameRoomListeners();
 
@@ -656,12 +682,10 @@ function attachGameRoomListeners() {
             handleSubmitChipUpdate(roomId);
         }
 
-        // --- NEW: Set Order Modal Actions ---
-        else if (targetId === 'cancelSetOrder') {
-            setOrderModal.classList.add('hidden');
-        } else if (targetId === 'saveSetOrder') {
-            handleSavePlayerOrder(roomId);
-        }
+        // --- *** FIX ***: Removed Set Order Modal Actions ---
+        // The listeners for 'cancelSetOrder' and 'saveSetOrder' have been
+        // moved to DOMContentLoaded for direct attachment, as they are
+        // outside this delegated listener's scope (gameRoomViewPanel).
 
         // --- Player Card Admin Menu ---
         else if (targetClassList.contains('player-admin-menu-btn')) {
