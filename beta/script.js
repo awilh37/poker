@@ -1781,6 +1781,56 @@ function openSetOrderModal(roomId) {
     listEl.addEventListener('dragend', handleDragEnd);
     listEl.addEventListener('dragover', handleDragOver);
 
+    // --- NEW: Touch Event Listeners for Mobile ---
+    let touchY = 0;
+
+    function handleTouchStart(e) {
+        // Find the .order-item element from the touch target
+        const targetItem = e.target.closest('.order-item');
+        if (!targetItem) {
+            draggedItem = null;
+            return;
+        }
+        draggedItem = targetItem;
+        touchY = e.touches[0].clientY;
+        setTimeout(() => {
+            if (draggedItem) draggedItem.classList.add('dragging');
+        }, 0);
+    }
+
+    function handleTouchMove(e) {
+        if (!draggedItem) return;
+        e.preventDefault(); // Prevent page scrolling
+        touchY = e.touches[0].clientY;
+        const afterElement = getDragAfterElement(listEl, touchY);
+        const dragging = listEl.querySelector('.dragging');
+        if (dragging) {
+            if (afterElement == null) {
+                listEl.appendChild(dragging);
+            } else {
+                listEl.insertBefore(dragging, afterElement);
+            }
+        }
+    }
+
+    function handleTouchEnd() {
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+        }
+        draggedItem = null;
+    }
+
+    // Clean up old touch listeners
+    listEl.removeEventListener('touchstart', handleTouchStart);
+    listEl.removeEventListener('touchmove', handleTouchMove);
+    listEl.removeEventListener('touchend', handleTouchEnd);
+
+    // Add new touch listeners
+    listEl.addEventListener('touchstart', handleTouchStart, { passive: false });
+    listEl.addEventListener('touchmove', handleTouchMove, { passive: false });
+    listEl.addEventListener('touchend', handleTouchEnd, { passive: false });
+    // --- END NEW: Touch Events ---
+
 
     function getDragAfterElement(container, y) {
         const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
@@ -1820,9 +1870,7 @@ async function handleSavePlayerOrder(roomId) {
     }
 }
 
-
-/* --- THIS SECTION IS THE BUG --- */
-/* Removing the broken, duplicate function declaration */
+// --- REMOVED BUG HERE ---
 
 /** (Admin) Removes a player from the game room */
 async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
