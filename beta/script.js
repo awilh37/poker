@@ -1880,21 +1880,31 @@ async function handleSavePlayerOrder(roomId) {
 
     if (newOrder.length === 0) return;
 
+    // --- NEW: Create reset state based on the new order ---
+    const newBets = {};
+    const newStatus = {};
+    newOrder.forEach(uid => {
+        newBets[uid] = 0;
+        newStatus[uid] = 'pending';
+    });
+
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
     try {
+        // --- UPDATED: Also reset the room and update the main 'players' array ---
         await updateDoc(roomRef, {
             playerOrder: newOrder,
-            dealerPosition: 0 // Reset dealer to the first player in the new order
+            players: newOrder, // <-- Syncs the players array to the new order
+            dealerPosition: 0, // <-- Sets dealer to the top player
+            "gameState.bets": newBets, // <-- Resets bets
+            "gameState.status": newStatus // <-- Resets statuses
         });
-        showMessage("Player order saved.", "success");
+        showMessage("Player order saved and room has been reset.", "success");
         setOrderModal.classList.add('hidden');
     } catch (error) {
         console.error("Error saving player order:", error);
         showMessage(`Error: ${error.message}`, "error");
     }
 }
-
-// --- REMOVED BUG HERE ---
 
 /** (Admin) Removes a player from the game room */
 async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
