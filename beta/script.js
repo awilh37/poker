@@ -1821,8 +1821,8 @@ async function handleSavePlayerOrder(roomId) {
 }
 
 
-/** (Admin) Posts blinds for SB/BB and rotates the dealer button */
-async function adminPostBlinds(roomId) {
+/* --- THIS SECTION IS THE BUG --- */
+/* Removing the broken, duplicate function declaration */
 
 /** (Admin) Removes a player from the game room */
 async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
