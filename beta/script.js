@@ -97,6 +97,9 @@ const createGroupPanel = document.getElementById('createGroupPanel');
 const playerJoinRoomPanel = document.getElementById('playerJoinRoomPanel');
 // NEW: Update Chips Modal
 const updateChipsModal = document.getElementById('updateChipsModal');
+// NEW: Set Order Modal
+const setOrderModal = document.getElementById('setOrderModal');
+const setOrderModalContent = document.getElementById('setOrderModalContent');
 
 // Buttons
 const googleLoginButton = document.getElementById('googleLoginButton');
@@ -1713,6 +1716,113 @@ async function adminPostBlinds(roomId) {
     }
 }
 
+/** (Admin) Opens the modal to set player order */
+function openSetOrderModal(roomId) {
+    if (!hasAdminAccess(currentUserId)) return;
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) return;
+
+    const listEl = setOrderModal.querySelector('#setOrderPlayerList');
+    listEl.innerHTML = ''; // Clear old list
+
+    // Use playerOrder if it exists, otherwise use the current players array
+    const playerOrder = room.playerOrder && room.playerOrder.length === room.players.length ?
+        room.playerOrder :
+        [...room.players];
+
+    playerOrder.forEach((uid, index) => {
+        const player = allFirebaseUsersData.find(u => u.uid === uid);
+        const item = document.createElement('div');
+        item.className = 'order-item';
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-uid', uid);
+        item.innerHTML = `
+            <span class="drag-handle">☰</span>
+            <span>${formatDisplayName(player)}</span>
+        `;
+        listEl.appendChild(item);
+    });
+
+    // Add drag/drop listeners
+    let draggedItem = null;
+
+    // Use named functions for adding/removing listeners
+    function handleDragStart(e) {
+        draggedItem = e.target;
+        setTimeout(() => e.target.classList.add('dragging'), 0);
+    }
+
+    function handleDragEnd() {
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+        }
+        draggedItem = null;
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(listEl, e.clientY);
+        const dragging = listEl.querySelector('.dragging');
+        if (dragging) {
+            if (afterElement == null) {
+                listEl.appendChild(dragging);
+            } else {
+                listEl.insertBefore(dragging, afterElement);
+            }
+        }
+    }
+
+    // Clean up old listeners before adding new ones
+    listEl.removeEventListener('dragstart', handleDragStart);
+    listEl.removeEventListener('dragend', handleDragEnd);
+    listEl.removeEventListener('dragover', handleDragOver);
+
+    listEl.addEventListener('dragstart', handleDragStart);
+    listEl.addEventListener('dragend', handleDragEnd);
+    listEl.addEventListener('dragover', handleDragOver);
+
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.order-item:not(.dragging)')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    setOrderModal.classList.remove('hidden');
+}
+
+/** (Admin) Saves the new player order from the modal */
+async function handleSavePlayerOrder(roomId) {
+    if (!hasAdminAccess(currentUserId)) return;
+    const listEl = setOrderModal.querySelector('#setOrderPlayerList');
+    const newOrder = [...listEl.querySelectorAll('.order-item')].map(item => item.dataset.uid);
+
+    if (newOrder.length === 0) return;
+
+    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    try {
+        await updateDoc(roomRef, {
+            playerOrder: newOrder,
+            dealerPosition: 0 // Reset dealer to the first player in the new order
+        });
+        showMessage("Player order saved.", "success");
+        setOrderModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error saving player order:", error);
+        showMessage(`Error: ${error.message}`, "error");
+    }
+}
+
+
+/** (Admin) Posts blinds for SB/BB and rotates the dealer button */
+async function adminPostBlinds(roomId) {
 
 /** (Admin) Removes a player from the game room */
 async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
