@@ -65,6 +65,8 @@ let firebaseAuthReady = false;
 let dataLoadedAndListenersSetup = false;
 let isLoggingOut = false;
 let isNewLogin = false; // <-- FIX FOR LOGOUT LOOP
+let loadTimestamp; // NEW: For chat message listeners
+let groupMessageListeners = new Map(); // NEW: Stores chat listener unsubscribe functions
 
 let allFirebaseUsersData = []; // Stores all user profile docs
 let allFirebaseRolesData = []; // Stores all user role docs
@@ -103,7 +105,7 @@ const setOrderModalContent = document.getElementById('setOrderModalContent');
 
 // Buttons
 const googleLoginButton = document.getElementById('googleLoginButton');
-const messageBox = document.getElementById('messageBox');
+// REMOVED: messageBox
 const loadingIndicator = document.getElementById('loadingIndicator');
 
 // Main action buttons
@@ -194,7 +196,7 @@ try {
     console.log("Firebase initialized successfully (Firestore-only).");
 } catch (e) {
     console.error("Firebase initialization failed:", e);
-    showMessage("Error: Could not connect to the application services. Please refresh.", "error");
+    showNotification("Error: Could not connect to the application services. Please refresh.", "error", { autoClose: 0 });
 }
 
 
@@ -217,7 +219,7 @@ if (auth) {
         if (user && !isLoggedInThisTab && !isLoggingOut && !isNewLogin) {
             console.warn("onAuthStateChanged: Stale session detected (user exists but tab flag is not set). Forcing logout to clean up.");
             await handleLogout(); // This will clear the user and show login
-            showMessage("Your previous session was cleared. Please log in again.", "info");
+            showNotification("Your previous session was cleared. Please log in again.", "info");
             return; // Stop further processing
         }
         // --- END NEW ---
@@ -225,6 +227,10 @@ if (auth) {
         if (user) {
             currentUserId = user.uid;
             firebaseAuthReady = true;
+
+            // NEW: Set timestamp for message listeners
+            // This ensures we only get *new* messages after login
+            loadTimestamp = Timestamp.now();
 
             if (!isLoggingOut && !dataLoadedAndListenersSetup) {
                 console.log("onAuthStateChanged: User present, triggering handleLoginSuccess.");
@@ -255,7 +261,7 @@ if (auth) {
                 console.log("Firebase: User logged out.");
                 isLoggingOut = false; // Reset flag
                 showPanel(loginButtonsContainer);
-                showMessage("You have been successfully logged out.", "success");
+                showNotification("You have been successfully logged out.", "success");
                 // NEW: Hide admin link on logout
                 dropdownAdminLink.classList.add('hidden');
             } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -452,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // onAuthStateChanged will handle the rest
         } catch (error) {
             console.error("Google Sign-In Error:", error);
-            showMessage(`Google Sign-In Error: ${error.message}`, "error");
+            showNotification(`Google Sign-In Error: ${error.message}`, "error");
             isNewLogin = false; // <-- Reset on error
         }
     });
@@ -492,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDisplayNameButton.addEventListener('click', async () => {
         const newName = displayNameInput.value.trim();
         if (newName.length < 3) {
-            showMessage("Display name must be at least 3 characters.", "error");
+            showNotification("Display name must be at least 3 characters.", "error");
             return;
         }
         try {
@@ -503,11 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const userProfileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
             await updateDoc(userProfileRef, { display_name: newName });
 
-            showMessage("Display name updated successfully!", "success");
+            showNotification("Display name updated successfully!", "success");
             showPanel(mainActionButtons);
         } catch (error) {
             console.error("Error updating display name:", error);
-            showMessage(`Error: ${error.message}`, "error");
+            showNotification(`Error: ${error.message}`, "error");
         }
     });
 
@@ -531,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createGameRoomButton.addEventListener('click', async () => {
         const name = newRoomName.value.trim();
         if (!name) {
-            showMessage("Please enter a room name.", "error");
+            showNotification("Please enter a room name.", "error");
             return;
         }
         try {
@@ -549,12 +555,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     status: {} // Map of uid -> 'ready', 'folded', etc.
                 }
             });
-            showMessage(`Room '${name}' created!`, "success");
+            showNotification(`Room '${name}' created!`, "success");
             newRoomName.value = '';
             // The onSnapshot listener will auto-update the list
         } catch (error) {
             console.error("Error creating game room:", error);
-            showMessage(`Error: ${error.message}`, "error");
+            showNotification(`Error: ${error.message}`, "error");
         }
     });
 
@@ -562,14 +568,14 @@ document.addEventListener('DOMContentLoaded', () => {
     finalizeGroupButton.addEventListener('click', async () => {
         const groupName = groupNameInput.value.trim();
         if (!groupName) {
-            showMessage("Please enter a group name.", "error");
+            showNotification("Please enter a group name.", "error");
             return;
         }
         const selectedUsers = Array.from(groupUserChecklist.querySelectorAll('input:checked'))
             .map(input => input.value);
 
         if (selectedUsers.length < 1) { // Need at least one other member
-            showMessage("Please select at least one member for the group.", "error");
+            showNotification("Please select at least one member for the group.", "error");
             return;
         }
 
@@ -587,12 +593,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 createdAt: serverTimestamp(),
                 createdBy: currentUserId
             });
-            showMessage(`Group '${groupName}' created!`, "success");
+            showNotification(`Group '${groupName}' created!`, "success");
             groupNameInput.value = '';
             showPanel(adminPanel);
         } catch (error) {
             console.error("Error creating group:", error);
-            showMessage(`Error: ${error.message}`, "error");
+            showNotification(`Error: ${error.message}`, "error");
         }
     });
 
@@ -748,6 +754,9 @@ async function handleLoginSuccess(user) {
     sessionStorage.setItem('isLoggedInThisTab', 'true');
     isNewLogin = false; // <-- FIX FOR LOGOUT LOOP
 
+    // NEW: Set timestamp for message listeners
+    loadTimestamp = Timestamp.now();
+
     try {
         // Setup profile first, as presence might need role data
         await setupUserProfile(user);
@@ -789,11 +798,11 @@ async function handleLoginSuccess(user) {
         }
 
         showPanel(mainActionButtons);
-        showMessage(`Welcome, ${formatDisplayName(currentUserData)}!`, "success");
+        showNotification(`Welcome, ${formatDisplayName(currentUserData)}!`, "success");
 
     } catch (error) {
         console.error("Error during login success handling:", error);
-        showMessage(`Error on login: ${error.message}`, "error");
+        showNotification(`Error on login: ${error.message}`, "error");
         showPanel(loginButtonsContainer); // Go back to login
     } finally {
         loadingIndicator.classList.add('hidden');
@@ -827,7 +836,7 @@ async function handleLogout() {
     } catch (error) {
         console.error("handleLogout: Error during signOut:", error);
         isLoggingOut = false; // Reset flag on error
-        showMessage(`Logout Error: ${error.message}`, "error");
+        showNotification(`Logout Error: ${error.message}`, "error");
     }
     // --- NEW: Session flag is cleared in onAuthStateChanged (when user is null) ---
 }
@@ -999,9 +1008,109 @@ function setupDataListeners() {
         }, (error) => { console.error("Firestore: Error listening to investments:", error); reject(error); });
     });
 
+    // --- NEW: Start chat listeners ---
+    listenForChatGroups();
+
     // --- Promise.all UPDATED ---
     return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise, gameRoomsPromise, investmentsPromise]);
 }
+
+// --- NEW: Chat Notification Listeners ---
+
+/**
+ * Attaches listeners to all chat groups the user is a member of.
+ * Listens for new messages and triggers notifications.
+ */
+function listenForChatGroups() {
+    if (!db || !currentUserId || !loadTimestamp) return;
+
+    console.log("Attaching chat group listeners...");
+    const q = query(collection(db, "artifacts", appId, "public/data/chat_groups"), where('members', 'array-contains', currentUserId));
+
+    onSnapshot(q, (groupsSnapshot) => {
+        groupsSnapshot.docChanges().forEach(async (change) => {
+            const groupDoc = change.doc;
+            const groupId = groupDoc.id;
+            const groupData = groupDoc.data();
+            const groupName = groupData.name;
+
+            if (change.type === 'added') {
+                if (groupMessageListeners.has(groupId)) return; // Already listening
+
+                console.log(`Adding message listener for group: ${groupName}`);
+                const messagesRef = collection(db, "artifacts", appId, "public/data/chat_groups", groupId, "messages");
+                // Listen for messages *after* the app loaded
+                const messagesQuery = query(messagesRef, where('timestamp', '>', loadTimestamp));
+
+                const unsubscribe = onSnapshot(messagesQuery, (messagesSnapshot) => {
+                    handleNewMessages(messagesSnapshot, groupId, groupName, groupData);
+                }, (error) => {
+                    console.error(`Error listening to messages for group ${groupId}:`, error);
+                });
+                groupMessageListeners.set(groupId, unsubscribe);
+            }
+
+            if (change.type === 'removed') {
+                console.log(`Removing message listener for group: ${groupName}`);
+                const unsubscribe = groupMessageListeners.get(groupId);
+                if (unsubscribe) {
+                    unsubscribe();
+                    groupMessageListeners.delete(groupId);
+                }
+            }
+        });
+    }, (error) => {
+        console.error("Error listening to chat groups:", error);
+    });
+}
+
+/**
+ * Processes new messages from a snapshot and shows notifications.
+ */
+function handleNewMessages(messagesSnapshot, groupId, groupName, groupData) {
+    messagesSnapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+            const msg = change.doc.data();
+            if (!msg.timestamp) return; // Ignore malformed
+
+            // Don't notify for own messages
+            if (msg.senderId === currentUserId) return;
+
+            // Don't notify if chat modal is already open to this group
+            const modalIsOpen = !groupChatModal.classList.contains('hidden');
+            const currentChatId = groupChatModal.dataset.currentGroupId;
+            if (modalIsOpen && currentChatId === groupId) {
+                return;
+            }
+
+            // Get sender name
+            const sender = allFirebaseUsersData.find(u => u.uid === msg.senderId);
+            const senderName = sender ? formatDisplayName(sender) : 'Someone';
+
+            // For DMs, show the sender's name as the title
+            let finalGroupName = groupName;
+            if (groupData.isDM) {
+                finalGroupName = `DM: ${senderName}`;
+            }
+
+            // Show notification
+            showNotification(
+                `<strong>${senderName}:</strong> ${msg.text.substring(0, 50)}...`,
+                'chat',
+                {
+                    autoClose: 10000, // 10 seconds
+                    onClick: () => {
+                        // Click handler
+                        openGroupChat(groupId, finalGroupName);
+                        // The `openGroupChat` function already shows the modal.
+                        // No need to call showPanel.
+                    }
+                }
+            );
+        }
+    });
+}
+
 
 // --- NEW Standings Sidebar Functions ---
 
@@ -1177,7 +1286,7 @@ function renderUserRolesTable() {
 async function updateUserRoleAndChips(uid, newRole, newChips) {
     console.log(`Updating user ${uid}: Role=${newRole}, Chips=${newChips}`);
     if (isNaN(newChips) || newChips < 0) {
-        showMessage("Invalid chip count. Must be a positive number.", "error");
+        showNotification("Invalid chip count. Must be a positive number.", "error");
         return;
     }
 
@@ -1194,10 +1303,10 @@ async function updateUserRoleAndChips(uid, newRole, newChips) {
         batch.update(profileRef, { chip_count: newChips });
 
         await batch.commit();
-        showMessage("User updated successfully!", "success");
+        showNotification("User updated successfully!", "success");
     } catch (error) {
         console.error("Error updating user:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
         // Note: Listeners will refresh the table, no manual refresh needed
     }
 }
@@ -1250,10 +1359,10 @@ async function deleteGameRoom(roomId) {
         // --- PATHS FIXED to v3.1 ---
         const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
         await deleteDoc(roomRef);
-        showMessage("Room deleted successfully.", "success");
+        showNotification("Room deleted successfully.", "success");
     } catch (error) {
         console.error("Error deleting room:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -1284,7 +1393,7 @@ async function joinGameRoom(roomId) {
     console.log(`User ${currentUserId} attempting to join room ${roomId}`);
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room) {
-        showMessage("Room not found.", "error");
+        showNotification("Room not found.", "error");
         return;
     }
 
@@ -1340,7 +1449,7 @@ async function joinGameRoom(roomId) {
         showPanel(gameRoomViewPanel);
     } catch (error) {
         console.error("Error joining room:", error);
-        showMessage(`Error joining room: ${error.message}`, "error");
+        showNotification(`Error joining room: ${error.message}`, "error");
     }
 }
 
@@ -1398,7 +1507,7 @@ async function leaveGameRoom() {
 
     } catch (error) {
         console.error("Error leaving room:", error);
-        showMessage(`Error leaving room: ${error.message}`, "error");
+        showNotification(`Error leaving room: ${error.message}`, "error");
     }
 }
 
@@ -1460,7 +1569,7 @@ async function handleJoinRoom(roomId) {
 
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room) {
-        showMessage("That room no longer exists.", "error");
+        showNotification("That room no longer exists.", "error");
         renderAvailableRoomsList();
         return;
     }
@@ -1468,7 +1577,7 @@ async function handleJoinRoom(roomId) {
     // Check if user is already in another room
     const userProfile = allFirebaseUsersData.find(u => u.uid === currentUserId);
     if (userProfile.current_room && userProfile.current_room !== roomId) {
-        showMessage("You must leave your current room before joining another.", "error");
+        showNotification("You must leave your current room before joining another.", "error");
         return;
     }
 
@@ -1509,7 +1618,7 @@ async function handleJoinRoom(roomId) {
 
     } catch (error) {
         console.error("Error joining room:", error);
-        showMessage(`Error joining room: ${error.message}`, "error");
+        showNotification(`Error joining room: ${error.message}`, "error");
     }
 }
 
@@ -1699,11 +1808,11 @@ function renderGameRoomView(roomId) {
 
 /** (Admin) Posts blinds for SB/BB and rotates the dealer button */
 async function adminPostBlinds(roomId) {
-    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    if (!hasAdminAccess(currentUserId)) return showNotification("Permission denied.", "error");
 
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room || !room.players || room.players.length < 2) {
-        return showMessage("Not enough players to post blinds.", "info");
+        return showNotification("Not enough players to post blinds.", "info");
     }
 
     console.log("Admin posting blinds...");
@@ -1733,10 +1842,10 @@ async function adminPostBlinds(roomId) {
             [`gameState.status.${sbPlayerId}`]: 'ready',
             [`gameState.status.${bbPlayerId}`]: 'ready'
         });
-        showMessage("Blinds posted and dealer button rotated.", "success");
+        showNotification("Blinds posted and dealer button rotated.", "success");
     } catch (error) {
         console.error("Error posting blinds:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -1898,18 +2007,18 @@ async function handleSavePlayerOrder(roomId) {
             "gameState.bets": newBets, // <-- Resets bets
             "gameState.status": newStatus // <-- Resets statuses
         });
-        showMessage("Player order saved and room has been reset.", "success");
+        showNotification("Player order saved and room has been reset.", "success");
         setOrderModal.classList.add('hidden');
     } catch (error) {
         console.error("Error saving player order:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
 /** (Admin) Removes a player from the game room */
 async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
-    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
-    if (targetPlayerId === currentUserId) return showMessage("Cannot remove self.", "error");
+    if (!hasAdminAccess(currentUserId)) return showNotification("Permission denied.", "error");
+    if (targetPlayerId === currentUserId) return showNotification("Cannot remove self.", "error");
 
     console.log(`Admin removing ${targetPlayerName} from room ${roomId}`);
 
@@ -1933,39 +2042,39 @@ async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
             });
             transaction.update(profileRef, { current_room: null });
         });
-        showMessage(`${targetPlayerName} has been removed from the room.`, "success");
+        showNotification(`${targetPlayerName} has been removed from the room.`, "success");
     } catch (error) {
         console.error("Error removing player:", error);
-        showMessage(`Error removing player: ${error.message}`, "error");
+        showNotification(`Error removing player: ${error.message}`, "error");
     }
 }
 
 /** (Admin) Forces a player to fold */
 async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
-    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    if (!hasAdminAccess(currentUserId)) return showNotification("Permission denied.", "error");
     console.log(`Admin forcing fold for ${targetPlayerName}`);
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
     try {
         await updateDoc(roomRef, {
             [`gameState.status.${targetPlayerId}`]: 'folded'
         });
-        showMessage(`${targetPlayerName} has been folded.`, "success");
+        showNotification(`${targetPlayerName} has been folded.`, "success");
     } catch (error) {
         console.error("Error forcing fold:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
 /** (Admin) Places a bet for a player */
 async function adminPlaceBetForPlayer(roomId, targetPlayerId, targetPlayerName, playerChips) {
-    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    if (!hasAdminAccess(currentUserId)) return showNotification("Permission denied.", "error");
 
     const betAmountStr = prompt(`Enter bet for ${targetPlayerName} (has ${playerChips} chips):`);
     if (!betAmountStr) return; // User cancelled
 
     const betAmount = parseInt(betAmountStr, 10);
-    if (isNaN(betAmount) || betAmount < 0) return showMessage("Invalid amount.", "error");
-    if (betAmount > playerChips) return showMessage("Amount exceeds player's chips.", "error");
+    if (isNaN(betAmount) || betAmount < 0) return showNotification("Invalid amount.", "error");
+    if (betAmount > playerChips) return showNotification("Amount exceeds player's chips.", "error");
 
     console.log(`Admin betting ${betAmount} for ${targetPlayerName}`);
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
@@ -1975,20 +2084,20 @@ async function adminPlaceBetForPlayer(roomId, targetPlayerId, targetPlayerName, 
             [`gameState.bets.${targetPlayerId}`]: betAmount,
             [`gameState.status.${targetPlayerId}`]: newStatus
         });
-        showMessage(`Bet of ${betAmount} placed for ${targetPlayerName}.`, "success");
+        showNotification(`Bet of ${betAmount} placed for ${targetPlayerName}.`, "success");
     } catch (error) {
         console.error("Error placing bet for player:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
 /** (Admin) Resets all bets and statuses in the room */
 async function adminRoomReset(roomId) {
-    if (!hasAdminAccess(currentUserId)) return showMessage("Permission denied.", "error");
+    if (!hasAdminAccess(currentUserId)) return showNotification("Permission denied.", "error");
     console.log(`Admin resetting room ${roomId}`);
 
     const room = firestoreGameRooms.find(r => r.id === roomId);
-    if (!room) return showMessage("Room not found.", "error");
+    if (!room) return showNotification("Room not found.", "error");
 
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
     try {
@@ -2003,10 +2112,10 @@ async function adminRoomReset(roomId) {
             "gameState.status": newStatus,
             // Add other game state resets here (e.g., community cards, pot)
         });
-        showMessage("Room has been reset.", "success");
+        showNotification("Room has been reset.", "success");
     } catch (error) {
         console.error("Error resetting room:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -2059,7 +2168,7 @@ function populateUpdateChipsPanel(roomId) {
 async function handleSubmitChipUpdate(roomId) {
     console.log("Submitting chip update...");
     const room = firestoreGameRooms.find(r => r.id === roomId);
-    if (!room) return showMessage("Room data not found.", "error");
+    if (!room) return showNotification("Room data not found.", "error");
 
     // UPDATED: Target the list inside the modal
     const listEl = updateChipsModal.querySelector('#updateChipsPlayerList');
@@ -2117,25 +2226,25 @@ async function handleSubmitChipUpdate(roomId) {
 
     try {
         await batch.commit();
-        showMessage("Chips updated and pot distributed!", "success");
+        showNotification("Chips updated and pot distributed!", "success");
         adminRoomReset(roomId); // Reset the room for the next hand
         toggleUpdateChipsPanel(roomId, false); // Hide the panel
     } catch (error) {
         console.error("Error updating chips:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
 /** (Player) Handles placing a bet or raise */
 async function handlePlaceBet(roomId, amount) {
-    if (isNaN(amount) || amount <= 0) return showMessage("Invalid bet amount.", "error");
+    if (isNaN(amount) || amount <= 0) return showNotification("Invalid bet amount.", "error");
 
     const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
     const playerChips = playerProfile?.chip_count || 0;
-    if (amount > playerChips) return showMessage("You don't have enough chips.", "error");
+    if (amount > playerChips) return showNotification("You don't have enough chips.", "error");
 
     const room = firestoreGameRooms.find(r => r.id === roomId);
-    if (!room) return showMessage("Room not found.", "error");
+    if (!room) return showNotification("Room not found.", "error");
 
     const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
     const newStatus = (amount === playerChips) ? 'all-in' : 'ready';
@@ -2145,10 +2254,10 @@ async function handlePlaceBet(roomId, amount) {
             [`gameState.bets.${currentUserId}`]: amount,
             [`gameState.status.${currentUserId}`]: newStatus
         });
-        showMessage(`You bet ${amount}.`, "success");
+        showNotification(`You bet ${amount}.`, "success");
     } catch (error) {
         console.error("Error placing bet:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -2157,7 +2266,7 @@ async function handleCallBet(roomId) {
     const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
     const playerChips = playerProfile?.chip_count || 0;
     const room = firestoreGameRooms.find(r => r.id === roomId);
-    if (!room) return showMessage("Room not found.", "error");
+    if (!room) return showNotification("Room not found.", "error");
 
     const roomBets = room.gameState.bets || {};
     const highestBet = Object.values(roomBets).reduce((max, bet) => Math.max(max, bet), 0);
@@ -2165,7 +2274,7 @@ async function handleCallBet(roomId) {
     const amountToCall = highestBet - currentUserBet;
 
     if (amountToCall === 0) { // This is a "Check"
-        showMessage("You checked.", "success");
+        showNotification("You checked.", "success");
         return; // No DB update needed if status is already 'ready'
     }
 
@@ -2179,10 +2288,10 @@ async function handleCallBet(roomId) {
             [`gameState.bets.${currentUserId}`]: highestBet, // Call by matching the highest bet
             [`gameState.status.${currentUserId}`]: 'ready'
         });
-        showMessage(`You called ${highestBet}.`, "success");
+        showNotification(`You called ${highestBet}.`, "success");
     } catch (error) {
         console.error("Error calling bet:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -2193,10 +2302,10 @@ async function handleFold(roomId) {
         await updateDoc(roomRef, {
             [`gameState.status.${currentUserId}`]: 'folded'
         });
-        showMessage("You folded.", "success");
+        showNotification("You folded.", "success");
     } catch (error) {
         console.error("Error folding:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -2211,10 +2320,10 @@ async function handleAllIn(roomId) {
             [`gameState.bets.${currentUserId}`]: playerChips, // Bet all chips
             [`gameState.status.${currentUserId}`]: 'all-in'
         });
-        showMessage(`You are All-In with ${playerChips}!`, "success");
+        showNotification(`You are All-In with ${playerChips}!`, "success");
     } catch (error) {
         console.error("Error going all-in:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -2332,7 +2441,7 @@ async function openDirectMessage(otherUserId) {
 
     } catch (error) {
         console.error("Error opening direct message:", error);
-        showMessage(`Error: ${error.message}`, "error");
+        showNotification(`Error: ${error.message}`, "error");
     }
 }
 
@@ -2410,7 +2519,7 @@ async function sendGroupMessage() {
         groupMessageInput.value = ''; // Clear input
     } catch (error) {
         console.error("Error sending message:", error);
-        showMessage("Error sending message.", "error");
+        showNotification("Error sending message.", "error");
     }
 }
 
@@ -2441,9 +2550,9 @@ function showPanel(panelToShow) {
         if (panel) panel.classList.add('hidden');
     });
 
-    // Hide loading and message
+    // Hide loading
     loadingIndicator.classList.add('hidden');
-    messageBox.classList.add('hidden');
+    // REMOVED: messageBox.classList.add('hidden');
 
     // Show the target panel
     if (panelToShow) {
@@ -2455,24 +2564,78 @@ function showPanel(panelToShow) {
 }
 
 /**
- * Displays a message to the user.
- * @param {string} message - The text to display.
- * @param {string} type - 'success', 'error', or 'info'.
+ * Displays a notification toast to the user.
+ * @param {string} message - The text (or HTML) to display.
+ * @param {string} type - 'success', 'error', 'info', or 'chat'.
+ * @param {object} options - Optional settings: { autoClose: 5000, onClick: null }
  */
-function showMessage(message, type = "info") {
-    messageBox.textContent = message;
-    messageBox.className = 'message-box'; // Reset classes
+function showNotification(message, type = "info", options = {}) {
+    // Set default options
+    const { autoClose = 5000, onClick = null } = options;
 
-    // Map simple types to style classes
-    if (type === 'success') {
-        messageBox.classList.add('success');
-    } else if (type === 'error') {
-        messageBox.classList.add('error');
-    } else {
-        messageBox.classList.add('info');
+    const container = document.getElementById('notificationContainer');
+    if (!container) {
+        console.error("Notification container not found!");
+        return;
     }
 
-    messageBox.classList.remove('hidden');
+    // Create the toast element
+    const toast = document.createElement('div');
+    toast.className = `notification-toast ${type}`;
+
+    // Create message content
+    const messageEl = document.createElement('div');
+    messageEl.className = 'notification-message';
+    messageEl.innerHTML = message; // Allow HTML for bolding sender, etc.
+    toast.appendChild(messageEl);
+
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'notification-close';
+    closeBtn.innerHTML = '&times;'; // 'x' icon
+    closeBtn.onclick = (e) => {
+        e.stopPropagation(); // Prevent click-through to toast's onClick
+        removeToast();
+    };
+    toast.appendChild(closeBtn);
+
+    // Add to DOM
+    container.appendChild(toast);
+
+    // Animate in
+    // We use a tiny timeout to allow the browser to paint the element
+    // before applying the 'show' class for the transition.
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    let autoCloseTimer;
+
+    // Click handler
+    if (onClick) {
+        toast.classList.add('clickable');
+        toast.onclick = () => {
+            onClick();
+            removeToast(); // Close toast when clicked
+        };
+    }
+
+    // Auto-close timer
+    if (autoClose > 0) {
+        autoCloseTimer = setTimeout(removeToast, autoClose);
+    }
+
+    // Function to remove the toast
+    function removeToast() {
+        clearTimeout(autoCloseTimer);
+        toast.classList.remove('show');
+
+        // Wait for the slide-out animation to finish before removing
+        // from the DOM to prevent it from just vanishing.
+        toast.addEventListener('transitionend', () => {
+            if (toast.parentElement) {
+                toast.parentElement.removeChild(toast);
+            }
+        });
+    }
 }
 
 /**

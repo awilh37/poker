@@ -14,7 +14,7 @@
       All styles have been moved to style.css and are
       linked here.
     -->
-    <link rel="stylesheet" href="style.css?v=3.2.14">
+    <link rel="stylesheet" href="style.css?v=3.2.15"> <!-- v-up -->
 </head>
 
 <body>
@@ -101,8 +101,14 @@
             <span>Loading, please wait...</span>
         </div>
 
-        <!-- Message Box: For success/error messages -->
-        <div id="messageBox" class="message-box hidden"></div>
+        <!-- 
+          ============================================================
+          =                MESSAGE BOX (REMOVED)                     =
+          ============================================================
+        -->
+        <!-- <div id="messageBox" class="message-box hidden"></div> -->
+        <!-- This has been replaced by the notificationContainer at the end of <body> -->
+
 
         <!-- 
           ============================================================
@@ -186,7 +192,7 @@
         </div>
 
         <!-- 
-          ============================================================
+          ================================S============================
           =            GAME ROOM MGMT (Hidden by default)            =
           ============================================================
         -->
@@ -360,6 +366,21 @@
 
     <!-- 
       ============================================================
+      =             NEW NOTIFICATION CONTAINER START             =
+      ============================================================
+    -->
+    <!-- 
+      This container will hold all the notification "toasts"
+      that slide in from the top right.
+    -->
+    <div id="notificationContainer" class="notification-container">
+        <!-- JS will populate this -->
+    </div>
+    <!-- =================== NEW NOTIFICATION CONTAINER END =================== -->
+
+
+    <!-- 
+      ============================================================
       =                 FIREBASE & APP SCRIPT LINK                =
       ============================================================
       
@@ -367,7 +388,7 @@
       is linked here. It's a "module" to support
       Firebase imports.
     -->
-    <script type="module" src="script.js?v=3.2.14"></script>
+    <script type="module" src="script.js?v=3.2.15"></script> <!-- v-up -->
 </body>
 
 </html>
