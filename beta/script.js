@@ -75,6 +75,10 @@ let firestoreGameRooms = []; // Stores game room docs
 let firestoreMessages = []; // Stores messages
 let currentJoinedRoomId = null; // Stores the ID of the room the player is in
 
+// NEW: Dashboard Content
+let currentNewsContent = ""; // Stores the raw markdown
+let currentLinksData = []; // Stores the array of link objects
+
 // Defined roles for the system
 const ROLES = {
     PLAYER: 'player',
@@ -117,7 +121,26 @@ const joinGameButton = document.getElementById('joinGameButton');
 // --- NEW Dashboard Elements ---
 const editNewsButton = document.getElementById('editNewsButton');
 const addLinkButton = document.getElementById('addLinkButton');
-// (Modal elements for dashboard are in HTML but not wired yet)
+const newsContent = document.getElementById('newsContent');
+const linksContent = document.getElementById('linksContent');
+
+// NEW: Dashboard Modals
+const editNewsModal = document.getElementById('editNewsModal');
+const cancelEditNews = document.getElementById('cancelEditNews');
+const saveEditNews = document.getElementById('saveEditNews');
+const newsMarkdownInput = document.getElementById('newsMarkdownInput');
+
+const editLinkModal = document.getElementById('editLinkModal');
+const cancelEditLink = document.getElementById('cancelEditLink');
+const saveEditLink = document.getElementById('saveEditLink');
+const deleteLinkButton = document.getElementById('deleteLinkButton');
+const editLinkId = document.getElementById('editLinkId');
+const linkLabel = document.getElementById('linkLabel');
+const linkTextInput = document.getElementById('linkTextInput');
+const linkUrlInput = document.getElementById('linkUrlInput');
+const linkColorInput = document.getElementById('linkColorInput');
+// --- END NEW Dashboard Elements ---
+
 
 // --- NEW Header & Sidebar Elements ---
 const hamburgerButton = document.getElementById('hamburgerButton');
@@ -638,6 +661,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NEW: Attach all delegated game room listeners ---
     attachGameRoomListeners();
 
+    // --- NEW: Dashboard Admin Listeners ---
+    if (editNewsButton) {
+        editNewsButton.addEventListener('click', openEditNewsModal);
+    }
+    if (cancelEditNews) {
+        cancelEditNews.addEventListener('click', () => editNewsModal.classList.add('hidden'));
+    }
+    if (saveEditNews) {
+        saveEditNews.addEventListener('click', handleSaveNews);
+    }
+
+    if (addLinkButton) {
+        addLinkButton.addEventListener('click', () => openEditLinkModal(null));
+    }
+    if (cancelEditLink) {
+        cancelEditLink.addEventListener('click', () => editLinkModal.classList.add('hidden'));
+    }
+    if (saveEditLink) {
+        saveEditLink.addEventListener('click', handleSaveLink);
+    }
+    if (deleteLinkButton) {
+        deleteLinkButton.addEventListener('click', handleDeleteLink);
+    }
+
+    // Delegated listener for editing existing links
+    if (linksContent) {
+        linksContent.addEventListener('click', (e) => {
+            const editButton = e.target.closest('.edit-link-btn');
+            if (editButton) {
+                const linkId = editButton.dataset.linkId;
+                openEditLinkModal(linkId);
+            }
+        });
+    }
+    // --- END NEW: Dashboard Admin Listeners ---
+
 }); // End DOMContentLoaded
 
 
@@ -791,7 +850,7 @@ async function handleLoginSuccess(user) {
 
         // Update UI
         currentUserData = allFirebaseUsersData.find(u => u.uid === user.uid);
-        
+
         // --- NEW: Consolidated Admin UI Logic ---
         if (hasAdminAccess(user.uid)) {
             // Main Menu button (hidden, for click() )
@@ -853,7 +912,7 @@ async function handleLogout() {
         isLoggingOut = false; // Reset flag on error
         showNotification(`Logout Error: ${error.message}`, "error");
     }
-    
+
     // --- NEW: Hide Admin UI on logout ---
     dropdownAdminLink.classList.add('hidden');
     if (editNewsButton) editNewsButton.classList.add('hidden');
@@ -953,6 +1012,11 @@ function setupDataListeners() {
     // --- NEW: Firestore active_sessions collection ---
     const activeSessionsCollectionRef = collection(db, "artifacts", appId, "public/data/active_sessions");
 
+    // --- NEW: Dashboard Content Refs ---
+    const newsDocRef = doc(db, "artifacts", appId, "public/data/site_content", "news");
+    const linksCollectionRef = collection(db, "artifacts", appId, "public/data/site_content", "links");
+
+
     // --- Promise-based listeners for initial load ---
 
     // Promise for User Roles
@@ -1028,11 +1092,38 @@ function setupDataListeners() {
         }, (error) => { console.error("Firestore: Error listening to investments:", error); reject(error); });
     });
 
+    // --- NEW: Dashboard Content Listeners ---
+    const newsPromise = new Promise((resolve, reject) => {
+        onSnapshot(newsDocRef, (docSnap) => {
+            console.log("Firestore: News snapshot received.");
+            renderNewsContent(docSnap);
+            resolve();
+        }, (error) => { console.error("Firestore: Error listening to news:", error); reject(error); });
+    });
+
+    const linksPromise = new Promise((resolve, reject) => {
+        onSnapshot(linksCollectionRef, (snapshot) => {
+            console.log("Firestore: Links snapshot received.");
+            renderLinksGrid(snapshot);
+            resolve();
+        }, (error) => { console.error("Firestore: Error listening to links:", error); reject(error); });
+    });
+    // --- END NEW ---
+
+
     // --- NEW: Start chat listeners ---
     listenForChatGroups();
 
     // --- Promise.all UPDATED ---
-    return Promise.all([rolesPromise, profilesPromise, activeSessionsPromise, gameRoomsPromise, investmentsPromise]);
+    return Promise.all([
+        rolesPromise,
+        profilesPromise,
+        activeSessionsPromise,
+        gameRoomsPromise,
+        investmentsPromise,
+        newsPromise, // NEW
+        linksPromise  // NEW
+    ]);
 }
 
 // --- NEW: Chat Notification Listeners ---
@@ -1215,6 +1306,148 @@ function showUserInfoModal(uid) {
 }
 
 // --- END NEW Standings Sidebar Functions ---
+
+// --- NEW: Dashboard Admin Functions ---
+
+/** Renders the news content from Firestore data */
+function renderNewsContent(docSnap) {
+    if (docSnap && docSnap.exists()) {
+        currentNewsContent = docSnap.data().markdown || "";
+        // Simple newline-to-break-tag conversion
+        newsContent.innerHTML = currentNewsContent.replace(/\n/g, '<br>');
+    } else {
+        currentNewsContent = "";
+        newsContent.innerHTML = "<p>Welcome! No news has been set by an admin yet.</p>";
+    }
+}
+
+/** Renders the links grid from Firestore data */
+function renderLinksGrid(snapshot) {
+    currentLinksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    linksContent.innerHTML = ''; // Clear old links
+
+    const isAdmin = hasAdminAccess(currentUserId);
+
+    if (currentLinksData.length === 0) {
+        linksContent.innerHTML = '<p style="margin-top: 0;">No quick links have been added yet.</p>';
+        return;
+    }
+
+    currentLinksData.forEach(link => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'dashboard-link-item';
+
+        itemDiv.innerHTML = `
+            <a href="${link.url}" class="btn ${link.color} btn-full" target="_blank" rel="noopener noreferrer">${link.text}</a>
+            ${isAdmin ? `
+                <button class="btn btn-icon btn-sm edit-link-btn" data-link-id="${link.id}" title="Edit Link">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.25rem; height: 1.25rem; margin: 0;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                </button>
+            ` : ''}
+        `;
+        linksContent.appendChild(itemDiv);
+    });
+}
+
+/** Opens the edit news modal */
+function openEditNewsModal() {
+    newsMarkdownInput.value = currentNewsContent;
+    editNewsModal.classList.remove('hidden');
+}
+
+/** Saves the news content to Firestore */
+async function handleSaveNews() {
+    const newMarkdown = newsMarkdownInput.value;
+    const newsDocRef = doc(db, "artifacts", appId, "public/data/site_content", "news");
+    try {
+        await setDoc(newsDocRef, { markdown: newMarkdown });
+        showNotification("News updated successfully!", "success");
+        editNewsModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error saving news:", error);
+        showNotification(`Error: ${error.message}`, "error");
+    }
+}
+
+/** Opens the add/edit link modal */
+function openEditLinkModal(linkId) {
+    if (linkId) {
+        // Edit existing link
+        const link = currentLinksData.find(l => l.id === linkId);
+        if (!link) return;
+        
+        linkLabel.textContent = 'Edit Link';
+        editLinkId.value = linkId;
+        linkTextInput.value = link.text;
+        linkUrlInput.value = link.url;
+        linkColorInput.value = link.color;
+        deleteLinkButton.classList.remove('hidden');
+    } else {
+        // Add new link
+        linkLabel.textContent = 'Add New Link';
+        editLinkId.value = '';
+        linkTextInput.value = '';
+        linkUrlInput.value = '';
+        linkColorInput.value = 'btn-blue';
+        deleteLinkButton.classList.add('hidden');
+    }
+    editLinkModal.classList.remove('hidden');
+}
+
+/** Saves the link (new or update) to Firestore */
+async function handleSaveLink() {
+    const linkId = editLinkId.value;
+    const linkData = {
+        text: linkTextInput.value.trim(),
+        url: linkUrlInput.value.trim(),
+        color: linkColorInput.value
+    };
+
+    if (!linkData.text || !linkData.url) {
+        return showNotification("Please fill out both text and URL.", "error");
+    }
+
+    try {
+        if (linkId) {
+            // Update existing
+            const linkDocRef = doc(db, "artifacts", appId, "public/data/site_content", "links", linkId);
+            await updateDoc(linkDocRef, linkData);
+        } else {
+            // Add new
+            const linksCollectionRef = collection(db, "artifacts", appId, "public/data/site_content", "links");
+            await addDoc(linksCollectionRef, linkData);
+        }
+        showNotification("Link saved successfully!", "success");
+        editLinkModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error saving link:", error);
+        showNotification(`Error: ${error.message}`, "error");
+    }
+}
+
+/** Deletes a link from Firestore */
+async function handleDeleteLink() {
+    const linkId = editLinkId.value;
+    if (!linkId) return;
+
+    // We can't use a nice modal, so we'll just log it for now
+    console.log(`Asking to delete link ${linkId}. In a real app, use a modal!`);
+    
+    try {
+        const linkDocRef = doc(db, "artifacts", appId, "public/data/site_content", "links", linkId);
+        await deleteDoc(linkDocRef);
+        showNotification("Link deleted successfully.", "success");
+        editLinkModal.classList.add('hidden');
+    } catch (error) {
+        console.error("Error deleting link:", error);
+        showNotification(`Error: ${error.message}`, "error");
+    }
+}
+
+// --- END NEW: Dashboard Admin Functions ---
+
 
 // --- Admin: User Management Functions ---
 

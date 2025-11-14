@@ -1296,3 +1296,22 @@ p {
         /* Keep as one column */
     }
 }
+
+/* --- NEW: Dashboard Link Item --- */
+.dashboard-link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-link-item .btn {
+    flex-grow: 1;
+    /* Make the <a> button take up the most space */
+}
+
+.dashboard-link-item .btn-icon {
+    flex-shrink: 0;
+    /* Don't shrink the icon button */
+}
+
+/* --- END NEW: Dashboard Link Item --- */

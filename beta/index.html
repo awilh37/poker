@@ -14,7 +14,7 @@
       All styles have been moved to style.css and are
       linked here.
     -->
-    <link rel="stylesheet" href="style.css?v=3.2.16"> <!-- v-up -->
+    <link rel="stylesheet" href="style.css?v=3.2.17"> <!-- v-up -->
 </head>
 
 <body>
@@ -164,19 +164,8 @@
                         </button>
                     </div>
                     <div id="newsContent" class="dashboard-card-content news-content">
-                        <p>Welcome to WPS 3.2!</p>
-                        <p>To get started, join a game or view the user directory from the menu in the top-left corner
-                            ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                            </svg> ).</p>
-                        <p>You can manage your account from the dropdown in the top-right ( <svg
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg> ).</p>
+                        <!-- JS will populate this -->
+                        <p>Loading news...</p>
                     </div>
                 </div>
 
@@ -194,7 +183,7 @@
                     </div>
                     <div id="linksContent" class="dashboard-card-content links-grid">
                         <!-- Links will be populated by JS -->
-                        <p style="margin-top: 0;">No custom links have been added yet.</p>
+                        <p style="margin-top: 0;">Loading links...</p>
                     </div>
                 </div>
             </div>
@@ -204,7 +193,7 @@
                 <div class="modal-content" style="max-width: 600px; text-align: left;">
                     <h3>Edit News</h3>
                     <div class="form-group">
-                        <label for="newsMarkdownInput" class="form-label">News Content</label>
+                        <label for="newsMarkdownInput" class="form-label">News Content (use new lines for paragraphs)</label>
                         <textarea id="newsMarkdownInput" class="form-input" rows="10"
                             placeholder="Type news here..."></textarea>
                     </div>
@@ -491,7 +480,7 @@
       is linked here. It's a "module" to support
       Firebase imports.
     -->
-    <script type="module" src="script.js?v=3.2.16"></script> <!-- v-up -->
+    <script type="module" src="script.js?v=3.2.17"></script> <!-- v-up -->
 </body>
 
 </html>
