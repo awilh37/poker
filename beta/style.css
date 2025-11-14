@@ -182,6 +182,19 @@ body {
     pointer-events: auto;
 }
 
+/*
+  FIX: Override the .hidden class for the sidebar and overlay.
+  These elements are controlled by transforms and opacity,
+  so they should never be set to display: none.
+*/
+.sidebar.hidden {
+    display: flex !important;
+}
+
+.sidebar-overlay.hidden {
+    display: block !important;
+}
+
 /* --- New Standings Sidebar (Right) --- */
 .standings-sidebar {
     display: none;
