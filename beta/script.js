@@ -432,8 +432,8 @@ if (auth) {
     document.addEventListener('visibilitychange', () => {
         if (!currentUserId || !db) return; // Not logged in or db not ready
 
-        // --- PATHS FIXED to v3.1 ---
-        const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", currentUserId);
+        // --- PATHS FIXED ---
+        const activeSessionRef = doc(db, "artifacts", appId, "public", "data", "active_sessions", currentUserId);
 
         if (document.hidden) {
             // User switched tabs, mark as idle
@@ -452,8 +452,8 @@ if (auth) {
 
         // This is a "fire-and-forget" delete. We can't wait for it to finish.
         // This instantly removes the user from "active_sessions"
-        // --- PATHS FIXED to v3.1 ---
-        const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", currentUserId);
+        // --- PATHS FIXED ---
+        const activeSessionRef = doc(db, "artifacts", appId, "public", "data", "active_sessions", currentUserId);
         deleteDoc(activeSessionRef).catch(console.warn);
     });
     // --- END NEW Smart Status Listeners ---
@@ -528,8 +528,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update Firebase Auth profile
             await updateProfile(auth.currentUser, { displayName: newName });
 
-            // --- PATHS FIXED to v3.1 ---
-            const userProfileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
+            // --- PATHS FIXED ---
+            const userProfileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", currentUserId);
             await updateDoc(userProfileRef, { display_name: newName });
 
             showNotification("Display name updated successfully!", "success");
@@ -564,8 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         try {
-            // --- PATHS FIXED to v3.1 ---
-            const roomCollectionRef = collection(db, "artifacts", appId, "public/data/game_rooms");
+            // --- PATHS FIXED ---
+            const roomCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
             await addDoc(roomCollectionRef, {
                 name: name,
                 createdAt: serverTimestamp(),
@@ -608,8 +608,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // --- PATHS FIXED to v3.1 (assuming chat_groups) ---
-            const groupCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups");
+            // --- PATHS FIXED ---
+            const groupCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups");
             await addDoc(groupCollectionRef, {
                 name: groupName,
                 members: selectedUsers,
@@ -823,15 +823,15 @@ async function handleLoginSuccess(user) {
         // --- NEW PRESENCE (Firestore) ---
         // Write to Firestore active_sessions collection
         console.log("handleLoginSuccess: Setting up FIRESTORE presence for:", user.uid);
-        // --- PATHS FIXED to v3.1 ---
-        const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", user.uid);
+        // --- PATHS FIXED ---
+        const activeSessionRef = doc(db, "artifacts", appId, "public", "data", "active_sessions", user.uid);
 
         // Get role *after* setupUserProfile has run
-        const role = await getCurrentUserRole(user.uid);
+        const userRole = await getCurrentUserRole(user.uid); // Use async helper
 
         await setDoc(activeSessionRef, {
             email: user.email || 'N/A',
-            role: role,
+            role: userRole,
             loginTime: serverTimestamp(),
             status: 'online' // <-- NEW: Set initial status to 'online'
         }, { merge: true });
@@ -892,8 +892,8 @@ async function handleLogout() {
 
     // --- NEW: Remove from Firestore active_sessions ---
     if (db && currentUserId) {
-        // --- PATHS FIXED to v3.1 ---
-        const activeSessionRef = doc(db, "artifacts", appId, "public/data/active_sessions", currentUserId);
+        // --- PATHS FIXED ---
+        const activeSessionRef = doc(db, "artifacts", appId, "public", "data", "active_sessions", currentUserId);
         try {
             await deleteDoc(activeSessionRef);
             console.log("handleLogout: Removed Firestore session.");
@@ -929,9 +929,9 @@ async function setupUserProfile(user) {
 
     const batch = writeBatch(db);
 
-    // --- PATHS FIXED to v3.1 ---
+    // --- PATHS FIXED ---
     // 1. User Role
-    const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
+    const roleRef = doc(db, "artifacts", appId, "public", "data", "user_roles", uid);
     const roleDoc = await getDoc(roleRef);
 
     let userRole = ROLES.PLAYER; // Default
@@ -959,7 +959,7 @@ async function setupUserProfile(user) {
     }
 
     // 2. User Profile
-    const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", uid);
+    const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", uid);
     const profileDoc = await getDoc(profileRef);
     if (!profileDoc.exists()) {
         console.log("setupUserProfile: No profile found, creating profile.");
@@ -1001,20 +1001,21 @@ async function setupUserProfile(user) {
  */
 function setupDataListeners() {
     console.log("setupDataListeners: Attaching listeners...");
-    // --- PATHS FIXED to v3.1 ---
+    // --- PATHS FIXED ---
     // Base collection paths
-    const rolesCollectionRef = collection(db, "artifacts", appId, "public/data/user_roles");
-    const profilesCollectionRef = collection(db, "artifacts", appId, "public/data/user_profiles");
-    const gameRoomsCollectionRef = collection(db, "artifacts", appId, "public/data/game_rooms");
-    const investmentsCollectionRef = collection(db, "artifacts", appId, "public/data/investments"); // Feature hidden
-    const chatGroupsCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups");
+    const rolesCollectionRef = collection(db, "artifacts", appId, "public", "data", "user_roles");
+    const profilesCollectionRef = collection(db, "artifacts", appId, "public", "data", "user_profiles");
+    const gameRoomsCollectionRef = collection(db, "artifacts", appId, "public", "data", "game_rooms");
+    const investmentsCollectionRef = collection(db, "artifacts", appId, "public", "data", "investments"); // Feature hidden
+    const chatGroupsCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups");
 
     // --- NEW: Firestore active_sessions collection ---
-    const activeSessionsCollectionRef = collection(db, "artifacts", appId, "public/data/active_sessions");
+    const activeSessionsCollectionRef = collection(db, "artifacts", appId, "public", "data", "active_sessions");
 
-    // --- NEW: Dashboard Content Refs ---
-    const newsDocRef = doc(db, "artifacts", appId, "public/data/site_content", "news");
-    const linksCollectionRef = collection(db, "artifacts", appId, "public/data/site_content", "links");
+    // --- NEW: Dashboard Content Refs (PATHS FIXED) ---
+    const newsDocRef = doc(db, "artifacts", appId, "public", "data", "site_content", "news");
+    // --- FIX: Moved 'links' to be its own collection under 'data' ---
+    const linksCollectionRef = collection(db, "artifacts", appId, "public", "data", "links");
 
 
     // --- Promise-based listeners for initial load ---
@@ -1136,7 +1137,8 @@ function listenForChatGroups() {
     if (!db || !currentUserId || !loadTimestamp) return;
 
     console.log("Attaching chat group listeners...");
-    const q = query(collection(db, "artifacts", appId, "public/data/chat_groups"), where('members', 'array-contains', currentUserId));
+    // --- PATHS FIXED ---
+    const q = query(collection(db, "artifacts", appId, "public", "data", "chat_groups"), where('members', 'array-contains', currentUserId));
 
     onSnapshot(q, (groupsSnapshot) => {
         groupsSnapshot.docChanges().forEach(async (change) => {
@@ -1149,7 +1151,8 @@ function listenForChatGroups() {
                 if (groupMessageListeners.has(groupId)) return; // Already listening
 
                 console.log(`Adding message listener for group: ${groupName}`);
-                const messagesRef = collection(db, "artifacts", appId, "public/data/chat_groups", groupId, "messages");
+                // --- PATHS FIXED ---
+                const messagesRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
                 // Listen for messages *after* the app loaded
                 const messagesQuery = query(messagesRef, where('timestamp', '>', loadTimestamp));
 
@@ -1267,12 +1270,12 @@ function renderStandingsSidebar() {
 }
 
 /** Shows the pop-up modal with a user's info */
-function showUserInfoModal(uid) {
+async function showUserInfoModal(uid) {
     const user = allFirebaseUsersData.find(u => u.uid === uid);
     if (!user) return;
 
-    // --- UPDATED: Use list ---
-    const userRole = getCurrentUserRole(uid);
+    // --- UPDATED: Use helper ---
+    const userRole = await getCurrentUserRole(uid);
     // --- UPDATED: Get full session status ---
     const session = firestoreActiveSessions.find(s => s.id === uid);
     const status = session ? (session.status || 'online') : 'offline'; // Default to 'online' if session exists but no status
@@ -1360,7 +1363,8 @@ function openEditNewsModal() {
 /** Saves the news content to Firestore */
 async function handleSaveNews() {
     const newMarkdown = newsMarkdownInput.value;
-    const newsDocRef = doc(db, "artifacts", appId, "public/data/site_content", "news");
+    // --- PATHS FIXED ---
+    const newsDocRef = doc(db, "artifacts", appId, "public", "data", "site_content", "news");
     try {
         await setDoc(newsDocRef, { markdown: newMarkdown });
         showNotification("News updated successfully!", "success");
@@ -1377,7 +1381,7 @@ function openEditLinkModal(linkId) {
         // Edit existing link
         const link = currentLinksData.find(l => l.id === linkId);
         if (!link) return;
-        
+
         linkLabel.textContent = 'Edit Link';
         editLinkId.value = linkId;
         linkTextInput.value = link.text;
@@ -1412,11 +1416,13 @@ async function handleSaveLink() {
     try {
         if (linkId) {
             // Update existing
-            const linkDocRef = doc(db, "artifacts", appId, "public/data/site_content", "links", linkId);
+            // --- PATHS FIXED ---
+            const linkDocRef = doc(db, "artifacts", appId, "public", "data", "links", linkId);
             await updateDoc(linkDocRef, linkData);
         } else {
             // Add new
-            const linksCollectionRef = collection(db, "artifacts", appId, "public/data/site_content", "links");
+            // --- PATHS FIXED ---
+            const linksCollectionRef = collection(db, "artifacts", appId, "public", "data", "links");
             await addDoc(linksCollectionRef, linkData);
         }
         showNotification("Link saved successfully!", "success");
@@ -1434,9 +1440,10 @@ async function handleDeleteLink() {
 
     // We can't use a nice modal, so we'll just log it for now
     console.log(`Asking to delete link ${linkId}. In a real app, use a modal!`);
-    
+
     try {
-        const linkDocRef = doc(db, "artifacts", appId, "public/data/site_content", "links", linkId);
+        // --- PATHS FIXED ---
+        const linkDocRef = doc(db, "artifacts", appId, "public", "data", "links", linkId);
         await deleteDoc(linkDocRef);
         showNotification("Link deleted successfully.", "success");
         editLinkModal.classList.add('hidden');
@@ -1452,20 +1459,21 @@ async function handleDeleteLink() {
 // --- Admin: User Management Functions ---
 
 /** Renders the table in the User Management panel */
-function renderUserRolesTable() {
+async function renderUserRolesTable() {
     if (!userRolesTable) return;
 
     // Combine data: profiles, roles, and online status
-    const combinedData = allFirebaseUsersData.map(user => {
-        const roleData = allFirebaseRolesData.find(r => r.uid === user.uid) || {};
-        // --- UPDATED: Get full session object ---
+    const combinedDataPromises = allFirebaseUsersData.map(async (user) => {
+        const role = await getCurrentUserRole(user.uid); // Use async helper
         const session = firestoreActiveSessions.find(s => s.id === user.uid);
         return {
             ...user,
-            role: getCurrentUserRole(user.uid), // Use helper
-            session: session // Pass the whole session object
+            role: role,
+            session: session
         };
     });
+
+    const combinedData = await Promise.all(combinedDataPromises);
 
     // *** NAME FIX: Removed Email header ***
     userRolesTable.innerHTML = `
@@ -1546,13 +1554,13 @@ async function updateUserRoleAndChips(uid, newRole, newChips) {
     try {
         const batch = writeBatch(db);
 
-        // --- PATHS FIXED to v3.1 ---
+        // --- PATHS FIXED ---
         // Update Role
-        const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
+        const roleRef = doc(db, "artifacts", appId, "public", "data", "user_roles", uid);
         batch.update(roleRef, { role: newRole });
 
         // Update Profile (Chips)
-        const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", uid);
+        const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", uid);
         batch.update(profileRef, { chip_count: newChips });
 
         await batch.commit();
@@ -1609,8 +1617,8 @@ async function deleteGameRoom(roomId) {
     //     return;
     // }
     try {
-        // --- PATHS FIXED to v3.1 ---
-        const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+        // --- PATHS FIXED ---
+        const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
         await deleteDoc(roomRef);
         showNotification("Room deleted successfully.", "success");
     } catch (error) {
@@ -1652,7 +1660,8 @@ async function joinGameRoom(roomId) {
 
     // --- UPDATED Data Structure ---
     // Add player to room's player list (array of UIDs)
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
 
     try {
         // Use a transaction to safely add player and set initial state
@@ -1692,9 +1701,9 @@ async function joinGameRoom(roomId) {
             }
         });
 
-        // --- PATHS FIXED to v3.1 ---
+        // --- PATHS FIXED ---
         // Set user's current room
-        const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
+        const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", currentUserId);
         await updateDoc(profileRef, { current_room: roomId });
 
         currentJoinedRoomId = roomId;
@@ -1722,7 +1731,8 @@ async function leaveGameRoom() {
     // We also need to remove them from the gameState maps
 
     try {
-        const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+        // --- PATHS FIXED ---
+        const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
 
         // Use a transaction to safely remove player and their state
         await runTransaction(db, async (transaction) => {
@@ -1748,9 +1758,9 @@ async function leaveGameRoom() {
             });
         });
 
-        // --- PATHS FIXED to v3.1 ---
+        // --- PATHS FIXED ---
         // Clear user's current room
-        const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
+        const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", currentUserId);
         await updateDoc(profileRef, { current_room: null });
 
         currentJoinedRoomId = null;
@@ -1835,8 +1845,9 @@ async function handleJoinRoom(roomId) {
     }
 
     console.log(`User ${currentUserId} joining room ${roomId}`);
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
-    const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", currentUserId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+    const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", currentUserId);
 
     try {
         // Use a transaction to safely add player
@@ -2069,7 +2080,8 @@ async function adminPostBlinds(roomId) {
     }
 
     console.log("Admin posting blinds...");
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     const players = room.players;
     const pCount = players.length;
     const currentDealerPos = room.dealerPosition || 0;
@@ -2250,7 +2262,8 @@ async function handleSavePlayerOrder(roomId) {
         newStatus[uid] = 'pending';
     });
 
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         // --- UPDATED: Also reset the room and update the main 'players' array ---
         await updateDoc(roomRef, {
@@ -2275,8 +2288,9 @@ async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
 
     console.log(`Admin removing ${targetPlayerName} from room ${roomId}`);
 
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
-    const profileRef = doc(db, "artifacts", appId, "public/data/user_profiles", targetPlayerId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+    const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", targetPlayerId);
 
     try {
         await runTransaction(db, async (transaction) => {
@@ -2306,7 +2320,8 @@ async function adminRemovePlayer(roomId, targetPlayerId, targetPlayerName) {
 async function adminForceFoldPlayer(roomId, targetPlayerId, targetPlayerName) {
     if (!hasAdminAccess(currentUserId)) return showNotification("Permission denied.", "error");
     console.log(`Admin forcing fold for ${targetPlayerName}`);
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         await updateDoc(roomRef, {
             [`gameState.status.${targetPlayerId}`]: 'folded'
@@ -2330,7 +2345,8 @@ async function adminPlaceBetForPlayer(roomId, targetPlayerId, targetPlayerName, 
     if (betAmount > playerChips) return showNotification("Amount exceeds player's chips.", "error");
 
     console.log(`Admin betting ${betAmount} for ${targetPlayerName}`);
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         const newStatus = (betAmount === playerChips) ? 'all-in' : 'ready';
         await updateDoc(roomRef, {
@@ -2352,7 +2368,8 @@ async function adminRoomReset(roomId) {
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room) return showNotification("Room not found.", "error");
 
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         const newBets = {};
         const newStatus = {};
@@ -2471,7 +2488,8 @@ async function handleSubmitChipUpdate(roomId) {
     // 8. Update Firestore
     const batch = writeBatch(db);
     players.forEach(player => {
-        const playerProfileRef = doc(db, "artifacts", appId, "public/data/user_profiles", player.id);
+        // --- PATHS FIXED ---
+        const playerProfileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", player.id);
         // Player's new chips = current chips - their bet + their winnings
         const newChipCount = player.chips - player.bet + player.winnings;
         batch.update(playerProfileRef, { chip_count: newChipCount });
@@ -2499,7 +2517,8 @@ async function handlePlaceBet(roomId, amount) {
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room) return showNotification("Room not found.", "error");
 
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     const newStatus = (amount === playerChips) ? 'all-in' : 'ready';
 
     try {
@@ -2535,7 +2554,8 @@ async function handleCallBet(roomId) {
         return handleAllIn(roomId);
     }
 
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         await updateDoc(roomRef, {
             [`gameState.bets.${currentUserId}`]: highestBet, // Call by matching the highest bet
@@ -2550,7 +2570,8 @@ async function handleCallBet(roomId) {
 
 /** (Player) Handles folding the hand */
 async function handleFold(roomId) {
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         await updateDoc(roomRef, {
             [`gameState.status.${currentUserId}`]: 'folded'
@@ -2567,7 +2588,8 @@ async function handleAllIn(roomId) {
     const playerProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
     const playerChips = playerProfile?.chip_count || 0;
 
-    const roomRef = doc(db, "artifacts", appId, "public/data/game_rooms", roomId);
+    // --- PATHS FIXED ---
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
     try {
         await updateDoc(roomRef, {
             [`gameState.bets.${currentUserId}`]: playerChips, // Bet all chips
@@ -2673,8 +2695,8 @@ async function openDirectMessage(otherUserId) {
 
     try {
         // Check if this DM group already exists
-        // --- PATHS FIXED to v3.1 ---
-        const groupRef = doc(db, "artifacts", appId, "public/data/chat_groups", groupId);
+        // --- PATHS FIXED ---
+        const groupRef = doc(db, "artifacts", appId, "public", "data", "chat_groups", groupId);
         const groupDoc = await getDoc(groupRef);
 
         if (!groupDoc.exists()) {
@@ -2711,8 +2733,8 @@ function openGroupChat(groupId, groupName) {
     groupChatModal.classList.remove('hidden');
 
     // --- Attach message listener ---
-    // --- PATHS FIXED to v3.1 ---
-    const messagesCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups", groupId, "messages");
+    // --- PATHS FIXED ---
+    const messagesCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
     const q = query(messagesCollectionRef); // Add orderBy('timestamp') here if you add it
 
     onSnapshot(q, (snapshot) => {
@@ -2760,8 +2782,8 @@ async function sendGroupMessage() {
 
     if (!text || !groupId) return;
 
-    // --- PATHS FIXED to v3.1 ---
-    const messagesCollectionRef = collection(db, "artifacts", appId, "public/data/chat_groups", groupId, "messages");
+    // --- PATHS FIXED ---
+    const messagesCollectionRef = collection(db, "artifacts", appId, "public", "data", "chat_groups", groupId, "messages");
 
     try {
         await addDoc(messagesCollectionRef, {
@@ -2933,7 +2955,8 @@ async function getCurrentUserRole(uid) {
 
     // Fallback for the very first login, before listeners are set
     console.warn("getCurrentUserRole: Role not in local cache, fetching doc.");
-    const roleRef = doc(db, "artifacts", appId, "public/data/user_roles", uid);
+    // --- PATHS FIXED ---
+    const roleRef = doc(db, "artifacts", appId, "public", "data", "user_roles", uid);
 
     try {
         const docSnap = await getDoc(roleRef);
