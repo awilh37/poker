@@ -14,7 +14,7 @@
       All styles have been moved to style.css and are
       linked here.
     -->
-    <link rel="stylesheet" href="style.css?v=3.2.15"> <!-- v-up -->
+    <link rel="stylesheet" href="style.css?v=3.2.16"> <!-- v-up -->
 </head>
 
 <body>
@@ -132,16 +132,118 @@
 
         <!-- 
           ============================================================
-          =                MAIN ACTIONS (Hidden by default)          =
+          =       MAIN ACTIONS (NOW DASHBOARD) (Hidden by default)   =
           ============================================================
         -->
-        <div id="mainActionButtons" class="content-panel hidden">
-            <h2>Main Menu</h2>
-            <div class="form-actions" style="flex-direction: column;">
-                <button id="joinGameButton" class="btn btn-green btn-full">Join a Game</button>
-                <button id="viewUserDirectoryButton" class="btn btn-blue btn-full">User Directory</button>
-                <button id="openAccountManagementButton" class="btn btn-purple btn-full">Manage Account</button>
-                <button id="openAdminPanelButton" class="btn btn-red btn-full hidden">Admin Panel</button>
+        <div id="mainActionButtons" class="content-panel hidden" style="max-width: 64rem; text-align: left;">
+            <h2>Dashboard</h2>
+
+            <!-- 
+              These buttons are hidden but are "clicked" by the sidebar and
+              dropdown menus. Do not remove them.
+            -->
+            <div class="hidden-action-buttons" style="display: none;">
+                <button id="joinGameButton"></button>
+                <button id="viewUserDirectoryButton"></button>
+                <button id="openAccountManagementButton"></button>
+                <button id="openAdminPanelButton"></button>
+            </div>
+
+            <div class="dashboard-layout">
+                <!-- News Section -->
+                <div id="newsSection" class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h3>Latest News</h3>
+                        <button id="editNewsButton" class="btn btn-icon btn-sm hidden" title="Edit News">
+                            <!-- Pencil Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" style="width: 1.25rem; height: 1.25rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="newsContent" class="dashboard-card-content news-content">
+                        <p>Welcome to WPS 3.2!</p>
+                        <p>To get started, join a game or view the user directory from the menu in the top-left corner
+                            ( <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            </svg> ).</p>
+                        <p>You can manage your account from the dropdown in the top-right ( <svg
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg> ).</p>
+                    </div>
+                </div>
+
+                <!-- Links Section -->
+                <div id="linksSection" class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <h3>Quick Links</h3>
+                        <button id="addLinkButton" class="btn btn-icon btn-sm hidden" title="Add New Link">
+                            <!-- Plus Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" style="width: 1.25rem; height: 1.25rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="linksContent" class="dashboard-card-content links-grid">
+                        <!-- Links will be populated by JS -->
+                        <p style="margin-top: 0;">No custom links have been added yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modals for editing (functionality not yet wired) -->
+            <div id="editNewsModal" class="modal-overlay hidden">
+                <div class="modal-content" style="max-width: 600px; text-align: left;">
+                    <h3>Edit News</h3>
+                    <div class="form-group">
+                        <label for="newsMarkdownInput" class="form-label">News Content</label>
+                        <textarea id="newsMarkdownInput" class="form-input" rows="10"
+                            placeholder="Type news here..."></textarea>
+                    </div>
+                    <div class="form-actions" style="justify-content: flex-end;">
+                        <button id="cancelEditNews" class="btn btn-gray">Cancel</button>
+                        <button id="saveEditNews" class="btn btn-blue">Save News</button>
+                    </div>
+                </div>
+            </div>
+            <div id="editLinkModal" class="modal-overlay hidden">
+                <div class="modal-content" style="max-width: 500px; text-align: left;">
+                    <h3 id="linkLabel">Add New Link</h3>
+                    <input type="hidden" id="editLinkId">
+                    <div class="form-group">
+                        <label for="linkTextInput" class="form-label">Button Text</label>
+                        <input type="text" id="linkTextInput" class="form-input" placeholder="e.g., Google">
+                    </div>
+                    <div class="form-group">
+                        <label for="linkUrlInput" class="form-label">Button URL</label>
+                        <input type="url" id="linkUrlInput" class="form-input" placeholder="https://google.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="linkColorInput" class="form-label">Button Color</label>
+                        <select id="linkColorInput" class="form-select">
+                            <option value="btn-blue">Blue</option>
+                            <option value="btn-green">Green</option>
+                            <option value="btn-purple">Purple</option>
+                            <option value="btn-red">Red</option>
+                            <option value="btn-gray">Gray</option>
+                        </select>
+                    </div>
+                    <div class="form-actions" style="justify-content: space-between;">
+                        <button id="deleteLinkButton" class="btn btn-red hidden">Delete</button>
+                        <div>
+                            <button id="cancelEditLink" class="btn btn-gray">Cancel</button>
+                            <button id="saveEditLink" class="btn btn-blue">Save Link</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -347,7 +449,8 @@
         <div id="setOrderModal" class="modal-overlay hidden">
             <div class="modal-content" id="setOrderModalContent" style="max-width: 400px;">
                 <h4>Set Player Order</h4>
-                <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 1rem;">Drag and drop players to set the turn order. The first player will be the dealer.</p>
+                <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 1rem;">Drag and drop players to set the
+                    turn order. The first player will be the dealer.</p>
                 <div id="setOrderPlayerList" class="set-order-list">
                     <!-- JS will populate this -->
                     <p>Loading players...</p>
@@ -388,7 +491,7 @@
       is linked here. It's a "module" to support
       Firebase imports.
     -->
-    <script type="module" src="script.js?v=3.2.15"></script> <!-- v-up -->
+    <script type="module" src="script.js?v=3.2.16"></script> <!-- v-up -->
 </body>
 
 </html>

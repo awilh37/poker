@@ -108,11 +108,16 @@ const googleLoginButton = document.getElementById('googleLoginButton');
 // REMOVED: messageBox
 const loadingIndicator = document.getElementById('loadingIndicator');
 
-// Main action buttons
+// Main action buttons (These are now hidden, but clicked by menus)
 const openAccountManagementButton = document.getElementById('openAccountManagementButton');
 const viewUserDirectoryButton = document.getElementById('viewUserDirectoryButton');
 const openAdminPanelButton = document.getElementById('openAdminPanelButton');
 const joinGameButton = document.getElementById('joinGameButton');
+
+// --- NEW Dashboard Elements ---
+const editNewsButton = document.getElementById('editNewsButton');
+const addLinkButton = document.getElementById('addLinkButton');
+// (Modal elements for dashboard are in HTML but not wired yet)
 
 // --- NEW Header & Sidebar Elements ---
 const hamburgerButton = document.getElementById('hamburgerButton');
@@ -235,12 +240,7 @@ if (auth) {
             if (!isLoggingOut && !dataLoadedAndListenersSetup) {
                 console.log("onAuthStateChanged: User present, triggering handleLoginSuccess.");
                 await handleLoginSuccess(user);
-                // NEW: Show/hide admin link in dropdown based on role
-                if (hasAdminAccess(user.uid)) {
-                    dropdownAdminLink.classList.remove('hidden');
-                } else {
-                    dropdownAdminLink.classList.add('hidden');
-                }
+                // MOVED: Admin link visibility is now handled in handleLoginSuccess
             } else if (isLoggingOut) {
                 console.log("onAuthStateChanged: isLoggingOut is true, skipping login success logic.");
             } else if (dataLoadedAndListenersSetup) {
@@ -262,8 +262,7 @@ if (auth) {
                 isLoggingOut = false; // Reset flag
                 showPanel(loginButtonsContainer);
                 showNotification("You have been successfully logged out.", "success");
-                // NEW: Hide admin link on logout
-                dropdownAdminLink.classList.add('hidden');
+                // MOVED: Admin link visibility is now handled in handleLogout
             } else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 // We have a custom token, let's try to sign in
                 console.log("Firebase: No user, trying custom token auth.");
@@ -283,8 +282,7 @@ if (auth) {
             } else {
                 // Regular web or after logout
                 console.log("Firebase: Displaying login options.");
-                // NEW: Hide admin link on logout
-                dropdownAdminLink.classList.add('hidden');
+                // MOVED: Admin link visibility is now handled in handleLogout
                 showPanel(loginButtonsContainer);
                 loadingIndicator.classList.add('hidden');
             }
@@ -464,6 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Main Menu Navigation ---
+    // These buttons are now hidden, but their listeners are
+    // triggered by the sidebar/dropdown links.
     openAccountManagementButton.addEventListener('click', () => {
         displayNameInput.value = auth.currentUser.displayName || '';
         showPanel(accountManagementPanel);
@@ -791,11 +791,26 @@ async function handleLoginSuccess(user) {
 
         // Update UI
         currentUserData = allFirebaseUsersData.find(u => u.uid === user.uid);
+        
+        // --- NEW: Consolidated Admin UI Logic ---
         if (hasAdminAccess(user.uid)) {
+            // Main Menu button (hidden, for click() )
             openAdminPanelButton.classList.remove('hidden');
+            // Dropdown link
+            dropdownAdminLink.classList.remove('hidden');
+            // Dashboard buttons
+            if (editNewsButton) editNewsButton.classList.remove('hidden');
+            if (addLinkButton) addLinkButton.classList.remove('hidden');
         } else {
+            // Main Menu button (hidden)
             openAdminPanelButton.classList.add('hidden');
+            // Dropdown link
+            dropdownAdminLink.classList.add('hidden');
+            // Dashboard buttons
+            if (editNewsButton) editNewsButton.classList.add('hidden');
+            if (addLinkButton) addLinkButton.classList.add('hidden');
         }
+        // --- END NEW ---
 
         showPanel(mainActionButtons);
         showNotification(`Welcome, ${formatDisplayName(currentUserData)}!`, "success");
@@ -838,7 +853,12 @@ async function handleLogout() {
         isLoggingOut = false; // Reset flag on error
         showNotification(`Logout Error: ${error.message}`, "error");
     }
-    // --- NEW: Session flag is cleared in onAuthStateChanged (when user is null) ---
+    
+    // --- NEW: Hide Admin UI on logout ---
+    dropdownAdminLink.classList.add('hidden');
+    if (editNewsButton) editNewsButton.classList.add('hidden');
+    if (addLinkButton) addLinkButton.classList.add('hidden');
+    // --- END NEW ---
 }
 
 /**
