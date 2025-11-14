@@ -1713,8 +1713,8 @@ async function adminPostBlinds(roomId) {
     const currentDealerPos = room.dealerPosition || 0;
 
     // Determine SB and BB
-    const sbIndex = (currentDealerPos + 1) % pCount;
-    const bbIndex = (currentDealerPos + 2) % pCount;
+    const sbIndex = (currentDealerPos + 2) % pCount;
+    const bbIndex = (currentDealerPos + 3) % pCount;
     const sbPlayerId = players[sbIndex];
     const bbPlayerId = players[bbIndex];
 
