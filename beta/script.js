@@ -107,6 +107,13 @@ const updateChipsModal = document.getElementById('updateChipsModal');
 const setOrderModal = document.getElementById('setOrderModal');
 const setOrderModalContent = document.getElementById('setOrderModalContent');
 
+// NEW: Spectator List Modal
+const spectatorListModal = document.getElementById('spectatorListModal');
+const spectatorList = document.getElementById('spectatorList');
+const closeSpectatorListModalButton = document.getElementById('closeSpectatorListModalButton');
+const spectatorInfo = document.getElementById('spectatorInfo');
+const spectatorCount = document.getElementById('spectatorCount');
+
 // Buttons
 const googleLoginButton = document.getElementById('googleLoginButton');
 // REMOVED: messageBox
@@ -143,6 +150,7 @@ const linkColorInput = document.getElementById('linkColorInput');
 
 
 // --- NEW Header & Sidebar Elements ---
+const headerTitle = document.getElementById('headerTitle');
 const hamburgerButton = document.getElementById('hamburgerButton');
 const accountButton = document.getElementById('accountButton');
 const sidebar = document.getElementById('sidebar');
@@ -498,6 +506,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     openAdminPanelButton.addEventListener('click', () => showPanel(adminPanel));
+
+    headerTitle.addEventListener('click', () => {
+        if (currentUserId) {
+            showPanel(mainActionButtons);
+        }
+    });
 
     joinGameButton.addEventListener('click', () => {
         // --- UPDATED: Show Lobby Panel ---
@@ -1042,7 +1056,6 @@ function setupDataListeners() {
             if (!userDirectoryPanel.classList.contains('hidden')) renderUserDirectoryTable();
             if (currentJoinedRoomId && !gameRoomViewPanel.classList.contains('hidden')) renderGameRoomView(currentJoinedRoomId);
             renderStandingsSidebar(); // NEW: Update standings on profile change
-            // if (!investmentsPanel.classList.contains('hidden')) populateInvestmentPlayerSelect(); // Feature hidden
 
             if (initialLoad) { initialLoad = false; resolve(); }
         }, (error) => { console.error("Firestore: Error listening to user profiles:", error); reject(error); });
@@ -1715,6 +1728,34 @@ async function joinGameRoom(roomId) {
     }
 }
 
+/** Joins a game room as a spectator */
+async function spectateGameRoom(roomId) {
+    console.log(`User ${currentUserId} attempting to spectate room ${roomId}`);
+    const room = firestoreGameRooms.find(r => r.id === roomId);
+    if (!room) {
+        showNotification("Room not found.", "error");
+        return;
+    }
+
+    const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+    try {
+        await updateDoc(roomRef, {
+            spectators: arrayUnion(currentUserId)
+        });
+
+        const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", currentUserId);
+        await updateDoc(profileRef, { current_room: roomId });
+
+        currentJoinedRoomId = roomId;
+        renderGameRoomView(roomId);
+        showPanel(gameRoomViewPanel);
+    } catch (error) {
+        console.error("Error spectating room:", error);
+        showNotification(`Error spectating room: ${error.message}`, "error");
+    }
+}
+
+
 /** Leaves the current game room */
 async function leaveGameRoom() {
     if (!currentJoinedRoomId) return;
@@ -1747,6 +1788,9 @@ async function leaveGameRoom() {
             // Remove from players array
             const newPlayers = (roomData.players || []).filter(uid => uid !== currentUserId);
 
+            // NEW: Remove from spectators array
+            const newSpectators = (roomData.spectators || []).filter(uid => uid !== currentUserId);
+
             // Remove from gameState maps
             const newGameState = { ...roomData.gameState };
             if (newGameState.bets) delete newGameState.bets[currentUserId];
@@ -1754,6 +1798,7 @@ async function leaveGameRoom() {
 
             transaction.update(roomRef, {
                 players: newPlayers,
+                spectators: newSpectators,
                 gameState: newGameState
             });
         });
@@ -1773,6 +1818,35 @@ async function leaveGameRoom() {
         showNotification(`Error leaving room: ${error.message}`, "error");
     }
 }
+
+/**
+ * Removes a user as a spectator from a room.
+ * This is a background task when a spectator navigates away.
+ */
+async function removeSpectator(roomId, userId) {
+    console.log(`Auto-removing spectator ${userId} from room ${roomId}`);
+    try {
+        const roomRef = doc(db, "artifacts", appId, "public", "data", "game_rooms", roomId);
+        const profileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", userId);
+
+        // Use a batch to perform both updates atomically
+        const batch = writeBatch(db);
+
+        batch.update(roomRef, {
+            spectators: arrayRemove(userId)
+        });
+        batch.update(profileRef, {
+            current_room: null
+        });
+
+        await batch.commit();
+        console.log(`Spectator ${userId} removed successfully.`);
+    } catch (error) {
+        console.error(`Error auto-removing spectator ${userId}:`, error);
+        // No user-facing notification needed for this background task
+    }
+}
+
 
 // --- NEW: Render Available Rooms (Lobby) ---
 /** Renders the list of available game rooms for the lobby panel */
@@ -1806,19 +1880,28 @@ function renderAvailableRoomsList() {
         joinBtn.textContent = 'Join Room';
         joinBtn.onclick = () => handleJoinRoom(room.id);
 
+        const spectateBtn = document.createElement('button');
+        spectateBtn.className = 'btn btn-gray btn-sm';
+        spectateBtn.textContent = 'Spectate';
+        spectateBtn.onclick = () => spectateGameRoom(room.id);
+
         // Check if user is already in *any* room
         const userInARoom = allFirebaseUsersData.find(u => u.uid === currentUserId)?.current_room;
         if (userInARoom) {
             if (userInARoom === room.id) {
                 joinBtn.textContent = 'Re-enter';
                 joinBtn.className = 'btn btn-blue btn-sm';
+                spectateBtn.disabled = true;
             } else {
                 joinBtn.disabled = true;
                 joinBtn.title = "You are already in another room";
+                spectateBtn.disabled = true;
+                spectateBtn.title = "You are already in another room";
             }
         }
 
         actionsDiv.appendChild(joinBtn);
+        actionsDiv.appendChild(spectateBtn);
         div.appendChild(infoDiv);
         div.appendChild(actionsDiv);
         availableRoomsListContainer.appendChild(div);
@@ -1901,12 +1984,41 @@ function renderGameRoomView(roomId) {
 
     // --- Calculate Game State ---
     const roomPlayers = room.players || [];
+    const roomSpectators = room.spectators || [];
     const roomBets = room.gameState.bets || {};
     const roomStatus = room.gameState.status || {};
-    // NEW: Get current user's profile and admin status
+
     const currentUserProfile = allFirebaseUsersData.find(p => p.uid === currentUserId);
     const currentUserChips = currentUserProfile?.chip_count || 0;
     const currentUserIsAdmin = hasAdminAccess(currentUserId);
+    const currentUserIsSpectator = roomSpectators.includes(currentUserId);
+
+    // Update spectator count
+    spectatorCount.textContent = roomSpectators.length;
+
+    // Populate and manage spectator modal
+    spectatorList.innerHTML = '';
+    if (roomSpectators.length > 0) {
+        roomSpectators.forEach(uid => {
+            const spectator = allFirebaseUsersData.find(u => u.uid === uid);
+            const li = document.createElement('div');
+            li.className = 'spectator-list-item';
+            li.textContent = spectator ? formatDisplayName(spectator) : 'Loading...';
+            spectatorList.appendChild(li);
+        });
+    } else {
+        spectatorList.innerHTML = '<p>No spectators yet.</p>';
+    }
+
+    // Attach listener to show/hide the modal
+    spectatorInfo.onclick = () => spectatorListModal.classList.remove('hidden');
+    closeSpectatorListModalButton.onclick = () => spectatorListModal.classList.add('hidden');
+    spectatorListModal.onclick = (e) => {
+        if (e.target === spectatorListModal) {
+            spectatorListModal.classList.add('hidden');
+        }
+    };
+
 
     // Calculate total pot
     let totalPot = 0;
@@ -2019,8 +2131,7 @@ function renderGameRoomView(roomId) {
     if (currentUserFinalStatus !== 'folded' && currentUserFinalStatus !== 'all-in' && currentUserBet < highestBet) {
         currentUserFinalStatus = 'pending';
     }
-    const canPlayerAct = currentUserFinalStatus !== 'folded' && currentUserFinalStatus !== 'all-in';
-    // --- END NEW ---
+    const canPlayerAct = !currentUserIsSpectator && currentUserFinalStatus !== 'folded' && currentUserFinalStatus !== 'all-in';
 
     let actionColumnHtml = '';
     if (canPlayerAct) {
@@ -2045,7 +2156,7 @@ function renderGameRoomView(roomId) {
         actionColumnHtml = `
             <div class="gr-box gr-action-box">
                 <h4>Your Action</h4>
-                <p class="text-center font-semibold text-lg">You are ${currentUserFinalStatus}</p> <!-- UPDATED: Use finalStatus -->
+                <p class="text-center font-semibold text-lg">${currentUserIsSpectator ? 'Spectating...' : `You are ${currentUserFinalStatus}`}</p>
             </div>
         `;
     }
@@ -2802,10 +2913,57 @@ async function sendGroupMessage() {
 // --- Utility & UI Functions ---
 
 /**
+ * Checks and shows the "re-join" notification if needed.
+ */
+function checkAndShowRejoinNotification() {
+    const currentUserProfile = allFirebaseUsersData.find(u => u.uid === currentUserId);
+    const reJoinNotification = document.querySelector('.rejoin-notification');
+    const room = firestoreGameRooms.find(r => r.id === currentUserProfile?.current_room);
+    const isSpectator = room?.spectators?.includes(currentUserId);
+
+    if (currentUserProfile && currentUserProfile.current_room && gameRoomViewPanel.classList.contains('hidden') && !isSpectator) {
+        if (!reJoinNotification) {
+            const roomName = room ? room.name : 'a room';
+            showNotification(
+                `You are still in the room "${roomName}". Click to re-join.`,
+                'info',
+                {
+                    autoClose: 0,
+                    customClass: 'rejoin-notification',
+                    onClick: () => {
+                        joinGameRoom(currentUserProfile.current_room);
+                    }
+                }
+            );
+        }
+    } else {
+        if (reJoinNotification) {
+            reJoinNotification.remove();
+        }
+    }
+}
+
+/**
  * Shows a specific panel and hides all others.
  * @param {HTMLElement} panelToShow - The DOM element of the panel to show.
  */
 function showPanel(panelToShow) {
+    // --- NEW: Auto-remove spectator on navigation ---
+    // Check if the user is a spectator and is navigating *away* from the game room
+    const currentUserProfile = allFirebaseUsersData.find(u => u.uid === currentUserId);
+    if (currentUserProfile && currentUserProfile.current_room) {
+        const room = firestoreGameRooms.find(r => r.id === currentUserProfile.current_room);
+        const isSpectator = room?.spectators?.includes(currentUserId);
+        const isLeavingGameView = !gameRoomViewPanel.classList.contains('hidden') && panelToShow !== gameRoomViewPanel;
+
+        if (isSpectator && isLeavingGameView) {
+            // Call the function but don't wait for it to complete
+            removeSpectator(currentUserProfile.current_room, currentUserId);
+        }
+    }
+    // --- END NEW ---
+
+
     // List of all panels
     const allPanels = [
         loginButtonsContainer,
@@ -2836,6 +2994,7 @@ function showPanel(panelToShow) {
     } else {
         console.warn("showPanel: panelToShow was null or undefined.");
     }
+    checkAndShowRejoinNotification();
 }
 
 /**
@@ -2846,7 +3005,7 @@ function showPanel(panelToShow) {
  */
 function showNotification(message, type = "info", options = {}) {
     // Set default options
-    const { autoClose = 5000, onClick = null } = options;
+    const { autoClose = 5000, onClick = null, customClass = '' } = options;
 
     const container = document.getElementById('notificationContainer');
     if (!container) {
@@ -2856,7 +3015,7 @@ function showNotification(message, type = "info", options = {}) {
 
     // Create the toast element
     const toast = document.createElement('div');
-    toast.className = `notification-toast ${type}`;
+    toast.className = `notification-toast ${type} ${customClass}`;
 
     // Create message content
     const messageEl = document.createElement('div');

@@ -36,7 +36,7 @@
             </button>
         </div>
         <div class="header-center">
-            <h1 class="header-title">WPS 3.2</h1>
+            <h1 id="headerTitle" class="header-title" style="cursor: pointer;">WPS 3.2</h1>
         </div>
         <div class="header-right">
             <button id="accountButton" class="header-icon-btn">
@@ -328,8 +328,17 @@
             The new CSS will handle the styling.
         -->
         <div id="gameRoomViewPanel" class="content-panel hidden">
-            <button class="btn btn-gray" id="leaveGameRoomButton">← Leave Room</button>
-            <h2 id="gameRoomName">Game Room</h2>
+            <div class="game-room-header">
+                <button class="btn btn-gray" id="leaveGameRoomButton">← Leave Room</button>
+                <h2 id="gameRoomName">Game Room</h2>
+                <div id="spectatorInfo" class="spectator-info">
+                    <svg class="spectator-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639l4.43-7.584a1.012 1.012 0 011.012 0l4.43 7.584a1.012 1.012 0 010 .639l-4.43 7.583a1.012 1.012 0 01-1.012 0l-4.43-7.583z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12.002 14.33a2.345 2.345 0 100-4.69 2.345 2.345 0 000 4.69z" />
+                    </svg>
+                    <span id="spectatorCount">0</span>
+                </div>
+            </div>
             <!-- gameRoomContent is now the main container for the new UI -->
             <div id="gameRoomContent">
                 <!-- JS will populate all game content here -->
@@ -394,6 +403,23 @@
             </div>
         </div>
         <!-- =================== GROUP CHAT MODAL END =================== -->
+
+        <!--
+          ============================================================
+          =            SPECTATOR LIST MODAL START (Hidden)           =
+          ============================================================
+        -->
+        <div id="spectatorListModal" class="modal-overlay hidden">
+            <div class="modal-content" style="max-width: 400px;">
+                <h3>Spectators</h3>
+                <div id="spectatorList" class="spectator-list">
+                    <!-- JS will populate this -->
+                    <p>No spectators yet.</p>
+                </div>
+                <button id="closeSpectatorListModalButton" class="btn btn-gray" style="margin-top: 1rem;">Close</button>
+            </div>
+        </div>
+        <!-- =================== SPECTATOR LIST MODAL END =================== -->
 
         <!-- 
           ============================================================
