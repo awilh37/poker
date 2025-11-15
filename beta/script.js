@@ -1057,33 +1057,6 @@ function setupDataListeners() {
             if (currentJoinedRoomId && !gameRoomViewPanel.classList.contains('hidden')) renderGameRoomView(currentJoinedRoomId);
             renderStandingsSidebar(); // NEW: Update standings on profile change
 
-            // Persistent "Re-join" Notification Logic
-            const currentUserProfile = allFirebaseUsersData.find(u => u.uid === currentUserId);
-            const reJoinNotification = document.querySelector('.rejoin-notification');
-
-            if (currentUserProfile && currentUserProfile.current_room && gameRoomViewPanel.classList.contains('hidden')) {
-                if (!reJoinNotification) {
-                    const room = firestoreGameRooms.find(r => r.id === currentUserProfile.current_room);
-                    const roomName = room ? room.name : 'a room';
-                    showNotification(
-                        `You are still in the room "${roomName}". Click to re-join.`,
-                        'info',
-                        {
-                            autoClose: 0,
-                            customClass: 'rejoin-notification',
-                            onClick: () => {
-                                joinGameRoom(currentUserProfile.current_room);
-                            }
-                        }
-                    );
-                }
-            } else {
-                if (reJoinNotification) {
-                    reJoinNotification.remove();
-                }
-            }
-
-
             if (initialLoad) { initialLoad = false; resolve(); }
         }, (error) => { console.error("Firestore: Error listening to user profiles:", error); reject(error); });
     });
@@ -2911,6 +2884,37 @@ async function sendGroupMessage() {
 // --- Utility & UI Functions ---
 
 /**
+ * Checks and shows the "re-join" notification if needed.
+ */
+function checkAndShowRejoinNotification() {
+    const currentUserProfile = allFirebaseUsersData.find(u => u.uid === currentUserId);
+    const reJoinNotification = document.querySelector('.rejoin-notification');
+    const room = firestoreGameRooms.find(r => r.id === currentUserProfile?.current_room);
+    const isSpectator = room?.spectators?.includes(currentUserId);
+
+    if (currentUserProfile && currentUserProfile.current_room && gameRoomViewPanel.classList.contains('hidden') && !isSpectator) {
+        if (!reJoinNotification) {
+            const roomName = room ? room.name : 'a room';
+            showNotification(
+                `You are still in the room "${roomName}". Click to re-join.`,
+                'info',
+                {
+                    autoClose: 0,
+                    customClass: 'rejoin-notification',
+                    onClick: () => {
+                        joinGameRoom(currentUserProfile.current_room);
+                    }
+                }
+            );
+        }
+    } else {
+        if (reJoinNotification) {
+            reJoinNotification.remove();
+        }
+    }
+}
+
+/**
  * Shows a specific panel and hides all others.
  * @param {HTMLElement} panelToShow - The DOM element of the panel to show.
  */
@@ -2945,6 +2949,7 @@ function showPanel(panelToShow) {
     } else {
         console.warn("showPanel: panelToShow was null or undefined.");
     }
+    checkAndShowRejoinNotification();
 }
 
 /**
