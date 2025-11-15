@@ -675,6 +675,72 @@ p {
     It replaces the "green felt table" design.
 */
 
+/* --- NEW: Game Room Header --- */
+.game-room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    /* gray-200 */
+}
+
+.game-room-header h2 {
+    margin: 0;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.spectator-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 99px;
+    transition: background-color 0.2s;
+}
+
+.spectator-info:hover {
+    background-color: #f3f4f6;
+    /* gray-100 */
+}
+
+.spectator-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: #6b7280;
+    /* gray-500 */
+}
+
+#spectatorCount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+    /* gray-700 */
+}
+
+/* --- NEW: Spectator List Modal --- */
+.spectator-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    max-height: 40vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.spectator-list-item {
+    padding: 0.5rem 0.75rem;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+
 .game-room-layout {
     display: flex;
     flex-direction: column;
