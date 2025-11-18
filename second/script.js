@@ -985,7 +985,7 @@ async function setupUserProfile(user) {
             photo_url: user.photoURL || null,
             created_at: serverTimestamp(),
             last_login: serverTimestamp(),
-            chip_count: 1000, // Starting chips
+            chip_count: 0, // Starting chips
             current_room: null
         });
     } else {
