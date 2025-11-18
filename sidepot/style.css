@@ -1,0 +1,1396 @@
+/* --- Imports & Base --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* --- CSS Reset & Base --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    /* NEW: Light blue to light purple gradient */
+    background-color: #c2d2ff;
+    /* Fallback color */
+    background-image: linear-gradient(135deg, #a8c0ff 0%, #d8b4fe 100%);
+    min-height: 100vh;
+    margin: 0;
+    color: #334155;
+    /* Default text color (slate-700) */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll */
+}
+
+/* --- New Header --- */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: rgba(255, 255, 255, 0.7);
+    /* Translucent white */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Safari support */
+    border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    /* Stick to top */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 30;
+    /* Above most content */
+}
+
+.header-left,
+.header-center,
+.header-right {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    /* Each takes 1/3 space */
+}
+
+.header-center {
+    justify-content: center;
+}
+
+.header-right {
+    justify-content: flex-end;
+    position: relative;
+    /* For dropdown */
+}
+
+.header-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1f2937;
+    margin: 0;
+}
+
+.header-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #374151;
+    padding: 0.5rem;
+    border-radius: 99px;
+    transition: background-color 0.2s;
+}
+
+.header-icon-btn svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: block;
+    /* Fixes potential SVG alignment issues */
+}
+
+.header-icon-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* --- New Account Dropdown --- */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    /* Right below the button */
+    right: 0;
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    min-width: 180px;
+    z-index: 40;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #374151;
+    text-decoration: none;
+    transition: background-color 0.15s;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f3f4f6;
+}
+
+.dropdown-menu a#dropdownLogoutLink {
+    color: #dc3545;
+}
+
+/* --- New Sidebar --- */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 280px;
+    background-color: #ffffff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    /* Topmost */
+    padding: 2rem 1rem;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(-100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar.show {
+    transform: translateX(0);
+}
+
+.sidebar a {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.sidebar a:hover {
+    background-color: #f3f4f6;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 45;
+    /* Below sidebar, above content */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.sidebar-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/*
+  FIX: Override the .hidden class for the sidebar and overlay.
+  These elements are controlled by transforms and opacity,
+  so they should never be set to display: none.
+*/
+.sidebar.hidden {
+    display: flex !important;
+}
+
+.sidebar-overlay.hidden {
+    display: block !important;
+}
+
+/* --- New Standings Sidebar (Right) --- */
+.standings-sidebar {
+    display: none;
+    /* Hidden on mobile by default */
+}
+
+.standings-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.standings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.standings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: rgba(255, 255, 255, 0.4);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+}
+
+.standings-item:hover {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.standings-item .name {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.standings-item .name .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #9ca3af;
+    /* Offline (gray) */
+}
+
+.standings-item .name .status-dot.online {
+    background-color: #22c55e;
+    /* Online (green) */
+}
+
+/* --- NEW: Idle Status Dot --- */
+.standings-item .name .status-dot.idle {
+    background-color: #f59e0b;
+    /* Idle (amber-500) */
+}
+
+.standings-item .chips {
+    font-weight: 500;
+    color: #007bff;
+    font-size: 0.9rem;
+}
+
+
+/* --- Utility --- */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* --- Layout --- */
+#mainContainer {
+    width: 100%;
+    /* max-width: 1280px;  <- REMOVED to go full-width */
+    /* margin: 0 auto;       <- REMOVED to go full-width */
+    padding: 5rem 1rem 2rem 1rem;
+    /* UPDATED - Added 5rem top padding for fixed header */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Center the panels in the main content area */
+    gap: 1.5rem;
+    /* Replaces all the separate margins */
+}
+
+/* --- Typography --- */
+h2 {
+    font-size: 1.5rem;
+    /* text-2xl */
+    font-weight: 600;
+    /* semibold */
+    color: #111827;
+    margin: 0 0 1rem 0;
+    text-align: center;
+}
+
+h4 {
+    font-size: 1.25rem;
+    /* text-xl */
+    font-weight: 600;
+    /* semibold */
+    color: #111827;
+    margin: 0 0 0.75rem 0;
+    text-align: center;
+}
+
+h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+}
+
+p {
+    line-height: 1.6;
+    /* Removed margin-bottom: 1rem; to avoid conflicts */
+}
+
+/* --- Panels --- */
+.content-panel {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    /* rounded-xl */
+    padding: 1.5rem;
+    /* p-6 */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 48rem;
+    /* max-w-3xl */
+    text-align: center;
+}
+
+/* --- NEW: Game Room Panel Override --- */
+/* Make game room panel wider and restore default panel styles */
+#gameRoomViewPanel {
+    max-width: 1200px;
+    padding: 1.5rem;
+    background-color: #ffffff;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+
+/* --- Buttons --- */
+.btn {
+    display: inline-flex;
+    /* Use inline-flex for icon alignment */
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    /* font-semibold */
+    padding: 0.875rem 1.5rem;
+    /* UPDATED: py-3.5 px-6 - Made buttons bigger */
+    border-radius: 0.75rem;
+    /* UPDATED: rounded-xl */
+    font-size: 1rem;
+    /* UPDATED: text-base */
+    line-height: 1.5rem;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    /* UPDATED: Added shadow and better transition */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease-out;
+    text-decoration: none;
+    /* For <a> tags styled as buttons */
+}
+
+.btn:hover {
+    /* UPDATED: Brighter transform/shadow on hover */
+    opacity: 1;
+    /* Reset opacity from old style if any */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+
+.btn svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+}
+
+/* Button small (for modals, etc) */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Button full width */
+.btn-full {
+    width: 100%;
+}
+
+/* Button half width */
+.btn-half {
+    width: 50%;
+}
+
+@media (min-width: 640px) {
+    .btn-half {
+        width: calc(50% - 0.5rem);
+        /* Adjust for gap */
+    }
+}
+
+/* Button Colors */
+.btn-blue {
+    background-color: #3b82f6;
+}
+
+/* blue-500 */
+.btn-green {
+    background-color: #22c55e;
+}
+
+/* green-500 */
+.btn-red {
+    background-color: #ef4444;
+}
+
+/* red-500 */
+.btn-gray {
+    background-color: #6b7280;
+}
+
+/* gray-500 */
+.btn-purple {
+    background-color: #8b5cf6;
+}
+
+/* violet-500 */
+.btn-google {
+    background-color: #db4437;
+}
+
+/* Google Red */
+
+/* --- Forms --- */
+.form-label {
+    display: block;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.form-input,
+.form-select {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+/* --- Tables --- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.data-table th {
+    background-color: #f3f4f6;
+    color: #374151;
+    font-weight: 600;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.data-table tr:hover {
+    background-color: #f0f9ff;
+}
+
+.data-table .form-select,
+.data-table .form-input {
+    width: auto;
+    min-width: 150px;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* --- List --- */
+.list-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.list-item-content {
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.list-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.list-item-actions .btn {
+    width: auto;
+}
+
+@media (min-width: 640px) {
+    .list-item {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+/* --- Popups / Modals --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 0.375rem;
+    /* rounded-md */
+    background-color: white;
+    text-align: center;
+}
+
+/* --- NEW: Status Text Colors --- */
+.status-text.online {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.status-text.idle {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.status-text.offline {
+    color: #6b7280;
+}
+
+/* --- END NEW --- */
+
+.modal-content h3 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #111827;
+    /* text-gray-900 */
+}
+
+#groupPlayerList {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* --- Responsive Layout Adjustments --- */
+
+/* Large screens (lg: 1024px) */
+@media (min-width: 1024px) {
+
+    /* Show and pin the standings sidebar */
+    .standings-sidebar {
+        display: block;
+        position: fixed;
+        top: 65px;
+        /* Approx header height */
+        right: 0;
+        width: 280px;
+        height: calc(100vh - 65px);
+        background-color: rgba(255, 255, 255, 0.7);
+        /* Translucent white */
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        /* Safari support */
+        border-left: 1px solid rgba(200, 200, 200, 0.3);
+        z-index: 25;
+        /* Below header (30), above content */
+        padding: 1rem;
+        overflow-y: auto;
+    }
+
+    /* Add padding to main container to avoid overlap */
+    #mainContainer {
+        padding-right: 300px;
+        /* 280px sidebar + 20px gutter */
+    }
+}
+
+/* --- NEW: Game Room UI (Column Layout) --- */
+/*
+    These styles are for the new column-based game room layout.
+    It replaces the "green felt table" design.
+*/
+
+/* --- NEW: Game Room Header --- */
+.game-room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    /* gray-200 */
+}
+
+.game-room-header h2 {
+    margin: 0;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.spectator-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 99px;
+    transition: background-color 0.2s;
+}
+
+.spectator-info:hover {
+    background-color: #f3f4f6;
+    /* gray-100 */
+}
+
+.spectator-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: #6b7280;
+    /* gray-500 */
+}
+
+#spectatorCount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+    /* gray-700 */
+}
+
+/* --- NEW: Spectator List Modal --- */
+.spectator-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    max-height: 40vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.spectator-list-item {
+    padding: 0.5rem 0.75rem;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+
+.game-room-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    text-align: left;
+}
+
+/* On medium screens and up, use a 3-column layout */
+@media (min-width: 768px) {
+    .game-room-layout {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+
+    .game-players-column {
+        flex: 1;
+        /* Takes 1/3 */
+        order: 1;
+    }
+
+    .game-info-column {
+        flex: 1;
+        /* Takes 1/3 */
+        order: 2;
+    }
+
+    .game-actions-column {
+        flex: 1;
+        /* Takes 1/3 */
+        order: 3;
+    }
+}
+
+/* Styling for the boxes within the columns */
+.gr-box {
+    /* UPDATED: Use light indigo for theme */
+    background-color: #eef2ff;
+    /* indigo-50 */
+    border: 1px solid #c7d2fe;
+    /* indigo-200 */
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.gr-box h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    /* UPDATED: Use indigo for theme */
+    color: #4338ca;
+    /* indigo-700 */
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    /* UPDATED: Use indigo for theme */
+    border-bottom: 1px solid #c7d2fe;
+    /* indigo-200 */
+    text-align: center;
+}
+
+/* Players Column */
+.game-players-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    order: 2;
+    /* On mobile: Players second */
+}
+
+.gr-player-card {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
+    /* For admin menu */
+}
+
+.gr-player-card.is-current-user {
+    border-left: 4px solid #3b82f6;
+    /* blue-500 */
+}
+
+.gr-player-card h5 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0;
+}
+
+.gr-player-card .chips {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.gr-player-card .chips span {
+    font-weight: 700;
+    color: #ca8a04;
+    /* yellow-600 */
+}
+
+.gr-player-card .bet-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.gr-player-card .bet {
+    color: #4b5563;
+}
+
+.gr-player-card .status {
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 99px;
+    font-size: 0.8rem;
+}
+
+/* Status colors (re-using from table, but simplified) */
+.gr-player-card .status.ready {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.gr-player-card .status.folded {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.gr-player-card .status.pending {
+    background-color: #fef9c3;
+    color: #854d0e;
+}
+
+.gr-player-card .status.all-in {
+    background-color: #f3e8ff;
+    color: #581c87;
+}
+
+/* NEW: Dealer Badge on player card */
+.gr-player-card .gr-dealer-badge {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    background-color: #f59e0b;
+    /* amber-500 */
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* NEW: Admin menu on player card */
+.player-admin-menu-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #eef2ff;
+    /* indigo-50 */
+    border: 1px solid #c7d2fe;
+    /* indigo-200 */
+    border-radius: 99px;
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1.1rem;
+    line-height: 1.5rem;
+    color: #4338ca;
+    /* indigo-700 */
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 5;
+    /* Ensure it's clickable */
+}
+
+.player-admin-menu-btn:hover {
+    background: #e0e7ff;
+    /* indigo-100 */
+    border-color: #a5b4fc;
+    /* indigo-300 */
+}
+
+.player-admin-menu {
+    position: absolute;
+    top: 2.5rem;
+    /* Below the button */
+    right: 0.5rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    min-width: 150px;
+    overflow: hidden;
+}
+
+.player-admin-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #374151;
+    /* gray-700 */
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.player-admin-menu button:hover {
+    background-color: #f3f4f6;
+    /* gray-100 */
+}
+
+.player-admin-menu button:disabled {
+    background-color: #f9fafb;
+    /* gray-50 */
+    color: #9ca3af;
+    /* gray-400 */
+    cursor: not-allowed;
+}
+
+/* --- END NEW Admin menu --- */
+
+/* Info Column */
+.game-info-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    order: 1;
+    /* On mobile: Info first */
+}
+
+.gr-info-box {
+    text-align: center;
+}
+
+.gr-info-box .pot-display {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.gr-info-box .pot-display-amount {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #166534;
+    /* green-800 */
+    margin: 0.25rem 0;
+}
+
+/* REMOVED: .community-cards style is no longer needed */
+
+
+/* Actions Column */
+.game-actions-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    order: 3;
+    /* On mobile: Actions last */
+}
+
+.gr-action-box .form-group {
+    margin-bottom: 0.75rem;
+}
+
+.gr-action-box .form-input {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.gr-action-box .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.gr-action-box .action-buttons .btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+.gr-action-box .action-buttons .btn-full-span {
+    grid-column: 1 / -1;
+}
+
+/* Re-using admin styles from old layout */
+.game-admin-controls {
+    /* Now a box in the column */
+    /* UPDATED: Use theme colors */
+    background-color: #eef2ff;
+    /* indigo-50 */
+    border: 1px solid #c7d2fe;
+    /* indigo-200 */
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.game-admin-controls h4 {
+    /* New title for the box */
+    font-size: 1.25rem;
+    font-weight: 600;
+    /* UPDATED: Use theme colors */
+    color: #4338ca;
+    /* indigo-700 */
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    /* UPDATED: Use theme colors */
+    border-bottom: 1px solid #c7d2fe;
+    /* indigo-200 */
+    text-align: center;
+}
+
+.game-admin-controls h5 {
+    /* Hiding the old sub-title */
+    display: none;
+}
+
+/* --- NEW: Update Chips Modal Styles (from v3.1) --- */
+.update-chips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1rem 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.update-chips-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+    /* gray-200 */
+}
+
+.update-chips-item:last-child {
+    border-bottom: none;
+}
+
+.update-chips-item span {
+    font-weight: 500;
+    color: #1f2937;
+    /* gray-800 */
+}
+
+.update-chips-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    /* gray-200 */
+    padding-top: 1rem;
+}
+
+/* --- END NEW: Update Chips Modal Styles --- */
+
+
+/* --- NEW: Set Order Modal Styles --- */
+.set-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    text-align: left;
+    min-height: 100px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    cursor: grab;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    touch-action: none;
+    /* NEW: Prevents page scroll on mobile */
+}
+
+.order-item:active {
+    cursor: grabbing;
+}
+
+.order-item .drag-handle {
+    margin-right: 0.75rem;
+    color: #9ca3af;
+    /* gray-400 */
+    cursor: grab;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.order-item:active .drag-handle {
+    cursor: grabbing;
+}
+
+.order-item.dragging {
+    opacity: 0.5;
+    background-color: #eef2ff;
+    /* indigo-50 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* --- END NEW Set Order Modal Styles --- */
+
+/* --- END NEW Game Room UI --- */
+
+
+/* --- NEW: Notification Toast Styles --- */
+.notification-container {
+    position: fixed;
+    top: calc(65px + 1rem);
+    /* Header height + 1rem margin */
+    right: 1rem;
+    z-index: 1000;
+    width: 350px;
+    max-width: calc(100% - 2rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.notification-toast {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.4s cubic-bezier(0.21, 1.02, 0.73, 1);
+    /* Smooth bounce */
+    text-align: left;
+}
+
+.notification-toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-toast.clickable {
+    cursor: pointer;
+}
+
+.notification-toast.clickable:hover {
+    background-color: #f9fafb;
+}
+
+.notification-message {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #374151;
+    margin-right: 0.75rem;
+    word-break: break-word;
+}
+
+.notification-message strong {
+    color: #111827;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    margin: -0.25rem 0 0 0;
+    /* Align 'x' better */
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.notification-close:hover {
+    opacity: 1;
+}
+
+/* Toast types */
+.notification-toast.success {
+    border-left: 4px solid #22c55e;
+    /* green-500 */
+}
+
+.notification-toast.error {
+    border-left: 4px solid #ef4444;
+    /* red-500 */
+}
+
+.notification-toast.info {
+    border-left: 4px solid #3b82f6;
+    /* blue-500 */
+}
+
+.notification-toast.chat {
+    border-left: 4px solid #8b5cf6;
+    /* violet-500 */
+}
+
+/* --- END NEW Notification Toast Styles --- */
+
+/* --- NEW: Dashboard Layout --- */
+.btn-icon {
+    padding: 0.5rem;
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.btn-icon:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    transform: translateY(0);
+    /* Override default btn hover */
+}
+
+.btn-icon svg {
+    margin-right: 0;
+    /* Override default btn svg */
+}
+
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .dashboard-layout {
+        grid-template-columns: 2fr 1fr;
+        /* News takes 2/3, Links 1/3 */
+    }
+}
+
+.dashboard-card {
+    background-color: #f9fafb;
+    /* gray-50 */
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+.dashboard-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    /* gray-200 */
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.dashboard-card-header h3 {
+    font-size: 1.125rem;
+    /* text-lg */
+    font-weight: 600;
+    color: #1f2937;
+    /* gray-800 */
+    margin: 0;
+}
+
+.dashboard-card-content p {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #4b5563;
+    /* gray-600 */
+}
+
+.dashboard-card-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* News Content Specifics */
+.news-content {
+    /* Add basic styling for news content */
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.news-content svg {
+    /* For the inline icons in the placeholder */
+    width: 1rem;
+    height: 1rem;
+    display: inline-block;
+    vertical-align: middle;
+    margin-bottom: 0.125rem;
+}
+
+/* Links Grid Specifics */
+.links-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+    .links-grid {
+        grid-template-columns: 1fr;
+        /* Keep as one column */
+    }
+}
+
+/* --- NEW: Dashboard Link Item --- */
+.dashboard-link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-link-item .btn {
+    flex-grow: 1;
+    /* Make the <a> button take up the most space */
+}
+
+.dashboard-link-item .btn-icon {
+    flex-shrink: 0;
+    /* Don't shrink the icon button */
+}
+
+/* --- END NEW: Dashboard Link Item --- */
