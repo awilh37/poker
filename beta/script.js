@@ -1273,7 +1273,7 @@ function renderStandingsSidebar() {
                 <span class="status-dot ${isOnline ? 'online' : (isIdle ? 'idle' : '')}"></span>
                 ${formatDisplayName(user)}
             </span>
-            <span class="chips">${user.chip_count || 0} 💎</span>
+            <span class="chips">${user.chip_count || 0} </span>
         `;
 
         // Add click listener to show the modal
@@ -1307,7 +1307,7 @@ async function showUserInfoModal(uid) {
     userInfoModalContent.innerHTML = `
         <h3 style="text-align: left;">${formatDisplayName(user)}</h3>
         <p classCSS="text-left"><strong>Role:</strong> ${userRole}</p>
-        <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} 💎</p>
+        <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} </p>
         <!-- UPDATED: Show styled status text -->
         <p classCSS="text-left"><strong>Status:</strong> <span class="status-text ${statusClass}">${statusText}</span></p>
         <button id="closeUserInfoModalButton" class="btn btn-gray btn-half" style="margin-top: 1rem;">Close</button>
@@ -2056,11 +2056,11 @@ function renderGameRoomView(roomId) {
             <h4>Game Info</h4>
             <div class="pot-display">
                 Total Pot
-                <div class="pot-display-amount">${totalPot} 💎</div>
+                <div class="pot-display-amount">${totalPot} </div>
             </div>
             <!-- REMOVED: Community Cards Div -->
             <div style="margin-top: 1rem; font-size: 0.9rem; color: #4b5563;">
-                <strong>Highest Bet:</strong> ${highestBet} 💎
+                <strong>Highest Bet:</strong> ${highestBet} 
             </div>
         </div>
     `;
@@ -2113,7 +2113,7 @@ function renderGameRoomView(roomId) {
                 ${dealerBadgeHtml} <!-- NEW: Show dealer badge -->
                 ${adminMenuHtml}
                 <h5>${formatDisplayName(player)}</h5>
-                <div class="chips"><span>${player.chip_count || 0} 💎</span></div>
+                <div class="chips"><span>${player.chip_count || 0} </span></div>
                 <div class="bet-status">
                     <div class="bet">Bet: ${bet}</div>
                     <div class="status ${statusClass}">${finalStatus}</div> <!-- UPDATED: Use finalStatus -->
@@ -2547,7 +2547,7 @@ function populateUpdateChipsPanel(roomId) {
 
 /** (Admin) Handles submission of chip updates and pot distribution */
 async function handleSubmitChipUpdate(roomId) {
-    console.log("Submitting chip update...");
+    showNotification("Submitting chip update...");
     const room = firestoreGameRooms.find(r => r.id === roomId);
     if (!room) return showNotification("Room data not found.", "error");
 
