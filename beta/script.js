@@ -2547,75 +2547,6 @@ function populateUpdateChipsPanel(roomId) {
 
 /** (Admin) Handles submission of chip updates and pot distribution */
 async function handleSubmitChipUpdate(roomId) {
-    showNotification("Submitting chip update...");
-    const room = firestoreGameRooms.find(r => r.id === roomId);
-    if (!room) return showNotification("Room data not found.", "error");
-
-    // UPDATED: Target the list inside the modal
-    const listEl = updateChipsModal.querySelector('#updateChipsPlayerList');
-    const selects = listEl.querySelectorAll('select[data-uid]');
-
-    const players = [];
-    let totalPot = 0;
-    const roomBets = room.gameState.bets || {};
-
-    room.players.forEach(uid => {
-        const playerProfile = allFirebaseUsersData.find(p => p.uid === uid);
-        const bet = roomBets[uid] || 0;
-        totalPot += bet;
-
-        players.push({
-            id: uid,
-            bet: bet,
-            chips: playerProfile?.chip_count || 0,
-            status: room.gameState.status[uid] || 'pending',
-            winnings: 0
-        });
-    });
-
-    // Get rankings from UI
-    const rankings = [];
-    selects.forEach(s => {
-        rankings.push({ id: s.dataset.uid, rank: parseInt(s.value, 10) });
-    });
-
-    // Simple distribution: 1st place gets all.
-    // This is a placeholder for the complex v3.1 logic.
-    const winners = rankings.filter(r => r.rank === 1);
-    if (winners.length > 0) {
-        const share = totalPot / winners.length;
-        winners.forEach(winner => {
-            const player = players.find(p => p.id === winner.id);
-            if (player) {
-                player.winnings = share;
-            }
-        });
-    }
-    // Note: This simple logic doesn't handle side pots or complex betting.
-
-    // 7. If available_pot is not 0 (in this simple case, it always is)
-    // We'll skip the error check for this placeholder.
-
-    // 8. Update Firestore
-    const batch = writeBatch(db);
-    players.forEach(player => {
-        // --- PATHS FIXED ---
-        const playerProfileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", player.id);
-        // Player's new chips = current chips - their bet + their winnings
-        const newChipCount = player.chips - player.bet + player.winnings;
-        batch.update(playerProfileRef, { chip_count: newChipCount });
-    });
-
-    try {
-        await batch.commit();
-        showNotification("Chips updated and pot distributed!", "success");
-        adminRoomReset(roomId); // Reset the room for the next hand
-        toggleUpdateChipsPanel(roomId, false); // Hide the panel
-    } catch (error) {
-        console.error("Error updating chips:", error);
-        showNotification(`Error: ${error.message}`, "error");
-    }
-
     // awilh - attempting to implement logic from 3.1 to work
     const playerRankings = [];
             const rankSelects = updateChipsPlayerList.querySelectorAll('select[data-player-id]');
@@ -2627,13 +2558,13 @@ async function handleSubmitChipUpdate(roomId) {
             });
 
             if (playerRankings.some(p => p.rank > 0 && (room.playerStatuses[p.playerId] === 'folded'))) {
-                 showMessage("Error: Folded players cannot be assigned a winning rank. Please correct and resubmit.", "error");
+                 showNotification("Error: Folded players cannot be assigned a winning rank. Please correct and resubmit.", "error");
                  return;
             }
 
             // 1. For every eligible (non-folded) player in the room, create a variable calculated by adding all bets that are lower than the player's bet together plus the player's bet times any bets that are equal to/greater than their own, including their own bet. This variable will reflect the max amount of chips each player can win.
             console.log("Step 1: Calculating max win for each player.");
-            players = room.players.map(playerId => {
+            const players = room.players.map(playerId => {
                 const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
                 const bet = room.currentBets[playerId] || 0;
                 const status = room.playerStatuses[playerId];
@@ -2696,7 +2627,7 @@ async function handleSubmitChipUpdate(roomId) {
             // 7. If the available_pot variable is not equal to 0, return an error, and set all of the winnings back to 0.
             console.log("Step 7: Final available pot check:", available_pot);
             if (available_pot !== 0) {
-                showMessage("Error: Pot not distributed correctly. All winnings have been reset to 0.", "error");
+                showNotification("Error: Pot not distributed correctly. All winnings have been reset to 0.", "error");
                 eligiblePlayers.forEach(player => {
                     player.winnings = 0;
                 });
