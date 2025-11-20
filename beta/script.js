@@ -2615,6 +2615,107 @@ async function handleSubmitChipUpdate(roomId) {
         console.error("Error updating chips:", error);
         showNotification(`Error: ${error.message}`, "error");
     }
+
+    // awilh - attempting to implement logic from 3.1 to work
+    const playerRankings = [];
+            const rankSelects = updateChipsPlayerList.querySelectorAll('select[data-player-id]');
+            rankSelects.forEach(select => {
+                playerRankings.push({
+                    playerId: select.getAttribute('data-player-id'),
+                    rank: parseInt(select.value, 10) // 0 for No Win, 1, 2, 3
+                });
+            });
+
+            if (playerRankings.some(p => p.rank > 0 && (room.playerStatuses[p.playerId] === 'folded'))) {
+                 showMessage("Error: Folded players cannot be assigned a winning rank. Please correct and resubmit.", "error");
+                 return;
+            }
+
+            // 1. For every eligible (non-folded) player in the room, create a variable calculated by adding all bets that are lower than the player's bet together plus the player's bet times any bets that are equal to/greater than their own, including their own bet. This variable will reflect the max amount of chips each player can win.
+            console.log("Step 1: Calculating max win for each player.");
+            players = room.players.map(playerId => {
+                const playerProfile = allFirebaseUsersData.find(p => p.uid === playerId);
+                const bet = room.currentBets[playerId] || 0;
+                const status = room.playerStatuses[playerId];
+                const rank = playerRankings.find(p => p.playerId === playerId)?.rank || 0;
+
+                return {
+                    id: playerId,
+                    name: playerProfile ? formatDisplayName(playerProfile) : `Player ${playerId}`,
+                    bet,
+                    status,
+                    rank,
+                    winnings: 0,
+                    chips: playerProfile.chip_count
+                };
+            });
+
+            const bets = players.map(p => p.bet);
+            const eligiblePlayers = players.filter(p => p.status !== 'folded');
+
+            eligiblePlayers.forEach(player => {
+                let maxWin = 0;
+                bets.forEach(bet => {
+                    if (bet < player.bet) {
+                        maxWin += bet;
+                    } else {
+                        maxWin += player.bet;
+                    }
+                });
+                player.maxWin = maxWin;
+            });
+            console.log("Eligible players with max win:", eligiblePlayers);
+
+            // 2. Create a new variable called available_pot that starts equal to the original pot. This new variable will be changed as the pot is calculated to see how many chips remain.
+            let available_pot = bets.reduce((a, b) => a + b, 0);
+            console.log("Step 2: Initial available pot:", available_pot);
+
+            // 3. Create a new variable called 1st_win_quotient that equals the number of players who are marked as 1st winner divided by the available_pot.
+            // 4. Based on the division, for each player marked as 1st winner, compare each players max they can win vs. 1st_win_quotient. if their max is equal to or smaller than the 1st_win_quotient, set their winnings to 1st_win_quotient. if 1st_win_quotient is larger than their max, set their winnings to their max.
+            // 5. Set the available_pot variable to available_pot minus all of the players winnings.
+            // 6. Repeat steps 3-5 for 2nd winners and 3rd winners.
+            for (let i = 1; i <= 3; i++) {
+                console.log(`Step 3-6: Calculating winnings for rank ${i}`);
+                const winners = eligiblePlayers.filter(p => p.rank === i);
+                if (winners.length > 0) {
+                    const win_quotient = available_pot / winners.length;
+                    console.log(`Rank ${i} win quotient:`, win_quotient);
+                    winners.forEach(winner => {
+                        if (winner.maxWin <= win_quotient) {
+                            winner.winnings = winner.maxWin;
+                        } else {
+                            winner.winnings = win_quotient;
+                        }
+                        available_pot -= winner.winnings;
+                        console.log(`Winner ${winner.name} winnings:`, winner.winnings);
+                        console.log("Available pot after winner:", available_pot);
+                    });
+                }
+            }
+
+            // 7. If the available_pot variable is not equal to 0, return an error, and set all of the winnings back to 0.
+            console.log("Step 7: Final available pot check:", available_pot);
+            if (available_pot !== 0) {
+                showMessage("Error: Pot not distributed correctly. All winnings have been reset to 0.", "error");
+                eligiblePlayers.forEach(player => {
+                    player.winnings = 0;
+                });
+                return;
+            }
+
+            // 8. If there is no error, subtract each player's bets from their chips in firestore, and add their winnings to their chips in firestore. Then run the reset room function.
+            const updates = [];
+            players.forEach(player => {
+                const playerProfileRef = doc(userProfilesCollectionRef, player.id);
+                const newChipCount = player.chips - player.bet + player.winnings;
+                updates.push(updateDoc(playerProfileRef, { chip_count: newChipCount }));
+            });
+
+            Promise.all(updates).then(() => {
+                adminRoomReset(roomId);
+                toggleUpdateChipsPanel(roomId, false);
+            });
+        
 }
 
 /** (Player) Handles placing a bet or raise */
