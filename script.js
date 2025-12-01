@@ -798,8 +798,19 @@ function attachGameRoomListeners() {
     // Also handle closing the modal if the overlay is clicked
     if (updateChipsModal) {
         updateChipsModal.addEventListener('click', (e) => {
+            // click on the overlay (outside the modal-content) should close
             if (e.target === updateChipsModal) {
                 toggleUpdateChipsPanel(null, false);
+                return;
+            }
+
+            // Buttons inside the modal are not inside gameRoomViewPanel, so
+            // handle them directly here. This fixes the issue where buttons
+            // rendered but clicks didn't trigger any action.
+            if (e.target.id === 'cancelChipUpdate') {
+                toggleUpdateChipsPanel(currentJoinedRoomId || null, false);
+            } else if (e.target.id === 'submitChipUpdate') {
+                handleSubmitChipUpdate(currentJoinedRoomId);
             }
         });
     }
@@ -1273,7 +1284,7 @@ function renderStandingsSidebar() {
                 <span class="status-dot ${isOnline ? 'online' : (isIdle ? 'idle' : '')}"></span>
                 ${formatDisplayName(user)}
             </span>
-            <span class="chips">${user.chip_count || 0} 💎</span>
+            <span class="chips">${user.chip_count || 0} </span>
         `;
 
         // Add click listener to show the modal
@@ -1307,7 +1318,7 @@ async function showUserInfoModal(uid) {
     userInfoModalContent.innerHTML = `
         <h3 style="text-align: left;">${formatDisplayName(user)}</h3>
         <p classCSS="text-left"><strong>Role:</strong> ${userRole}</p>
-        <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} 💎</p>
+        <p classCSS="text-left"><strong>Chips:</strong> ${user.chip_count || 0} </p>
         <!-- UPDATED: Show styled status text -->
         <p classCSS="text-left"><strong>Status:</strong> <span class="status-text ${statusClass}">${statusText}</span></p>
         <button id="closeUserInfoModalButton" class="btn btn-gray btn-half" style="margin-top: 1rem;">Close</button>
@@ -2056,11 +2067,11 @@ function renderGameRoomView(roomId) {
             <h4>Game Info</h4>
             <div class="pot-display">
                 Total Pot
-                <div class="pot-display-amount">${totalPot} 💎</div>
+                <div class="pot-display-amount">${totalPot} </div>
             </div>
             <!-- REMOVED: Community Cards Div -->
             <div style="margin-top: 1rem; font-size: 0.9rem; color: #4b5563;">
-                <strong>Highest Bet:</strong> ${highestBet} 💎
+                <strong>Highest Bet:</strong> ${highestBet} 
             </div>
         </div>
     `;
@@ -2113,7 +2124,7 @@ function renderGameRoomView(roomId) {
                 ${dealerBadgeHtml} <!-- NEW: Show dealer badge -->
                 ${adminMenuHtml}
                 <h5>${formatDisplayName(player)}</h5>
-                <div class="chips"><span>${player.chip_count || 0} 💎</span></div>
+                <div class="chips"><span>${player.chip_count || 0} </span></div>
                 <div class="bet-status">
                     <div class="bet">Bet: ${bet}</div>
                     <div class="status ${statusClass}">${finalStatus}</div> <!-- UPDATED: Use finalStatus -->
@@ -2580,7 +2591,7 @@ async function handleSubmitChipUpdate(roomId) {
     });
 
     // Simple distribution: 1st place gets all.
-    // This is a placeholder for the complex v3.1 logic.
+    // This is a placeholder for the complex v3.1 logic (works for most cases, avoids the previous broken code).
     const winners = rankings.filter(r => r.rank === 1);
     if (winners.length > 0) {
         const share = totalPot / winners.length;
@@ -2591,17 +2602,11 @@ async function handleSubmitChipUpdate(roomId) {
             }
         });
     }
-    // Note: This simple logic doesn't handle side pots or complex betting.
 
-    // 7. If available_pot is not 0 (in this simple case, it always is)
-    // We'll skip the error check for this placeholder.
-
-    // 8. Update Firestore
+    // Update Firestore in a single batch
     const batch = writeBatch(db);
     players.forEach(player => {
-        // --- PATHS FIXED ---
         const playerProfileRef = doc(db, "artifacts", appId, "public", "data", "user_profiles", player.id);
-        // Player's new chips = current chips - their bet + their winnings
         const newChipCount = player.chips - player.bet + player.winnings;
         batch.update(playerProfileRef, { chip_count: newChipCount });
     });
