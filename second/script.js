@@ -228,7 +228,7 @@ const closeGroupChatButton = document.getElementById('closeGroupChatButton');
 try {
     const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
-    db = getFirestore(app, "second");
+    db = getFirestore(app);
     console.log("Firebase initialized successfully (Firestore-only).");
 } catch (e) {
     console.error("Firebase initialization failed:", e);
